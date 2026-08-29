@@ -1,0 +1,41 @@
+# Local reference material — not part of the project
+triage-agent-project-plan.md
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.python-version
+
+# uv
+# (uv.lock IS committed — reproducible installs)
+
+# Testing / tooling
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Vector store / model caches
+.chroma/
+chroma/
+data/runbook_index/
+.cache/
+*.sqlite3
+
+# LangSmith / local run artifacts
+.langsmith/
+runs/
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
