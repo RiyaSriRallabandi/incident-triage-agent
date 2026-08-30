@@ -98,20 +98,23 @@ def test_unified_label_mapping():
 
     # diagnosis on a solvable scenario -> the root-cause grade carries through
     assert (
-        _j(agent_outcome="diagnosis", root_cause_grade="partial", escalation_call="correct")
-        .unified_label()
+        _j(
+            agent_outcome="diagnosis", root_cause_grade="partial", escalation_call="correct"
+        ).unified_label()
         == "partial"
     )
     # escalated a solvable scenario -> incorrect
     assert (
-        _j(agent_outcome="escalate", root_cause_grade="n/a", escalation_call="missed_escalation")
-        .unified_label()
+        _j(
+            agent_outcome="escalate", root_cause_grade="n/a", escalation_call="missed_escalation"
+        ).unified_label()
         == "incorrect"
     )
     # correctly escalated an ambiguous scenario -> correct
     assert (
-        _j(agent_outcome="escalate", root_cause_grade="n/a", escalation_call="correct")
-        .unified_label()
+        _j(
+            agent_outcome="escalate", root_cause_grade="n/a", escalation_call="correct"
+        ).unified_label()
         == "correct"
     )
     # confident diagnosis on an ambiguous scenario -> incorrect

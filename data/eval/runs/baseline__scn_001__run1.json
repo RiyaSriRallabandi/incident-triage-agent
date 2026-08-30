@@ -1,0 +1,78 @@
+{
+  "tag": "baseline",
+  "scenario_id": "scn_001",
+  "run_index": 1,
+  "budget": 6,
+  "result": {
+    "scenario_id": "scn_001",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "WAF rule 100417 regex evaluation exceeded the 40 ms budget, causing CPU spikes in edge‑proxy and resulting in 502 errors",
+      "confidence": 0.9,
+      "evidence": [
+        "CPU utilization spiked to ~100 % during 13:43‑13:48 ([1])",
+        "HTTP 5xx rate rose to ~0.63 during the same period ([2])",
+        "A new WAF ruleset including rule 100417 was deployed at 13:42 ([3])",
+        "Log shows rule 100417 regex evaluation exceeded 40 ms budget at 13:42:45 ([4])"
+      ],
+      "recommended_fix": "Temporarily disable or rewrite rule 100417 to remove nested quantifiers; redeploy edge‑proxy without the problematic rule; monitor CPU and 5xx metrics to confirm resolution; if rule is required, optimize its regex or increase the evaluation budget."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "Need to confirm if CPU utilization spiked during the incident window to support the CPU-bound hypothesis.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "edge-proxy",
+          "metric": "cpu_utilization_pct",
+          "start": "2026-05-12T13:12:00Z",
+          "end": "2026-05-12T14:05:00Z"
+        },
+        "result": "edge-proxy / cpu_utilization_pct (percent)\nsummary: first=35.5025, last=98.9367, min=34.3102, max=101.8277, change +186.8% (first value -> most extreme value)\npoints: 13:12=35.5025, 13:13=35.6176, 13:14=34.3102, 13:15=34.4988, 13:16=35.068, 13:17=34.7953, 13:18=34.7467, 13:19=35.6198, 13:20=35.2051, 13:21=35.2963, 13:22=34.8912, 13:23=34.6756, 13:24=34.5099, 13:25=35.1643, 13:26=34.7581, 13:27=35.0018, 13:28=35.2314, 13:29=34.5522, 13:30=35.4487, 13:31=34.5774, 13:32=34.6368, 13:33=35.3752, 13:34=34.5049, 13:35=35.4605, 13:36=35.083, 13:37=35.2166, 13:38=35.1797, 13:39=34.6868, 13:40=34.7717, 13:41=34.4979, 13:42=34.4813, 13:43=63.2711, 13:44=98.977, 13:45=98.6996, 13:46=100.575, 13:47=98.0433, 13:48=100.868, 13:49=100.204, 13:50=100.292, 13:51=100.095, 13:52=101.828, 13:53=99.195, 13:54=101.445, 13:55=100.245, 13:56=100.663, 13:57=101.754, 13:58=100.927, 13:59=98.9491, 14:00=99.2711, 14:01=98.208, 14:02=99.7249, 14:03=98.723, 14:04=99.9754, 14:05=98.9367",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The CPU utilization spike suggests a resource bottleneck, but we need to confirm that the 502 errors correlate with the high CPU period. Querying the http_5xx_rate metric for edge‑proxy will show if the error rate rises during the same window.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "edge-proxy",
+          "metric": "http_5xx_rate",
+          "start": "2026-05-12T13:12:00Z",
+          "end": "2026-05-12T14:05:00Z"
+        },
+        "result": "edge-proxy / http_5xx_rate (ratio)\nsummary: first=0.002, last=0.6288, min=0.002, max=0.6304, change +31420.0% (first value -> most extreme value)\npoints: 13:12=0.002, 13:13=0.002, 13:14=0.002, 13:15=0.002, 13:16=0.002, 13:17=0.002, 13:18=0.002, 13:19=0.002, 13:20=0.002, 13:21=0.002, 13:22=0.002, 13:23=0.002, 13:24=0.002, 13:25=0.002, 13:26=0.002, 13:27=0.002, 13:28=0.002, 13:29=0.002, 13:30=0.002, 13:31=0.002, 13:32=0.002, 13:33=0.002, 13:34=0.002, 13:35=0.002, 13:36=0.002, 13:37=0.002, 13:38=0.002, 13:39=0.002, 13:40=0.002, 13:41=0.002, 13:42=0.002, 13:43=0.002, 13:44=0.408, 13:45=0.6251, 13:46=0.6205, 13:47=0.6181, 13:48=0.617, 13:49=0.6088, 13:50=0.6204, 13:51=0.6134, 13:52=0.6181, 13:53=0.6221, 13:54=0.6204, 13:55=0.6199, 13:56=0.6121, 13:57=0.6236, 13:58=0.6186, 13:59=0.6217, 14:00=0.6282, 14:01=0.6206, 14:02=0.6304, 14:03=0.6152, 14:04=0.6221, 14:05=0.6288",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The CPU and 5xx spikes suggest a resource bottleneck, but we need to determine if a recent deployment introduced a change that could cause this. Checking recent deploys for edge‑proxy during the incident window will reveal whether a new release coincides with the spike.",
+        "tool": "get_recent_deploys",
+        "args": {
+          "service": "edge-proxy",
+          "start": "2026-05-12T13:12:00Z",
+          "end": "2026-05-12T14:05:00Z"
+        },
+        "result": "1 deploy(s):\n2026-05-12T13:42:00Z  edge-proxy  7f3a9c1  roll out WAF managed ruleset 2026.05.12 (adds ~30 new rules, incl. rule 100417)",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "The CPU spike and 502s coincide with the deployment of new WAF rules; we need to confirm that the new rules were actively matched and causing the load. Searching the WAF engine logs for the specific rule ID will provide evidence of rule matches during the spike period.",
+        "tool": "search_logs",
+        "args": {
+          "query": "rule 100417",
+          "service": "waf-engine",
+          "start": "2026-05-12T13:40:00Z",
+          "end": "2026-05-12T14:05:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-05-12T13:42:45Z  waf-engine  ERROR  regex evaluation exceeded 40ms budget on managed rule 100417 (pattern contains nested quantifiers: (?:.*.*=.*))",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 4,
+    "hit_budget_cap": false
+  },
+  "error": null
+}
