@@ -118,3 +118,37 @@ def with_structured_output[Schema: BaseModel](
         stop_after_attempt=4,
         wait_exponential_jitter=True,
     )
+
+
+def rate_limit_exceptions() -> tuple[type[Exception], ...]:
+    """Transient provider errors worth waiting out (rate limits, brief outages)."""
+    import groq
+
+    exc: list[type[Exception]] = [
+        groq.RateLimitError,
+        groq.InternalServerError,
+        groq.APIConnectionError,
+        groq.APITimeoutError,
+    ]
+    try:
+        import google.genai.errors as gerr
+
+        exc += [gerr.ServerError, gerr.ClientError]  # ClientError covers 429
+    except ImportError:
+        pass
+    return tuple(exc)
+
+
+def invoke_with_backoff(runnable: Runnable, value: object, *, attempts: int = 5) -> object:
+    """Invoke ``runnable``, sleeping through rate-limit errors (free-tier friendly)."""
+    import time
+
+    retryable = rate_limit_exceptions()
+    for i in range(attempts):
+        try:
+            return runnable.invoke(value)
+        except retryable:
+            if i == attempts - 1:
+                raise
+            time.sleep(min(90, 8 * 2**i))  # 8, 16, 32, 64, 90
+    raise AssertionError("unreachable")

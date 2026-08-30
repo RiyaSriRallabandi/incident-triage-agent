@@ -40,6 +40,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--budget", type=int, default=6)
+    parser.add_argument("--provider", default="gemini", choices=["groq", "gemini"])
     parser.add_argument("--tag", default="baseline")
     parser.add_argument("--force", action="store_true", help="re-run agent and judge")
     args = parser.parse_args()
@@ -47,9 +48,14 @@ def main() -> int:
     scenarios = load_scenarios()
     by_id = {s.id: s for s in scenarios}
 
-    print(f"producing runs (tag={args.tag}, repeats={args.repeats}) ...")
+    print(f"producing runs (tag={args.tag}, repeats={args.repeats}, provider={args.provider}) ...")
     produce_runs(
-        scenarios, repeats=args.repeats, budget=args.budget, tag=args.tag, force=args.force
+        scenarios,
+        repeats=args.repeats,
+        budget=args.budget,
+        provider=args.provider,
+        tag=args.tag,
+        force=args.force,
     )
     runs = load_runs(args.tag)
 

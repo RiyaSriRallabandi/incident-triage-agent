@@ -20,7 +20,7 @@ Concluder = Callable[[str], ConcludeResult]
 
 Toolset = dict[str, StructuredTool]
 
-_MAX_RESULT_CHARS = 1500
+_MAX_RESULT_CHARS = 900
 
 
 # --------------------------------------------------------------------------- #

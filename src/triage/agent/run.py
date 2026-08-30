@@ -17,13 +17,19 @@ from triage.agent.state import (
     TriageState,
 )
 from triage.config import get_settings
-from triage.llm import get_chat_model, with_structured_output
+from triage.llm import (
+    Provider,
+    get_chat_model,
+    invoke_with_backoff,
+    with_structured_output,
+)
 from triage.rag.index import INDEX_DIR
 from triage.schema import Scenario
 from triage.tools.toolset import build_toolset
 from triage.tracing import configure_tracing, trace_config
 
 DEFAULT_BUDGET = 6
+DEFAULT_PROVIDER: Provider = "groq"
 
 
 def _evidence_window(scenario: Scenario) -> str:
@@ -38,31 +44,38 @@ def _metric_catalog(scenario: Scenario) -> dict[str, list[str]]:
     return {svc: sorted(names) for svc, names in catalog.items()}
 
 
-def _structured_runnable(schema):
-    """Groq (json-schema, with retry) and, if a Gemini key is set, a Gemini fallback."""
-    runnable = with_structured_output(get_chat_model("groq"), schema)
-    if get_settings().gemini_api_key:
-        gemini = with_structured_output(get_chat_model("gemini"), schema, provider="gemini")
-        runnable = runnable.with_fallbacks([gemini])
+_OTHER: dict[Provider, Provider] = {"groq": "gemini", "gemini": "groq"}
+
+
+def _structured_runnable(schema, provider: Provider):
+    """Primary provider with the other as a fallback when its key is present."""
+    settings = get_settings()
+    runnable = with_structured_output(get_chat_model(provider), schema, provider=provider)
+
+    other = _OTHER[provider]
+    other_key = settings.groq_api_key if other == "groq" else settings.gemini_api_key
+    if other_key:
+        fb = with_structured_output(get_chat_model(other), schema, provider=other)
+        runnable = runnable.with_fallbacks([fb])
     return runnable
 
 
-def _llm_planner(model: BaseChatModel | None = None) -> Planner:
+def _llm_planner(provider: Provider, model: BaseChatModel | None = None) -> Planner:
     structured = (
         with_structured_output(model, PlanDecision)
         if model is not None
-        else _structured_runnable(PlanDecision)
+        else _structured_runnable(PlanDecision, provider)
     )
-    return lambda prompt: structured.invoke(prompt)
+    return lambda prompt: invoke_with_backoff(structured, prompt)
 
 
-def _llm_concluder(model: BaseChatModel | None = None) -> Concluder:
+def _llm_concluder(provider: Provider, model: BaseChatModel | None = None) -> Concluder:
     structured = (
         with_structured_output(model, ConcludeResult)
         if model is not None
-        else _structured_runnable(ConcludeResult)
+        else _structured_runnable(ConcludeResult, provider)
     )
-    return lambda prompt: structured.invoke(prompt)
+    return lambda prompt: invoke_with_backoff(structured, prompt)
 
 
 def _to_result(scenario_id: str, state: TriageState) -> AgentResult:
@@ -100,19 +113,20 @@ def investigate(
     scenario: Scenario,
     *,
     budget: int = DEFAULT_BUDGET,
+    provider: Provider = DEFAULT_PROVIDER,
     planner: Planner | None = None,
     concluder: Concluder | None = None,
     runbook_index_dir: Path = INDEX_DIR,
 ) -> AgentResult:
     """Run the triage agent on one scenario and return its assessment.
 
-    ``planner`` / ``concluder`` default to Groq-backed LLM callables; tests pass
-    scripted ones.
+    ``provider`` selects the model backing the default planner/concluder (the
+    other provider is used as a fallback). Tests pass scripted callables instead.
     """
     configure_tracing()
     tools = {t.name: t for t in build_toolset(scenario, runbook_index_dir=runbook_index_dir)}
-    planner = planner or _llm_planner()
-    concluder = concluder or _llm_concluder()
+    planner = planner or _llm_planner(provider)
+    concluder = concluder or _llm_concluder(provider)
 
     graph = build_graph(tools, planner, concluder)
     initial: TriageState = {

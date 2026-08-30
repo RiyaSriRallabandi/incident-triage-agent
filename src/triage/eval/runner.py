@@ -7,14 +7,16 @@ specific cached set.
 
 from __future__ import annotations
 
+import time
 import traceback
 from pathlib import Path
 
 from pydantic import BaseModel
 
-from triage.agent.run import DEFAULT_BUDGET, investigate
+from triage.agent.run import DEFAULT_BUDGET, DEFAULT_PROVIDER, investigate
 from triage.agent.state import AgentResult
 from triage.dataset import REPO_ROOT, load_scenarios
+from triage.llm import Provider
 from triage.rag.index import INDEX_DIR
 from triage.schema import Scenario
 
@@ -26,6 +28,7 @@ class CachedRun(BaseModel):
     scenario_id: str
     run_index: int
     budget: int
+    provider: str = "groq"
     result: AgentResult | None = None
     error: str | None = None
 
@@ -43,15 +46,18 @@ def produce_runs(
     *,
     repeats: int = 3,
     budget: int = DEFAULT_BUDGET,
+    provider: Provider = DEFAULT_PROVIDER,
     tag: str = "baseline",
     runbook_index_dir: Path = INDEX_DIR,
     runs_dir: Path = RUNS_DIR,
     force: bool = False,
+    pause_s: float = 4.0,
 ) -> list[CachedRun]:
     """Run every scenario ``repeats`` times, caching each result. Reuses the cache."""
     scenarios = scenarios or load_scenarios()
     runs_dir.mkdir(parents=True, exist_ok=True)
     out: list[CachedRun] = []
+    ran_any = False
 
     for scenario in scenarios:
         for i in range(1, repeats + 1):
@@ -60,13 +66,23 @@ def produce_runs(
                 out.append(CachedRun.model_validate_json(path.read_text()))
                 continue
 
+            if ran_any and pause_s:
+                time.sleep(pause_s)  # stay under per-minute free-tier limits
+            ran_any = True
+
             try:
-                result = investigate(scenario, budget=budget, runbook_index_dir=runbook_index_dir)
+                result = investigate(
+                    scenario,
+                    budget=budget,
+                    provider=provider,
+                    runbook_index_dir=runbook_index_dir,
+                )
                 cached = CachedRun(
                     tag=tag,
                     scenario_id=scenario.id,
                     run_index=i,
                     budget=budget,
+                    provider=provider,
                     result=result,
                 )
             except Exception:  # noqa: BLE001 - a crashed run is a data point, not a stop
@@ -74,6 +90,7 @@ def produce_runs(
                     tag=tag,
                     scenario_id=scenario.id,
                     run_index=i,
+                    provider=provider,
                     budget=budget,
                     error=traceback.format_exc(limit=3),
                 )
