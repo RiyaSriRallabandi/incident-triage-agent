@@ -1,0 +1,686 @@
+{
+  "id": "scn_019",
+  "category": "resource_exhaustion",
+  "difficulty": "medium",
+  "title": "A decompression-bomb image pins every resize worker's CPU",
+  "source_url": "https://cwe.mitre.org/data/definitions/409.html",
+  "source_note": "Failure pattern (a small crafted input that expands enormously on decode, consuming CPU and memory per attempt - a decompression bomb, CWE-409) applied to an image-processing service. All services, asset ids, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~19:32 UTC image resizing is extremely slow platform-wide and the resize queue is huge. No deploys. CPU on the resize fleet is pinned.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-12-01T19:00:02.141574Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "GET /search 200 in 56ms"
+    },
+    {
+      "ts": "2026-12-01T19:03:28.408464Z",
+      "service": "image-resizer",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 138ms"
+    },
+    {
+      "ts": "2026-12-01T19:07:56.523401Z",
+      "service": "asset-cache",
+      "level": "INFO",
+      "msg": "evicted 803 keys (lru)"
+    },
+    {
+      "ts": "2026-12-01T19:10:43.863145Z",
+      "service": "asset-cache",
+      "level": "INFO",
+      "msg": "GET key=user:108 hit"
+    },
+    {
+      "ts": "2026-12-01T19:13:39.187640Z",
+      "service": "asset-cache",
+      "level": "INFO",
+      "msg": "GET key=user:475 hit"
+    },
+    {
+      "ts": "2026-12-01T19:16:00.579270Z",
+      "service": "asset-cache",
+      "level": "INFO",
+      "msg": "evicted 692 keys (lru)"
+    },
+    {
+      "ts": "2026-12-01T19:16:04.630862Z",
+      "service": "thumbnail-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2026-12-01T19:17:27.953176Z",
+      "service": "image-resizer",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 237ms"
+    },
+    {
+      "ts": "2026-12-01T19:18:30.728934Z",
+      "service": "asset-cache",
+      "level": "WARN",
+      "msg": "GET key=user:884 miss"
+    },
+    {
+      "ts": "2026-12-01T19:20:07.023867Z",
+      "service": "asset-cache",
+      "level": "INFO",
+      "msg": "GET key=user:331 hit"
+    },
+    {
+      "ts": "2026-12-01T19:21:32.445124Z",
+      "service": "asset-cache",
+      "level": "WARN",
+      "msg": "GET key=user:624 miss"
+    },
+    {
+      "ts": "2026-12-01T19:21:51.726481Z",
+      "service": "image-resizer",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=33"
+    },
+    {
+      "ts": "2026-12-01T19:22:43.806234Z",
+      "service": "asset-cache",
+      "level": "INFO",
+      "msg": "evicted 400 keys (lru)"
+    },
+    {
+      "ts": "2026-12-01T19:23:54.745448Z",
+      "service": "asset-cache",
+      "level": "INFO",
+      "msg": "GET key=user:789 hit"
+    },
+    {
+      "ts": "2026-12-01T19:24:18.029889Z",
+      "service": "asset-cache",
+      "level": "INFO",
+      "msg": "SET key=session:652 ttl=3600"
+    },
+    {
+      "ts": "2026-12-01T19:26:36.465986Z",
+      "service": "thumbnail-worker",
+      "level": "INFO",
+      "msg": "processed batch size=23"
+    },
+    {
+      "ts": "2026-12-01T19:28:24.582334Z",
+      "service": "asset-cache",
+      "level": "WARN",
+      "msg": "GET key=user:556 miss"
+    },
+    {
+      "ts": "2026-12-01T19:30:00Z",
+      "service": "image-resizer",
+      "level": "WARN",
+      "msg": "worker CPU 80%; several resize jobs running >30s (normal <500ms)"
+    },
+    {
+      "ts": "2026-12-01T19:30:01.035727Z",
+      "service": "thumbnail-worker",
+      "level": "WARN",
+      "msg": "job cache.warm retried attempt=1"
+    },
+    {
+      "ts": "2026-12-01T19:32:00Z",
+      "service": "image-resizer",
+      "level": "ERROR",
+      "msg": "decode job for asset a91f exceeded 60s; image declares 48000x48000 px from a 40KB file"
+    },
+    {
+      "ts": "2026-12-01T19:35:00Z",
+      "service": "image-resizer",
+      "level": "CRITICAL",
+      "msg": "all workers busy on oversized-decode jobs; resize queue depth 9000; CPU pinned"
+    },
+    {
+      "ts": "2026-12-01T19:36:42.175534Z",
+      "service": "thumbnail-worker",
+      "level": "INFO",
+      "msg": "processed batch size=236"
+    },
+    {
+      "ts": "2026-12-01T19:37:00Z",
+      "service": "image-resizer",
+      "level": "WARN",
+      "msg": "asset a91f resubmitted 140 times (client retry)"
+    },
+    {
+      "ts": "2026-12-01T19:39:39.005832Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 116ms"
+    },
+    {
+      "ts": "2026-12-01T19:41:29.258699Z",
+      "service": "thumbnail-worker",
+      "level": "INFO",
+      "msg": "processed batch size=337"
+    },
+    {
+      "ts": "2026-12-01T19:44:50.400877Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2026-12-01T19:45:00Z",
+      "service": "image-resizer",
+      "level": "INFO",
+      "msg": "operator added a max-decoded-dimension guard and blocklisted asset a91f; CPU recovering"
+    },
+    {
+      "ts": "2026-12-01T19:45:54.149804Z",
+      "service": "thumbnail-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2026-12-01T19:46:46.550953Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-12-01T19:47:28.948653Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "GET /products 200 in 31ms"
+    },
+    {
+      "ts": "2026-12-01T19:47:58.350518Z",
+      "service": "asset-cache",
+      "level": "INFO",
+      "msg": "SET key=session:216 ttl=3600"
+    },
+    {
+      "ts": "2026-12-01T19:50:29.022593Z",
+      "service": "thumbnail-worker",
+      "level": "INFO",
+      "msg": "queue depth=167"
+    },
+    {
+      "ts": "2026-12-01T19:52:08.319404Z",
+      "service": "asset-cache",
+      "level": "WARN",
+      "msg": "GET key=user:362 miss"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "cpu_utilization_pct",
+      "unit": "percent",
+      "service": "image-resizer",
+      "points": [
+        [
+          "2026-12-01T19:00:00Z",
+          39.3285
+        ],
+        [
+          "2026-12-01T19:01:00Z",
+          39.2574
+        ],
+        [
+          "2026-12-01T19:02:00Z",
+          39.9929
+        ],
+        [
+          "2026-12-01T19:03:00Z",
+          39.6316
+        ],
+        [
+          "2026-12-01T19:04:00Z",
+          40.0319
+        ],
+        [
+          "2026-12-01T19:05:00Z",
+          39.762
+        ],
+        [
+          "2026-12-01T19:06:00Z",
+          39.3442
+        ],
+        [
+          "2026-12-01T19:07:00Z",
+          40.598
+        ],
+        [
+          "2026-12-01T19:08:00Z",
+          40.7564
+        ],
+        [
+          "2026-12-01T19:09:00Z",
+          39.4851
+        ],
+        [
+          "2026-12-01T19:10:00Z",
+          40.5156
+        ],
+        [
+          "2026-12-01T19:11:00Z",
+          40.1509
+        ],
+        [
+          "2026-12-01T19:12:00Z",
+          39.3446
+        ],
+        [
+          "2026-12-01T19:13:00Z",
+          39.7226
+        ],
+        [
+          "2026-12-01T19:14:00Z",
+          40.2845
+        ],
+        [
+          "2026-12-01T19:15:00Z",
+          40.5154
+        ],
+        [
+          "2026-12-01T19:16:00Z",
+          40.0047
+        ],
+        [
+          "2026-12-01T19:17:00Z",
+          39.5929
+        ],
+        [
+          "2026-12-01T19:18:00Z",
+          40.0283
+        ],
+        [
+          "2026-12-01T19:19:00Z",
+          39.7948
+        ],
+        [
+          "2026-12-01T19:20:00Z",
+          40.0981
+        ],
+        [
+          "2026-12-01T19:21:00Z",
+          39.8655
+        ],
+        [
+          "2026-12-01T19:22:00Z",
+          40.2175
+        ],
+        [
+          "2026-12-01T19:23:00Z",
+          40.2651
+        ],
+        [
+          "2026-12-01T19:24:00Z",
+          40.6041
+        ],
+        [
+          "2026-12-01T19:25:00Z",
+          39.8191
+        ],
+        [
+          "2026-12-01T19:26:00Z",
+          39.2046
+        ],
+        [
+          "2026-12-01T19:27:00Z",
+          40.4919
+        ],
+        [
+          "2026-12-01T19:28:00Z",
+          39.9533
+        ],
+        [
+          "2026-12-01T19:29:00Z",
+          39.337
+        ],
+        [
+          "2026-12-01T19:30:00Z",
+          39.5858
+        ],
+        [
+          "2026-12-01T19:31:00Z",
+          59.1687
+        ],
+        [
+          "2026-12-01T19:32:00Z",
+          79.9483
+        ],
+        [
+          "2026-12-01T19:33:00Z",
+          100.3264
+        ],
+        [
+          "2026-12-01T19:34:00Z",
+          101.051
+        ],
+        [
+          "2026-12-01T19:35:00Z",
+          99.7237
+        ],
+        [
+          "2026-12-01T19:36:00Z",
+          100.4908
+        ],
+        [
+          "2026-12-01T19:37:00Z",
+          98.1531
+        ],
+        [
+          "2026-12-01T19:38:00Z",
+          101.4766
+        ],
+        [
+          "2026-12-01T19:39:00Z",
+          100.9403
+        ],
+        [
+          "2026-12-01T19:40:00Z",
+          100.8903
+        ],
+        [
+          "2026-12-01T19:41:00Z",
+          99.0198
+        ],
+        [
+          "2026-12-01T19:42:00Z",
+          98.6698
+        ],
+        [
+          "2026-12-01T19:43:00Z",
+          101.7782
+        ],
+        [
+          "2026-12-01T19:44:00Z",
+          100.0845
+        ],
+        [
+          "2026-12-01T19:45:00Z",
+          101.9174
+        ],
+        [
+          "2026-12-01T19:46:00Z",
+          101.9822
+        ],
+        [
+          "2026-12-01T19:47:00Z",
+          101.9889
+        ],
+        [
+          "2026-12-01T19:48:00Z",
+          100.0127
+        ],
+        [
+          "2026-12-01T19:49:00Z",
+          100.7123
+        ],
+        [
+          "2026-12-01T19:50:00Z",
+          98.4201
+        ],
+        [
+          "2026-12-01T19:51:00Z",
+          100.7215
+        ],
+        [
+          "2026-12-01T19:52:00Z",
+          98.2176
+        ],
+        [
+          "2026-12-01T19:53:00Z",
+          101.8172
+        ],
+        [
+          "2026-12-01T19:54:00Z",
+          99.0181
+        ],
+        [
+          "2026-12-01T19:55:00Z",
+          99.7609
+        ]
+      ]
+    },
+    {
+      "name": "resize_p95_latency_ms",
+      "unit": "milliseconds",
+      "service": "image-resizer",
+      "points": [
+        [
+          "2026-12-01T19:00:00Z",
+          484.8614
+        ],
+        [
+          "2026-12-01T19:01:00Z",
+          482.9816
+        ],
+        [
+          "2026-12-01T19:02:00Z",
+          482.4728
+        ],
+        [
+          "2026-12-01T19:03:00Z",
+          483.2337
+        ],
+        [
+          "2026-12-01T19:04:00Z",
+          476.0691
+        ],
+        [
+          "2026-12-01T19:05:00Z",
+          475.0557
+        ],
+        [
+          "2026-12-01T19:06:00Z",
+          485.6708
+        ],
+        [
+          "2026-12-01T19:07:00Z",
+          474.8745
+        ],
+        [
+          "2026-12-01T19:08:00Z",
+          471.1617
+        ],
+        [
+          "2026-12-01T19:09:00Z",
+          477.7581
+        ],
+        [
+          "2026-12-01T19:10:00Z",
+          472.9365
+        ],
+        [
+          "2026-12-01T19:11:00Z",
+          477.216
+        ],
+        [
+          "2026-12-01T19:12:00Z",
+          478.3985
+        ],
+        [
+          "2026-12-01T19:13:00Z",
+          482.5741
+        ],
+        [
+          "2026-12-01T19:14:00Z",
+          485.6972
+        ],
+        [
+          "2026-12-01T19:15:00Z",
+          482.658
+        ],
+        [
+          "2026-12-01T19:16:00Z",
+          480.3012
+        ],
+        [
+          "2026-12-01T19:17:00Z",
+          480.5033
+        ],
+        [
+          "2026-12-01T19:18:00Z",
+          488.1255
+        ],
+        [
+          "2026-12-01T19:19:00Z",
+          477.7673
+        ],
+        [
+          "2026-12-01T19:20:00Z",
+          472.3076
+        ],
+        [
+          "2026-12-01T19:21:00Z",
+          482.375
+        ],
+        [
+          "2026-12-01T19:22:00Z",
+          483.7035
+        ],
+        [
+          "2026-12-01T19:23:00Z",
+          485.592
+        ],
+        [
+          "2026-12-01T19:24:00Z",
+          471.9501
+        ],
+        [
+          "2026-12-01T19:25:00Z",
+          471.1095
+        ],
+        [
+          "2026-12-01T19:26:00Z",
+          470.977
+        ],
+        [
+          "2026-12-01T19:27:00Z",
+          482.0392
+        ],
+        [
+          "2026-12-01T19:28:00Z",
+          489.4282
+        ],
+        [
+          "2026-12-01T19:29:00Z",
+          485.9054
+        ],
+        [
+          "2026-12-01T19:30:00Z",
+          485.5501
+        ],
+        [
+          "2026-12-01T19:31:00Z",
+          480.1777
+        ],
+        [
+          "2026-12-01T19:32:00Z",
+          11637.2865
+        ],
+        [
+          "2026-12-01T19:33:00Z",
+          23121.5367
+        ],
+        [
+          "2026-12-01T19:34:00Z",
+          33458.7675
+        ],
+        [
+          "2026-12-01T19:35:00Z",
+          44296.5667
+        ],
+        [
+          "2026-12-01T19:36:00Z",
+          45151.771
+        ],
+        [
+          "2026-12-01T19:37:00Z",
+          44990.4755
+        ],
+        [
+          "2026-12-01T19:38:00Z",
+          44731.994
+        ],
+        [
+          "2026-12-01T19:39:00Z",
+          44647.8334
+        ],
+        [
+          "2026-12-01T19:40:00Z",
+          44851.6805
+        ],
+        [
+          "2026-12-01T19:41:00Z",
+          44239.3215
+        ],
+        [
+          "2026-12-01T19:42:00Z",
+          44474.8189
+        ],
+        [
+          "2026-12-01T19:43:00Z",
+          45422.8606
+        ],
+        [
+          "2026-12-01T19:44:00Z",
+          44903.0273
+        ],
+        [
+          "2026-12-01T19:45:00Z",
+          45793.523
+        ],
+        [
+          "2026-12-01T19:46:00Z",
+          45410.6525
+        ],
+        [
+          "2026-12-01T19:47:00Z",
+          45095.3611
+        ],
+        [
+          "2026-12-01T19:48:00Z",
+          44960.07
+        ],
+        [
+          "2026-12-01T19:49:00Z",
+          44778.9092
+        ],
+        [
+          "2026-12-01T19:50:00Z",
+          45690.2827
+        ],
+        [
+          "2026-12-01T19:51:00Z",
+          45490.3123
+        ],
+        [
+          "2026-12-01T19:52:00Z",
+          44267.0732
+        ],
+        [
+          "2026-12-01T19:53:00Z",
+          45424.8773
+        ],
+        [
+          "2026-12-01T19:54:00Z",
+          44509.2133
+        ],
+        [
+          "2026-12-01T19:55:00Z",
+          44451.6633
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "A user uploaded a decompression-bomb image: a ~40KB file that declares 48000x48000 pixel dimensions. image-resizer attempted to fully decode it, consuming enormous CPU and holding a worker for tens of seconds per attempt. The client retried the same asset ~140 times, so many workers were simultaneously stuck on oversized-decode jobs, CPU saturated, and the resize queue backed up for all users. There was no deploy - the trigger was the crafted input plus the absence of a decoded-size guard. Recovery required adding a max-decoded-dimension check and blocklisting the asset.",
+    "evidence_path": [
+      "image-resizer resize jobs suddenly take >30s against a <500ms baseline and worker CPU climbs",
+      "image-resizer ERROR: a 40KB asset declares 48000x48000 px and its decode exceeds 60s",
+      "the same asset was resubmitted ~140 times by client retries",
+      "all workers become stuck on oversized-decode jobs; CPU pins and the queue grows to 9000",
+      "no deploy; recovery after a max-decoded-dimension guard is added and the asset is blocklisted"
+    ],
+    "fix": "Add a decoded-dimension / pixel-count limit before decoding and reject oversized images (done). Blocklist the offending asset, add per-job CPU and time budgets, and rate-limit repeated submissions of the same asset.",
+    "should_escalate": false
+  }
+}

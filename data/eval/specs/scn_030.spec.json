@@ -1,0 +1,44 @@
+{
+  "id": "scn_030",
+  "category": "database_issue",
+  "difficulty": "medium",
+  "title": "Query plan regression after a statistics refresh turns a hot query into a sequential scan",
+  "source_url": "https://about.gitlab.com/blog/2017/02/10/postmortem-of-database-outage-of-january-31/",
+  "source_note": "Failure pattern (an ANALYZE / statistics update flips the planner from an index scan to a sequential scan on a large table, so a frequently-run query becomes very slow and saturates database CPU) is a common query-plan-regression class. All services, query names, row counts, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~08:00 UTC the dashboards are timing out and anything sharing the reporting database is slow. Database CPU is near 100%. No deploys. There was a large data import into the reporting database earlier.",
+  "incident_start": "2027-01-20T08:00:00Z",
+  "detected_offset_s": 300,
+  "window_before_s": 1800,
+  "window_after_s": 1500,
+  "primary_service": "reporting-db",
+  "distractor_services": [
+    { "name": "ingest-worker", "role": "worker" },
+    { "name": "metrics-api", "role": "api" },
+    { "name": "query-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": -600, "service": "reporting-db", "level": "INFO", "msg": "auto-analyze ran on table events after a bulk import (~30M new rows)" },
+    { "offset_s": 0, "service": "reporting-db", "level": "WARN", "msg": "query q_dashboard_summary latency 8s+ (baseline ~40ms); now doing a sequential scan on events (200M rows)" },
+    { "offset_s": 180, "service": "dashboard-api", "level": "ERROR", "msg": "dashboard requests timing out; DB CPU 96%" },
+    { "offset_s": 300, "service": "reporting-db", "level": "ERROR", "msg": "plan regression confirmed: q_dashboard_summary switched from index scan to seq scan after the stats update" },
+    { "offset_s": 420, "service": "reporting-db", "level": "INFO", "msg": "other queries sharing the database are slow due to CPU contention from the sequential scans" },
+    { "offset_s": 1200, "service": "reporting-db", "level": "INFO", "msg": "pinned the index plan for q_dashboard_summary; latency back to ~45ms" }
+  ],
+  "metrics": [
+    { "name": "query_p95_latency_ms", "unit": "milliseconds", "service": "reporting-db", "baseline": 40.0, "spike": 12000.0, "spike_at_offset_s": 0, "ramp_s": 120 },
+    { "name": "db_cpu_utilization_pct", "unit": "percent", "service": "reporting-db", "baseline": 35.0, "spike": 96.0, "spike_at_offset_s": 60, "ramp_s": 120 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "A routine auto-analyze, triggered after a ~30M-row bulk import into the events table, updated the table statistics, and the query planner then switched a frequently-run dashboard query (q_dashboard_summary) from an index scan to a sequential scan on the 200M-row events table. That query's latency jumped from ~40ms to over 8s, and the repeated sequential scans drove database CPU to 96%, slowing every other query sharing the database. There was no deploy - the trigger was the statistics refresh changing the plan. Recovery required pinning the good (index) plan for that query.",
+    "evidence_path": [
+      "reporting-db INFO ~10 min before onset: auto-analyze ran on the events table after a ~30M-row bulk import",
+      "reporting-db WARN: q_dashboard_summary latency 8s+ vs a ~40ms baseline, now doing a sequential scan on events (200M rows)",
+      "reporting-db ERROR: plan regression confirmed - the query switched from index scan to seq scan after the stats update",
+      "db_cpu_utilization climbs to 96% from the repeated sequential scans; other queries slow from contention",
+      "latency returns to ~45ms after the plan is pinned for that query"
+    ],
+    "fix": "Pin the index plan for q_dashboard_summary (done). Investigate why the planner's cost estimate favoured a seq scan after ANALYZE (stale or skewed stats, missing extended statistics), add plan-regression monitoring on the top queries, and control when ANALYZE runs on large tables after bulk imports.",
+    "should_escalate": false
+  }
+}

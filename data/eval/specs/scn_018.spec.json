@@ -1,0 +1,43 @@
+{
+  "id": "scn_018",
+  "category": "resource_exhaustion",
+  "difficulty": "hard",
+  "title": "File-descriptor leak on an error path exhausts the connection limit",
+  "source_url": "https://sre.google/sre-book/addressing-cascading-failures/",
+  "source_note": "Failure pattern (connections not closed on a specific error path, so file descriptors leak until the process hits 'too many open files' and cannot accept or open new connections) is a standard resource-exhaustion class in the Google SRE Book. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~08:30 UTC proxy-service is returning 5xx on about a third of requests and the rate is climbing. No deploys today. inventory-api had a spell of errors earlier this morning.",
+  "incident_start": "2026-11-27T08:00:00Z",
+  "detected_offset_s": 1800,
+  "window_before_s": 1800,
+  "window_after_s": 2400,
+  "primary_service": "proxy-service",
+  "distractor_services": [
+    { "name": "inventory-api", "role": "api" },
+    { "name": "orders-worker", "role": "worker" },
+    { "name": "route-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "proxy-service", "level": "WARN", "msg": "open file descriptors 38000 / 40000 limit and climbing" },
+    { "offset_s": 600, "service": "proxy-service", "level": "WARN", "msg": "fd count not dropping during low traffic; connections to inventory-api not being released" },
+    { "offset_s": 1200, "service": "proxy-service", "level": "ERROR", "msg": "accept() failing: too many open files (EMFILE)" },
+    { "offset_s": 1800, "service": "proxy-service", "level": "ERROR", "msg": "cannot open new upstream connections; 5xx rate 30%" },
+    { "offset_s": 2700, "service": "proxy-service", "level": "INFO", "msg": "operator restarted proxy-service pods; fd count reset; leak on the inventory-api error path still open" }
+  ],
+  "metrics": [
+    { "name": "open_fds", "unit": "count", "service": "proxy-service", "baseline": 8000.0, "spike": 40000.0, "spike_at_offset_s": 0, "ramp_s": 1500 },
+    { "name": "error_rate", "unit": "ratio", "service": "proxy-service", "baseline": 0.002, "spike": 0.3, "spike_at_offset_s": 1200, "ramp_s": 300 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "proxy-service leaks file descriptors on one error path: connections opened to inventory-api during a request are not closed when that request hits a specific downstream error, so the socket and its fd stay open indefinitely. An earlier spell of inventory-api errors accelerated the leak; open fds climbed from ~8k toward the 40k limit. Once the limit was hit, proxy-service could not accept new connections or open upstream ones ('too many open files'), so ~30% of requests failed. A restart resets the fd count but the leak remains until the error-path code is fixed.",
+    "evidence_path": [
+      "proxy-service open fds climb steadily toward the 40k limit and do not drop even during low traffic - a leak, not load",
+      "the fd growth is tied to un-released connections to inventory-api on an error path",
+      "proxy-service ERROR: accept() failing with 'too many open files' (EMFILE)",
+      "error_rate rises to ~30% once new connections cannot be opened",
+      "restarting the pods resets fds but does not fix the leak"
+    ],
+    "fix": "Restart affected pods to restore service (done). Fix the inventory-api client to close the connection in a finally block on every path including errors, add an open-fd-count alert, and add a leak test that exercises the error path.",
+    "should_escalate": false
+  }
+}

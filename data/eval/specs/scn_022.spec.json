@@ -1,0 +1,43 @@
+{
+  "id": "scn_022",
+  "category": "dependency_failure",
+  "difficulty": "medium",
+  "title": "Managed DNS provider under DDoS makes the company's domains unresolvable",
+  "source_url": "https://en.wikipedia.org/wiki/2016_Dyn_cyberattack",
+  "source_note": "Failure pattern follows the 2016 Dyn cyberattack: a DDoS against a managed DNS provider made many customers' domains unresolvable, an outage entirely outside the affected companies' own infrastructure. All services, provider names, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~12:00 UTC many users cannot reach the site at all, and some outbound API calls are failing intermittently. Our servers look healthy. Reports say a DNS provider is having problems.",
+  "incident_start": "2026-12-11T12:00:00Z",
+  "detected_offset_s": 300,
+  "window_before_s": 1800,
+  "window_after_s": 2400,
+  "primary_service": "edge-monitor",
+  "distractor_services": [
+    { "name": "origin-web", "role": "api" },
+    { "name": "payments-gateway", "role": "gateway" },
+    { "name": "cdn-edge", "role": "gateway" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "edge-monitor", "level": "WARN", "msg": "external DNS resolution success for www.example.com down to 60% from multiple regions" },
+    { "offset_s": 180, "service": "edge-monitor", "level": "ERROR", "msg": "DNS provider dyn-managed reports a large DDoS against its infrastructure since 11:58 UTC" },
+    { "offset_s": 300, "service": "api-gateway", "level": "WARN", "msg": "intermittent resolution failures for third-party endpoints (payments, email); ~20% of individual outbound calls fail to resolve, so a multi-call checkout succeeds only ~65% of the time" },
+    { "offset_s": 420, "service": "edge-monitor", "level": "INFO", "msg": "origin servers and internal DNS are healthy; failures are all at the external authoritative layer" },
+    { "offset_s": 1800, "service": "edge-monitor", "level": "INFO", "msg": "secondary DNS provider activated for critical zones; resolution success climbing back toward 99%" }
+  ],
+  "metrics": [
+    { "name": "external_dns_success_rate", "unit": "ratio", "service": "edge-monitor", "baseline": 0.999, "spike": 0.55, "spike_at_offset_s": 0, "ramp_s": 240 },
+    { "name": "synthetic_checkout_success_rate", "unit": "ratio", "service": "edge-monitor", "baseline": 0.98, "spike": 0.64, "spike_at_offset_s": 180, "ramp_s": 240 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "The managed DNS provider hosting the company's public DNS zones was hit by a large DDoS starting ~11:58 UTC (confirmed by the provider). External resolution of the company's own domains - and of some third-party endpoints on the same provider - became unreliable, dropping to ~55% success from multiple regions, so users could not reliably reach the site and ~20% of outbound third-party calls failed at DNS resolution. Internal DNS and the origin servers were healthy; the failure was entirely at the external authoritative DNS layer, which the company does not operate. The mitigation was to activate a secondary DNS provider for critical zones.",
+    "evidence_path": [
+      "edge-monitor: external DNS resolution success for the company's domain drops to ~60% from multiple regions",
+      "the DNS provider reports a large DDoS against its infrastructure since 11:58 UTC",
+      "api-gateway sees intermittent resolution failures for third-party endpoints; ~20% of outbound calls fail to resolve",
+      "origin servers and internal DNS are confirmed healthy - failures are all at the external authoritative layer",
+      "resolution recovers after a secondary DNS provider is activated for critical zones"
+    ],
+    "fix": "Activate a secondary DNS provider for critical zones (done). Run authoritative DNS across two independent providers permanently, and cache last-known-good resolutions for critical third-party endpoints.",
+    "should_escalate": false
+  }
+}

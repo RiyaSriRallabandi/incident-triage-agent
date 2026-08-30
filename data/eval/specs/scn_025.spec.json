@@ -1,0 +1,45 @@
+{
+  "id": "scn_025",
+  "category": "network_dns",
+  "difficulty": "hard",
+  "title": "Load-balancer health check points at a readiness endpoint that fails during a cache warm",
+  "source_url": "https://sre.google/sre-book/load-balancing-datacenter/",
+  "source_note": "Failure pattern (a load-balancer health check checks readiness of a slow-warming dependency rather than liveness, so healthy instances get pulled from rotation during a routine event and the survivors overload) follows datacenter load-balancing guidance in the Google SRE Book. All services, change ids, paths, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~03:03 UTC the app is throwing 503s for most users. The load balancer shows most instances as unhealthy, but the instances themselves look fine. No application deploys. A load-balancer config change went in overnight.",
+  "incident_start": "2026-12-22T03:00:00Z",
+  "detected_offset_s": 300,
+  "window_before_s": 1800,
+  "window_after_s": 1500,
+  "primary_service": "app-lb",
+  "distractor_services": [
+    { "name": "api-gateway", "role": "gateway" },
+    { "name": "report-worker", "role": "worker" },
+    { "name": "lookup-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "app-lb", "level": "INFO", "msg": "health check path updated to /ready (config change CR-9012)" },
+    { "offset_s": 120, "service": "cache-warmer", "level": "INFO", "msg": "scheduled nightly cache flush and rebuild started" },
+    { "offset_s": 180, "service": "app-lb", "level": "WARN", "msg": "18 of 24 app-server instances failing health check /ready (503 while the cache rebuilds)" },
+    { "offset_s": 300, "service": "app-lb", "level": "ERROR", "msg": "only 6 instances in rotation; each at 95% CPU; 503 rate climbing" },
+    { "offset_s": 420, "service": "app-server", "level": "INFO", "msg": "instances are healthy; /ready returns 503 only until the cache is warm (~10 min)" },
+    { "offset_s": 1200, "service": "app-lb", "level": "INFO", "msg": "health check reverted to /healthz (liveness only); all instances back in rotation" }
+  ],
+  "metrics": [
+    { "name": "lb_healthy_instances", "unit": "count", "service": "app-lb", "baseline": 24.0, "spike": 6.0, "spike_at_offset_s": 180, "ramp_s": 60 },
+    { "name": "http_5xx_rate", "unit": "ratio", "service": "app-lb", "baseline": 0.004, "spike": 0.55, "spike_at_offset_s": 300, "ramp_s": 120 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "A config change (CR-9012) pointed the load balancer's health check at /ready, which returns 503 until a background cache is warm. When the nightly cache flush and rebuild ran, 18 of 24 app-server instances failed that health check - even though they could serve traffic - and the load balancer removed them from rotation. The remaining 6 instances overloaded (95% CPU) and started returning 503s. The instances were never unhealthy; the health check was testing readiness of a warming cache, not liveness. Recovery required reverting the health check to a liveness-only path.",
+    "evidence_path": [
+      "app-lb INFO at 03:00: health check path changed to /ready (config change CR-9012)",
+      "the nightly cache flush and rebuild starts at 03:02",
+      "app-lb WARN: 18 of 24 instances fail /ready with 503 while the cache rebuilds",
+      "lb_healthy_instances drops from 24 to 6; the survivors overload and 5xx rate climbs to ~55%",
+      "app-server confirms the instances are healthy - /ready just returns 503 until the cache warms",
+      "recovery after the health check is reverted to /healthz (liveness only)"
+    ],
+    "fix": "Revert the health check to a liveness-only path (done). Separate liveness from readiness in the load-balancer config, make readiness failures reduce an instance's weight rather than remove it entirely, and never gate rotation on a slow-warming dependency.",
+    "should_escalate": false
+  }
+}

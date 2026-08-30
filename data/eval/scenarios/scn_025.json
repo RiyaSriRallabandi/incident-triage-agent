@@ -1,0 +1,865 @@
+{
+  "id": "scn_025",
+  "category": "network_dns",
+  "difficulty": "hard",
+  "title": "Load-balancer health check points at a readiness endpoint that fails during a cache warm",
+  "source_url": "https://sre.google/sre-book/load-balancing-datacenter/",
+  "source_note": "Failure pattern (a load-balancer health check checks readiness of a slow-warming dependency rather than liveness, so healthy instances get pulled from rotation during a routine event and the survivors overload) follows datacenter load-balancing guidance in the Google SRE Book. All services, change ids, paths, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~03:03 UTC the app is throwing 503s for most users. The load balancer shows most instances as unhealthy, but the instances themselves look fine. No application deploys. A load-balancer config change went in overnight.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-12-22T02:30:23.376308Z",
+      "service": "report-worker",
+      "level": "WARN",
+      "msg": "job webhook.deliver retried attempt=1"
+    },
+    {
+      "ts": "2026-12-22T02:32:32.098906Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "upstream app-lb slow 229ms"
+    },
+    {
+      "ts": "2026-12-22T02:32:40.753445Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "evicted 319 keys (lru)"
+    },
+    {
+      "ts": "2026-12-22T02:32:59.923001Z",
+      "service": "report-worker",
+      "level": "INFO",
+      "msg": "processed batch size=837"
+    },
+    {
+      "ts": "2026-12-22T02:33:32.317695Z",
+      "service": "report-worker",
+      "level": "INFO",
+      "msg": "queue depth=432"
+    },
+    {
+      "ts": "2026-12-22T02:35:23.887823Z",
+      "service": "app-lb",
+      "level": "INFO",
+      "msg": "GET /search 200 in 55ms"
+    },
+    {
+      "ts": "2026-12-22T02:35:42.537269Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "evicted 219 keys (lru)"
+    },
+    {
+      "ts": "2026-12-22T02:37:23.407934Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "route matched /cart -> app-lb"
+    },
+    {
+      "ts": "2026-12-22T02:37:58.618843Z",
+      "service": "report-worker",
+      "level": "INFO",
+      "msg": "processed batch size=4"
+    },
+    {
+      "ts": "2026-12-22T02:39:02.255437Z",
+      "service": "lookup-cache",
+      "level": "WARN",
+      "msg": "GET key=user:727 miss"
+    },
+    {
+      "ts": "2026-12-22T02:41:04.959912Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "upstream app-lb 200 72ms"
+    },
+    {
+      "ts": "2026-12-22T02:41:11.813528Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "upstream app-lb slow 163ms"
+    },
+    {
+      "ts": "2026-12-22T02:41:15.158227Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "SET key=session:489 ttl=3600"
+    },
+    {
+      "ts": "2026-12-22T02:41:38.749000Z",
+      "service": "app-lb",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 236ms"
+    },
+    {
+      "ts": "2026-12-22T02:42:21.596860Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "route matched /search -> app-lb"
+    },
+    {
+      "ts": "2026-12-22T02:43:16.100802Z",
+      "service": "report-worker",
+      "level": "WARN",
+      "msg": "job invoice.render retried attempt=1"
+    },
+    {
+      "ts": "2026-12-22T02:44:02.792307Z",
+      "service": "report-worker",
+      "level": "WARN",
+      "msg": "job invoice.render retried attempt=1"
+    },
+    {
+      "ts": "2026-12-22T02:45:41.004217Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "upstream app-lb slow 126ms"
+    },
+    {
+      "ts": "2026-12-22T02:46:35.303014Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "upstream app-lb 200 73ms"
+    },
+    {
+      "ts": "2026-12-22T02:48:50.272058Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "upstream app-lb slow 210ms"
+    },
+    {
+      "ts": "2026-12-22T02:49:23.259900Z",
+      "service": "app-lb",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 61ms"
+    },
+    {
+      "ts": "2026-12-22T02:51:09.167292Z",
+      "service": "app-lb",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 236ms"
+    },
+    {
+      "ts": "2026-12-22T02:53:25.165709Z",
+      "service": "lookup-cache",
+      "level": "WARN",
+      "msg": "GET key=user:472 miss"
+    },
+    {
+      "ts": "2026-12-22T03:00:00Z",
+      "service": "app-lb",
+      "level": "INFO",
+      "msg": "health check path updated to /ready (config change CR-9012)"
+    },
+    {
+      "ts": "2026-12-22T03:00:21.765010Z",
+      "service": "app-lb",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-12-22T03:00:32.424134Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "upstream app-lb slow 114ms"
+    },
+    {
+      "ts": "2026-12-22T03:02:00Z",
+      "service": "cache-warmer",
+      "level": "INFO",
+      "msg": "scheduled nightly cache flush and rebuild started"
+    },
+    {
+      "ts": "2026-12-22T03:02:37.828364Z",
+      "service": "report-worker",
+      "level": "INFO",
+      "msg": "queue depth=34"
+    },
+    {
+      "ts": "2026-12-22T03:02:48.518849Z",
+      "service": "app-lb",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-12-22T03:03:00Z",
+      "service": "app-lb",
+      "level": "WARN",
+      "msg": "18 of 24 app-server instances failing health check /ready (503 while the cache rebuilds)"
+    },
+    {
+      "ts": "2026-12-22T03:03:33.480185Z",
+      "service": "report-worker",
+      "level": "INFO",
+      "msg": "job webhook.deliver completed in 132ms"
+    },
+    {
+      "ts": "2026-12-22T03:05:00Z",
+      "service": "app-lb",
+      "level": "ERROR",
+      "msg": "only 6 instances in rotation; each at 95% CPU; 503 rate climbing"
+    },
+    {
+      "ts": "2026-12-22T03:05:26.230060Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "upstream app-lb 200 106ms"
+    },
+    {
+      "ts": "2026-12-22T03:06:27.777964Z",
+      "service": "app-lb",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 213ms"
+    },
+    {
+      "ts": "2026-12-22T03:07:00Z",
+      "service": "app-server",
+      "level": "INFO",
+      "msg": "instances are healthy; /ready returns 503 only until the cache is warm (~10 min)"
+    },
+    {
+      "ts": "2026-12-22T03:07:23.434603Z",
+      "service": "app-lb",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2026-12-22T03:10:49.187692Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "route matched /api/v1/users/me -> app-lb"
+    },
+    {
+      "ts": "2026-12-22T03:11:23.596162Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "SET key=session:507 ttl=3600"
+    },
+    {
+      "ts": "2026-12-22T03:11:37.305953Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "GET key=user:506 hit"
+    },
+    {
+      "ts": "2026-12-22T03:12:05.536144Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "route matched /search -> app-lb"
+    },
+    {
+      "ts": "2026-12-22T03:12:47.964302Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "GET key=user:775 hit"
+    },
+    {
+      "ts": "2026-12-22T03:13:21.588562Z",
+      "service": "report-worker",
+      "level": "INFO",
+      "msg": "processed batch size=553"
+    },
+    {
+      "ts": "2026-12-22T03:13:26.142280Z",
+      "service": "report-worker",
+      "level": "INFO",
+      "msg": "processed batch size=782"
+    },
+    {
+      "ts": "2026-12-22T03:13:53.738619Z",
+      "service": "app-lb",
+      "level": "INFO",
+      "msg": "POST /products 201 in 49ms"
+    },
+    {
+      "ts": "2026-12-22T03:14:53.276188Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "SET key=session:230 ttl=3600"
+    },
+    {
+      "ts": "2026-12-22T03:16:35.041276Z",
+      "service": "report-worker",
+      "level": "INFO",
+      "msg": "job invoice.render completed in 27ms"
+    },
+    {
+      "ts": "2026-12-22T03:17:38.491094Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "upstream app-lb slow 52ms"
+    },
+    {
+      "ts": "2026-12-22T03:20:00Z",
+      "service": "app-lb",
+      "level": "INFO",
+      "msg": "health check reverted to /healthz (liveness only); all instances back in rotation"
+    },
+    {
+      "ts": "2026-12-22T03:20:33.140047Z",
+      "service": "report-worker",
+      "level": "INFO",
+      "msg": "queue depth=700"
+    },
+    {
+      "ts": "2026-12-22T03:22:34.613857Z",
+      "service": "report-worker",
+      "level": "INFO",
+      "msg": "queue depth=750"
+    },
+    {
+      "ts": "2026-12-22T03:23:15.410521Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "upstream app-lb 200 22ms"
+    },
+    {
+      "ts": "2026-12-22T03:24:43.450466Z",
+      "service": "report-worker",
+      "level": "INFO",
+      "msg": "processed batch size=402"
+    },
+    {
+      "ts": "2026-12-22T03:25:47.054339Z",
+      "service": "app-lb",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-22T03:25:48.609084Z",
+      "service": "report-worker",
+      "level": "WARN",
+      "msg": "job email.send retried attempt=1"
+    },
+    {
+      "ts": "2026-12-22T03:27:42.565390Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "evicted 733 keys (lru)"
+    },
+    {
+      "ts": "2026-12-22T03:29:40.857181Z",
+      "service": "report-worker",
+      "level": "INFO",
+      "msg": "job invoice.render completed in 234ms"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "lb_healthy_instances",
+      "unit": "count",
+      "service": "app-lb",
+      "points": [
+        [
+          "2026-12-22T02:30:00Z",
+          23.8598
+        ],
+        [
+          "2026-12-22T02:31:00Z",
+          23.7113
+        ],
+        [
+          "2026-12-22T02:32:00Z",
+          24.1137
+        ],
+        [
+          "2026-12-22T02:33:00Z",
+          23.5402
+        ],
+        [
+          "2026-12-22T02:34:00Z",
+          24.4617
+        ],
+        [
+          "2026-12-22T02:35:00Z",
+          23.9731
+        ],
+        [
+          "2026-12-22T02:36:00Z",
+          23.7932
+        ],
+        [
+          "2026-12-22T02:37:00Z",
+          23.6278
+        ],
+        [
+          "2026-12-22T02:38:00Z",
+          24.2522
+        ],
+        [
+          "2026-12-22T02:39:00Z",
+          23.7789
+        ],
+        [
+          "2026-12-22T02:40:00Z",
+          23.7353
+        ],
+        [
+          "2026-12-22T02:41:00Z",
+          23.8919
+        ],
+        [
+          "2026-12-22T02:42:00Z",
+          23.5597
+        ],
+        [
+          "2026-12-22T02:43:00Z",
+          23.5897
+        ],
+        [
+          "2026-12-22T02:44:00Z",
+          23.7755
+        ],
+        [
+          "2026-12-22T02:45:00Z",
+          24.2434
+        ],
+        [
+          "2026-12-22T02:46:00Z",
+          24.397
+        ],
+        [
+          "2026-12-22T02:47:00Z",
+          24.2516
+        ],
+        [
+          "2026-12-22T02:48:00Z",
+          24.3081
+        ],
+        [
+          "2026-12-22T02:49:00Z",
+          24.4164
+        ],
+        [
+          "2026-12-22T02:50:00Z",
+          24.2904
+        ],
+        [
+          "2026-12-22T02:51:00Z",
+          23.5504
+        ],
+        [
+          "2026-12-22T02:52:00Z",
+          24.3983
+        ],
+        [
+          "2026-12-22T02:53:00Z",
+          23.6465
+        ],
+        [
+          "2026-12-22T02:54:00Z",
+          24.3006
+        ],
+        [
+          "2026-12-22T02:55:00Z",
+          24.0327
+        ],
+        [
+          "2026-12-22T02:56:00Z",
+          24.4269
+        ],
+        [
+          "2026-12-22T02:57:00Z",
+          24.2745
+        ],
+        [
+          "2026-12-22T02:58:00Z",
+          23.991
+        ],
+        [
+          "2026-12-22T02:59:00Z",
+          24.0833
+        ],
+        [
+          "2026-12-22T03:00:00Z",
+          24.0604
+        ],
+        [
+          "2026-12-22T03:01:00Z",
+          24.1956
+        ],
+        [
+          "2026-12-22T03:02:00Z",
+          23.8016
+        ],
+        [
+          "2026-12-22T03:03:00Z",
+          23.5741
+        ],
+        [
+          "2026-12-22T03:04:00Z",
+          5.8891
+        ],
+        [
+          "2026-12-22T03:05:00Z",
+          6.0692
+        ],
+        [
+          "2026-12-22T03:06:00Z",
+          5.9105
+        ],
+        [
+          "2026-12-22T03:07:00Z",
+          5.9231
+        ],
+        [
+          "2026-12-22T03:08:00Z",
+          6.0148
+        ],
+        [
+          "2026-12-22T03:09:00Z",
+          6.0675
+        ],
+        [
+          "2026-12-22T03:10:00Z",
+          6.1155
+        ],
+        [
+          "2026-12-22T03:11:00Z",
+          6.0133
+        ],
+        [
+          "2026-12-22T03:12:00Z",
+          6.0708
+        ],
+        [
+          "2026-12-22T03:13:00Z",
+          6.0568
+        ],
+        [
+          "2026-12-22T03:14:00Z",
+          5.9371
+        ],
+        [
+          "2026-12-22T03:15:00Z",
+          6.0694
+        ],
+        [
+          "2026-12-22T03:16:00Z",
+          5.8872
+        ],
+        [
+          "2026-12-22T03:17:00Z",
+          6.0994
+        ],
+        [
+          "2026-12-22T03:18:00Z",
+          5.9612
+        ],
+        [
+          "2026-12-22T03:19:00Z",
+          5.9492
+        ],
+        [
+          "2026-12-22T03:20:00Z",
+          5.9964
+        ],
+        [
+          "2026-12-22T03:21:00Z",
+          5.9123
+        ],
+        [
+          "2026-12-22T03:22:00Z",
+          6.0729
+        ],
+        [
+          "2026-12-22T03:23:00Z",
+          6.0768
+        ],
+        [
+          "2026-12-22T03:24:00Z",
+          5.9231
+        ],
+        [
+          "2026-12-22T03:25:00Z",
+          6.0299
+        ],
+        [
+          "2026-12-22T03:26:00Z",
+          6.0166
+        ],
+        [
+          "2026-12-22T03:27:00Z",
+          5.8925
+        ],
+        [
+          "2026-12-22T03:28:00Z",
+          6.1194
+        ],
+        [
+          "2026-12-22T03:29:00Z",
+          6.0969
+        ],
+        [
+          "2026-12-22T03:30:00Z",
+          5.9634
+        ]
+      ]
+    },
+    {
+      "name": "http_5xx_rate",
+      "unit": "ratio",
+      "service": "app-lb",
+      "points": [
+        [
+          "2026-12-22T02:30:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:31:00Z",
+          0.0041
+        ],
+        [
+          "2026-12-22T02:32:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:33:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:34:00Z",
+          0.0039
+        ],
+        [
+          "2026-12-22T02:35:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:36:00Z",
+          0.0039
+        ],
+        [
+          "2026-12-22T02:37:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:38:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:39:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:40:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:41:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:42:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:43:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:44:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:45:00Z",
+          0.0041
+        ],
+        [
+          "2026-12-22T02:46:00Z",
+          0.0039
+        ],
+        [
+          "2026-12-22T02:47:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:48:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:49:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:50:00Z",
+          0.0041
+        ],
+        [
+          "2026-12-22T02:51:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:52:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:53:00Z",
+          0.0039
+        ],
+        [
+          "2026-12-22T02:54:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:55:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:56:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T02:57:00Z",
+          0.0041
+        ],
+        [
+          "2026-12-22T02:58:00Z",
+          0.0039
+        ],
+        [
+          "2026-12-22T02:59:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T03:00:00Z",
+          0.0041
+        ],
+        [
+          "2026-12-22T03:01:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T03:02:00Z",
+          0.0041
+        ],
+        [
+          "2026-12-22T03:03:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T03:04:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T03:05:00Z",
+          0.004
+        ],
+        [
+          "2026-12-22T03:06:00Z",
+          0.2751
+        ],
+        [
+          "2026-12-22T03:07:00Z",
+          0.5428
+        ],
+        [
+          "2026-12-22T03:08:00Z",
+          0.5452
+        ],
+        [
+          "2026-12-22T03:09:00Z",
+          0.5535
+        ],
+        [
+          "2026-12-22T03:10:00Z",
+          0.5598
+        ],
+        [
+          "2026-12-22T03:11:00Z",
+          0.5436
+        ],
+        [
+          "2026-12-22T03:12:00Z",
+          0.5411
+        ],
+        [
+          "2026-12-22T03:13:00Z",
+          0.5535
+        ],
+        [
+          "2026-12-22T03:14:00Z",
+          0.5604
+        ],
+        [
+          "2026-12-22T03:15:00Z",
+          0.5525
+        ],
+        [
+          "2026-12-22T03:16:00Z",
+          0.5445
+        ],
+        [
+          "2026-12-22T03:17:00Z",
+          0.544
+        ],
+        [
+          "2026-12-22T03:18:00Z",
+          0.5417
+        ],
+        [
+          "2026-12-22T03:19:00Z",
+          0.5506
+        ],
+        [
+          "2026-12-22T03:20:00Z",
+          0.5469
+        ],
+        [
+          "2026-12-22T03:21:00Z",
+          0.5502
+        ],
+        [
+          "2026-12-22T03:22:00Z",
+          0.5453
+        ],
+        [
+          "2026-12-22T03:23:00Z",
+          0.5423
+        ],
+        [
+          "2026-12-22T03:24:00Z",
+          0.5597
+        ],
+        [
+          "2026-12-22T03:25:00Z",
+          0.5418
+        ],
+        [
+          "2026-12-22T03:26:00Z",
+          0.5401
+        ],
+        [
+          "2026-12-22T03:27:00Z",
+          0.5411
+        ],
+        [
+          "2026-12-22T03:28:00Z",
+          0.5574
+        ],
+        [
+          "2026-12-22T03:29:00Z",
+          0.5527
+        ],
+        [
+          "2026-12-22T03:30:00Z",
+          0.5433
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "A config change (CR-9012) pointed the load balancer's health check at /ready, which returns 503 until a background cache is warm. When the nightly cache flush and rebuild ran, 18 of 24 app-server instances failed that health check - even though they could serve traffic - and the load balancer removed them from rotation. The remaining 6 instances overloaded (95% CPU) and started returning 503s. The instances were never unhealthy; the health check was testing readiness of a warming cache, not liveness. Recovery required reverting the health check to a liveness-only path.",
+    "evidence_path": [
+      "app-lb INFO at 03:00: health check path changed to /ready (config change CR-9012)",
+      "the nightly cache flush and rebuild starts at 03:02",
+      "app-lb WARN: 18 of 24 instances fail /ready with 503 while the cache rebuilds",
+      "lb_healthy_instances drops from 24 to 6; the survivors overload and 5xx rate climbs to ~55%",
+      "app-server confirms the instances are healthy - /ready just returns 503 until the cache warms",
+      "recovery after the health check is reverted to /healthz (liveness only)"
+    ],
+    "fix": "Revert the health check to a liveness-only path (done). Separate liveness from readiness in the load-balancer config, make readiness failures reduce an instance's weight rather than remove it entirely, and never gate rotation on a slow-warming dependency.",
+    "should_escalate": false
+  }
+}

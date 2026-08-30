@@ -1,0 +1,46 @@
+{
+  "id": "scn_014",
+  "category": "bad_deploy",
+  "difficulty": "easy",
+  "title": "Refactor deploy drops a caching decorator, sending 12x read load to the database",
+  "source_url": "https://danluu.com/postmortem-lessons/",
+  "source_note": "Failure pattern (a deploy that inadvertently removes caching so a hot path hits the database on every request, spiking DB load and latency) is a recurring class in the danluu/post-mortems collection. All services, commit hashes, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~10:23 UTC product pages are very slow and some are timing out. A refactor of product-api went out around 10:20. Database team says product-api read load is way up.",
+  "incident_start": "2026-11-13T10:20:00Z",
+  "detected_offset_s": 240,
+  "window_before_s": 1800,
+  "window_after_s": 1200,
+  "primary_service": "product-api",
+  "distractor_services": [
+    { "name": "search-api", "role": "api" },
+    { "name": "recommendation-worker", "role": "worker" },
+    { "name": "cdn-edge", "role": "gateway" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "deploy-system", "level": "INFO", "msg": "product-api e4f5a6b deployed to all hosts (product detail assembly refactor)" },
+    { "offset_s": 60, "service": "product-api", "level": "WARN", "msg": "product detail cache hit rate dropped from 94% to 3%" },
+    { "offset_s": 180, "service": "products-db", "level": "WARN", "msg": "read query volume from product-api up ~12x; read latency rising" },
+    { "offset_s": 240, "service": "product-api", "level": "ERROR", "msg": "p95 latency 3200ms (baseline ~180ms); ~4% of requests timing out" },
+    { "offset_s": 900, "service": "deploy-system", "level": "INFO", "msg": "product-api rolled back; cache hit rate and latency recovering" }
+  ],
+  "metrics": [
+    { "name": "cache_hit_rate", "unit": "ratio", "service": "product-api", "baseline": 0.94, "spike": 0.03, "spike_at_offset_s": 60, "ramp_s": 120 },
+    { "name": "db_read_qps", "unit": "count_per_second", "service": "products-db", "baseline": 800.0, "spike": 9600.0, "spike_at_offset_s": 60, "ramp_s": 180 },
+    { "name": "p95_latency_ms", "unit": "milliseconds", "service": "product-api", "baseline": 180.0, "spike": 3200.0, "spike_at_offset_s": 180, "ramp_s": 180 }
+  ],
+  "deploys": [
+    { "service": "product-api", "offset_s": 0, "commit": "e4f5a6b", "summary": "refactor product detail assembly" }
+  ],
+  "ground_truth": {
+    "root_cause": "Deploy e4f5a6b refactored the product-detail assembly path and removed the caching decorator around the per-product lookup. Requests that previously served from cache (94% hit rate) now made a fresh database query per product, raising product-api's database read volume ~12x. The database could not keep up, so p95 latency climbed to ~3.2s and ~4% of requests timed out. Recovery on rollback.",
+    "evidence_path": [
+      "deploy e4f5a6b to product-api at 10:20 (product detail assembly refactor)",
+      "product-api cache hit rate collapses from 94% to 3% immediately after the deploy",
+      "products-db read QPS rises ~12x (800 -> 9600)",
+      "product-api p95 latency climbs to ~3.2s with ~4% timeouts",
+      "cache hit rate and latency recover on rollback"
+    ],
+    "fix": "Roll back e4f5a6b (done). Re-apply the refactor with the cache decorator restored, add a test asserting the product-detail path stays cached, and alert on a sudden cache-hit-rate drop.",
+    "should_escalate": false
+  }
+}

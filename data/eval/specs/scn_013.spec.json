@@ -1,0 +1,45 @@
+{
+  "id": "scn_013",
+  "category": "bad_deploy",
+  "difficulty": "medium",
+  "title": "Ingress-controller major upgrade silently drops routes using a legacy annotation",
+  "source_url": "https://www.reddit.com/r/RedditEng/comments/11xx5o0/you_broke_reddit_the_piday_outage/",
+  "source_note": "Failure pattern (a platform component upgrade that changes how existing config is interpreted, silently breaking a large fraction of routing) is in the spirit of Reddit's 2023 Pi-Day outage. All services, versions, annotations, commit hashes, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~16:03 UTC roughly 40% of services are returning 503s. The rest are fine. No application deploys. The platform team did some infrastructure work this afternoon.",
+  "incident_start": "2026-11-10T16:00:00Z",
+  "detected_offset_s": 180,
+  "window_before_s": 1800,
+  "window_after_s": 1200,
+  "primary_service": "ingress-controller",
+  "distractor_services": [
+    { "name": "orders-api", "role": "api" },
+    { "name": "payments-api", "role": "api" },
+    { "name": "config-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "deploy-system", "level": "INFO", "msg": "ingress-controller upgraded 3.11 -> 4.2 across the fleet" },
+    { "offset_s": 120, "service": "ingress-controller", "level": "WARN", "msg": "42 route rules did not match any backend after upgrade (legacy annotation 'route.class' ignored in 4.x)" },
+    { "offset_s": 180, "service": "web-frontend", "level": "ERROR", "msg": "calls to orders-api and payments-api returning 503 (no route)" },
+    { "offset_s": 300, "service": "ingress-controller", "level": "ERROR", "msg": "40% of configured routes inactive; affected services returning 503" },
+    { "offset_s": 900, "service": "deploy-system", "level": "INFO", "msg": "ingress-controller rolled back to 3.11; routes restored" }
+  ],
+  "metrics": [
+    { "name": "http_5xx_rate", "unit": "ratio", "service": "edge-ingress", "baseline": 0.004, "spike": 0.41, "spike_at_offset_s": 120, "ramp_s": 120 },
+    { "name": "active_route_rules", "unit": "count", "service": "ingress-controller", "baseline": 105.0, "spike": 63.0, "spike_at_offset_s": 120, "ramp_s": 60 }
+  ],
+  "deploys": [
+    { "service": "ingress-controller", "offset_s": 0, "commit": "b1c2d3e", "summary": "upgrade ingress-controller 3.x -> 4.x (annotation syntax change)" }
+  ],
+  "ground_truth": {
+    "root_cause": "The ingress-controller was upgraded from 3.x to 4.x (deploy b1c2d3e). Version 4.x changed how a routing annotation is interpreted and silently ignored the legacy 'route.class' annotation still used by ~40% of services. Those services' route rules stopped matching any backend, so the ingress returned 503 (no route) for them. Services already on the new annotation form were unaffected. Recovery required rolling back the ingress-controller.",
+    "evidence_path": [
+      "deploy b1c2d3e at 16:00 upgrades ingress-controller 3.11 -> 4.2 fleet-wide",
+      "ingress-controller WARN: 42 route rules no longer match a backend; legacy 'route.class' annotation ignored in 4.x",
+      "web-frontend calls to orders-api and payments-api return 503 (no route)",
+      "active_route_rules drops from ~105 to ~63 and http_5xx_rate rises to ~40%",
+      "recovery after the ingress-controller is rolled back to 3.11"
+    ],
+    "fix": "Roll back the ingress-controller (done). Before re-upgrading, migrate every service to the 4.x annotation form and add a pre-upgrade check that fails if any route rule would become unmatched.",
+    "should_escalate": false
+  }
+}

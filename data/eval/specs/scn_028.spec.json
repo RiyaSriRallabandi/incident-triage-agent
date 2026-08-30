@@ -1,0 +1,43 @@
+{
+  "id": "scn_028",
+  "category": "cert_config_expiry",
+  "difficulty": "hard",
+  "title": "OAuth client-secret rotation leaves autoscaled pods on the revoked secret",
+  "source_url": "https://aws.amazon.com/builders-library/",
+  "source_note": "Failure pattern (a scheduled credential rotation where the old secret is revoked before a subset of consumers picks up the new one, so those consumers get authentication failures) reflects credential-management guidance in the AWS Builders' Library. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~14:02 UTC about 30% of partner API calls are failing authentication. The rest succeed. No application deploys. The identity team did a scheduled secret rotation at 14:00.",
+  "incident_start": "2027-01-09T14:00:00Z",
+  "detected_offset_s": 420,
+  "window_before_s": 2400,
+  "window_after_s": 1800,
+  "primary_service": "partner-api-gateway",
+  "distractor_services": [
+    { "name": "partner-webhook-worker", "role": "worker" },
+    { "name": "rate-limit-cache", "role": "cache" },
+    { "name": "orders-api", "role": "api" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "identity-provider", "level": "INFO", "msg": "scheduled rotation of the client secret for 'partner-api-gateway' completed; old secret revoked" },
+    { "offset_s": 120, "service": "partner-api-gateway", "level": "ERROR", "msg": "token request to identity-provider returning 401 invalid_client on some pods" },
+    { "offset_s": 420, "service": "partner-api-gateway", "level": "ERROR", "msg": "~30% of partner API calls failing auth; affected pods started after 13:40 with a stale config" },
+    { "offset_s": 480, "service": "partner-api-gateway", "level": "INFO", "msg": "config map version skew: newer pods hold the pre-rotation client secret" },
+    { "offset_s": 1500, "service": "partner-api-gateway", "level": "INFO", "msg": "rolled the deployment to force fresh config on all pods; auth failures cleared" }
+  ],
+  "metrics": [
+    { "name": "auth_failure_rate", "unit": "ratio", "service": "partner-api-gateway", "baseline": 0.002, "spike": 0.3, "spike_at_offset_s": 120, "ramp_s": 180 },
+    { "name": "token_requests_401_per_s", "unit": "count_per_second", "service": "identity-provider", "baseline": 0.1, "spike": 22.0, "spike_at_offset_s": 120, "ramp_s": 120 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "The OAuth client secret that partner-api-gateway uses to authenticate to the internal identity provider was rotated on schedule and the old secret was revoked. The new secret was in place at the identity provider, but a subset of partner-api-gateway pods - those that autoscaled up after ~13:40 from a stale config map - came up holding the pre-rotation secret. Those pods' token requests returned '401 invalid_client', failing ~30% of partner API calls. The rotation itself was fine; the failure is a config-propagation gap that left some pods on the revoked secret. Recovery required rolling the deployment to force fresh config onto all pods.",
+    "evidence_path": [
+      "identity-provider INFO at 14:00: scheduled client-secret rotation for partner-api-gateway completed, old secret revoked",
+      "partner-api-gateway ERROR: token requests returning 401 invalid_client on some pods",
+      "the affected pods all started after 13:40 with a stale config map holding the pre-rotation secret",
+      "auth_failure_rate rises to ~30%, matching the fraction of stale pods",
+      "auth failures clear after the deployment is rolled to force fresh config on all pods"
+    ],
+    "fix": "Roll the deployment to refresh config on all pods (done). Make rotation wait for confirmed propagation to 100% of consumers before revoking the old secret, keep a short window where both secrets are valid, and have pods fail startup if their config is older than the current secret generation.",
+    "should_escalate": false
+  }
+}

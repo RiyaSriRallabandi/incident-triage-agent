@@ -1,0 +1,44 @@
+{
+  "id": "scn_017",
+  "category": "resource_exhaustion",
+  "difficulty": "medium",
+  "title": "Debug logging left enabled fills the log disk and breaks request handling",
+  "source_url": "https://sre.google/sre-book/effective-troubleshooting/",
+  "source_note": "Failure pattern (a temporary diagnostic setting - here verbose logging - left enabled after an earlier investigation, filling a disk until the service cannot write) is a common operational class in the Google SRE Book's troubleshooting chapter. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~14:03 UTC api-server is throwing 5xx on a growing share of requests. It looks host-specific - some hosts are fine. No deploys. There was a troubleshooting session on this service about an hour ago.",
+  "incident_start": "2026-11-24T14:00:00Z",
+  "detected_offset_s": 300,
+  "window_before_s": 3600,
+  "window_after_s": 1500,
+  "primary_service": "api-server",
+  "distractor_services": [
+    { "name": "edge-gateway", "role": "gateway" },
+    { "name": "batch-worker", "role": "worker" },
+    { "name": "object-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": -3600, "service": "api-server", "level": "INFO", "msg": "log level set to DEBUG on host pool (troubleshooting session)" },
+    { "offset_s": 0, "service": "api-server", "level": "WARN", "msg": "disk usage on /var/log at 92%" },
+    { "offset_s": 180, "service": "api-server", "level": "ERROR", "msg": "disk full: cannot write request log; /var/log at 100%" },
+    { "offset_s": 300, "service": "api-server", "level": "ERROR", "msg": "request handling failing: cannot create temp file (No space left on device)" },
+    { "offset_s": 420, "service": "api-server", "level": "WARN", "msg": "5xx rate 22%; errors correlate with hosts at 100% disk" },
+    { "offset_s": 1200, "service": "api-server", "level": "INFO", "msg": "log level reverted to INFO; old debug logs rotated; disk at 61%" }
+  ],
+  "metrics": [
+    { "name": "disk_used_pct", "unit": "percent", "service": "api-server", "baseline": 55.0, "spike": 100.0, "spike_at_offset_s": 0, "ramp_s": 240 },
+    { "name": "error_rate", "unit": "ratio", "service": "api-server", "baseline": 0.003, "spike": 0.22, "spike_at_offset_s": 180, "ramp_s": 120 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "DEBUG-level logging was enabled on the api-server host pool during an earlier troubleshooting session (~1 hour before) and never reverted. The elevated log volume filled the /var/log disk to 100%. With the disk full, api-server could not write its request log or create temp files ('No space left on device'), so a growing fraction of requests failed - tracking exactly the hosts that hit 100% disk. Recovery required reverting the log level and rotating the accumulated debug logs.",
+    "evidence_path": [
+      "api-server INFO ~1h before: log level set to DEBUG on the host pool for a troubleshooting session",
+      "disk_used_pct on /var/log climbs from ~55% to 100%",
+      "api-server ERROR: disk full, cannot write request log / create temp files (No space left on device)",
+      "error_rate rises to ~22%, correlated with the hosts at 100% disk",
+      "recovery after the log level is reverted to INFO and old debug logs are rotated"
+    ],
+    "fix": "Revert the log level and rotate the debug logs (done). Make elevated log levels time-boxed with automatic revert, alert on disk usage well before 100%, and keep application temp files off the log volume.",
+    "should_escalate": false
+  }
+}

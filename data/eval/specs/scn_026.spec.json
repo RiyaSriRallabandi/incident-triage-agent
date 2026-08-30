@@ -1,0 +1,43 @@
+{
+  "id": "scn_026",
+  "category": "network_dns",
+  "difficulty": "hard",
+  "title": "Firewall failover leaves routing asymmetric; long-lived flows get reset",
+  "source_url": "https://sre.google/sre-book/managing-incidents/",
+  "source_note": "Failure pattern (a network appliance failover that leaves outbound and return traffic on different paths, so stateful firewalls drop the 'unseen-direction' packets and connections needing many round-trips fail while short ones succeed) is a classic asymmetric-routing incident. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~09:19 UTC large file uploads and streaming responses are failing about 40% of the time with connection resets. Small quick requests mostly work. No deploys. Network team did a planned firewall failover this morning.",
+  "incident_start": "2026-12-27T09:15:00Z",
+  "detected_offset_s": 600,
+  "window_before_s": 1800,
+  "window_after_s": 2400,
+  "primary_service": "region-gateway",
+  "distractor_services": [
+    { "name": "upload-api", "role": "api" },
+    { "name": "stream-service", "role": "api" },
+    { "name": "edge-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "network-ops", "level": "INFO", "msg": "planned failover of the edge firewall pair to the secondary unit completed" },
+    { "offset_s": 240, "service": "region-gateway", "level": "WARN", "msg": "elevated connection resets on long-lived flows; short requests mostly OK" },
+    { "offset_s": 600, "service": "region-gateway", "level": "ERROR", "msg": "large uploads and streaming responses failing ~40%; TCP resets mid-transfer" },
+    { "offset_s": 720, "service": "network-ops", "level": "INFO", "msg": "packet capture: return traffic routes via the primary firewall while outbound uses the secondary - asymmetric path; stateful inspection drops return packets" },
+    { "offset_s": 1800, "service": "network-ops", "level": "INFO", "msg": "corrected the return route to match outbound; failing flows recovering" }
+  ],
+  "metrics": [
+    { "name": "long_flow_error_rate", "unit": "ratio", "service": "region-gateway", "baseline": 0.01, "spike": 0.4, "spike_at_offset_s": 240, "ramp_s": 300 },
+    { "name": "tcp_resets_per_s", "unit": "count_per_second", "service": "region-gateway", "baseline": 5.0, "spike": 210.0, "spike_at_offset_s": 240, "ramp_s": 300 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "A planned failover of the edge firewall pair to the secondary unit created an asymmetric network path: outbound traffic went through the secondary firewall while return traffic still routed through the primary. Each stateful firewall only saw one direction of a connection, so it dropped the 'unexpected' return packets. Connections needing many round-trips (large uploads, streaming responses) failed with mid-transfer TCP resets at ~40%, while short request/response pairs usually completed before hitting the problem. The trigger is the failover leaving routing asymmetric. Recovery required correcting the return route to match the outbound path.",
+    "evidence_path": [
+      "network-ops INFO at 09:15: planned failover of the edge firewall pair to the secondary completed",
+      "region-gateway WARN: elevated connection resets on long-lived flows while short requests are mostly fine",
+      "large uploads and streaming responses fail ~40% with mid-transfer TCP resets",
+      "packet capture shows return traffic via the primary firewall and outbound via the secondary - an asymmetric path; stateful inspection drops the return packets",
+      "recovery after the return route is corrected to match outbound"
+    ],
+    "fix": "Correct the return route so both directions traverse the same firewall (done). Make firewall failover switch both directions atomically, add a post-failover synthetic check for large-transfer and long-lived connections, and enable stateful-session sync between the firewall pair.",
+    "should_escalate": false
+  }
+}

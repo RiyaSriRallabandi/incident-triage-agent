@@ -1,0 +1,710 @@
+{
+  "id": "scn_023",
+  "category": "dependency_failure",
+  "difficulty": "medium",
+  "title": "Service-discovery config reload returns empty backend lists for a third of services",
+  "source_url": "https://blog.roblox.com/2022/01/roblox-return-to-service-10-28-10-31-2021/",
+  "source_note": "Failure pattern (a core service-discovery / coordination system returns stale or empty catalog data after a change, so clients stop routing to healthy backends) is in the spirit of the Roblox 2021 Consul outage. All services, change ids, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~10:03 UTC several services report 'no healthy instances' for dependencies that are actually up. Errors are widespread. No application deploys. The platform team applied a service-discovery config change this morning.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-12-15T09:30:35.849354Z",
+      "service": "payments-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2026-12-15T09:32:15.703824Z",
+      "service": "config-cache",
+      "level": "WARN",
+      "msg": "GET key=user:875 miss"
+    },
+    {
+      "ts": "2026-12-15T09:34:18.430274Z",
+      "service": "inventory-worker",
+      "level": "WARN",
+      "msg": "job email.send retried attempt=1"
+    },
+    {
+      "ts": "2026-12-15T09:35:04.810778Z",
+      "service": "config-cache",
+      "level": "INFO",
+      "msg": "evicted 67 keys (lru)"
+    },
+    {
+      "ts": "2026-12-15T09:35:11.343891Z",
+      "service": "inventory-worker",
+      "level": "WARN",
+      "msg": "job cache.warm retried attempt=1"
+    },
+    {
+      "ts": "2026-12-15T09:35:52.112276Z",
+      "service": "payments-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-15T09:36:08.790971Z",
+      "service": "inventory-worker",
+      "level": "WARN",
+      "msg": "job webhook.deliver retried attempt=1"
+    },
+    {
+      "ts": "2026-12-15T09:36:31.730860Z",
+      "service": "inventory-worker",
+      "level": "INFO",
+      "msg": "processed batch size=539"
+    },
+    {
+      "ts": "2026-12-15T09:43:30.753009Z",
+      "service": "payments-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-12-15T09:45:00.213916Z",
+      "service": "config-cache",
+      "level": "INFO",
+      "msg": "GET key=user:858 hit"
+    },
+    {
+      "ts": "2026-12-15T09:47:26.644704Z",
+      "service": "config-cache",
+      "level": "INFO",
+      "msg": "evicted 580 keys (lru)"
+    },
+    {
+      "ts": "2026-12-15T09:52:44.269040Z",
+      "service": "config-cache",
+      "level": "INFO",
+      "msg": "evicted 448 keys (lru)"
+    },
+    {
+      "ts": "2026-12-15T09:53:11.979686Z",
+      "service": "service-discovery",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-15T09:59:26.034598Z",
+      "service": "config-cache",
+      "level": "WARN",
+      "msg": "GET key=user:546 miss"
+    },
+    {
+      "ts": "2026-12-15T10:00:00Z",
+      "service": "service-discovery",
+      "level": "WARN",
+      "msg": "config reload applied; catalog re-sync in progress"
+    },
+    {
+      "ts": "2026-12-15T10:01:00Z",
+      "service": "service-discovery",
+      "level": "ERROR",
+      "msg": "health-check subsystem returning empty results for 30% of services after the reload"
+    },
+    {
+      "ts": "2026-12-15T10:03:00Z",
+      "service": "orders-api",
+      "level": "ERROR",
+      "msg": "0 healthy instances reported for payments-api; all payment calls failing"
+    },
+    {
+      "ts": "2026-12-15T10:05:00Z",
+      "service": "service-discovery",
+      "level": "CRITICAL",
+      "msg": "stale catalog: many services show 0 or partial backends; dependent traffic mis-routed"
+    },
+    {
+      "ts": "2026-12-15T10:08:29.142387Z",
+      "service": "payments-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-15T10:08:33.418679Z",
+      "service": "payments-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2026-12-15T10:11:11.650352Z",
+      "service": "inventory-worker",
+      "level": "INFO",
+      "msg": "job invoice.render completed in 79ms"
+    },
+    {
+      "ts": "2026-12-15T10:11:34.781736Z",
+      "service": "inventory-worker",
+      "level": "INFO",
+      "msg": "processed batch size=229"
+    },
+    {
+      "ts": "2026-12-15T10:13:34.641617Z",
+      "service": "inventory-worker",
+      "level": "WARN",
+      "msg": "job email.send retried attempt=1"
+    },
+    {
+      "ts": "2026-12-15T10:13:46.711959Z",
+      "service": "service-discovery",
+      "level": "INFO",
+      "msg": "GET /search 200 in 217ms"
+    },
+    {
+      "ts": "2026-12-15T10:14:25.292167Z",
+      "service": "payments-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 225ms"
+    },
+    {
+      "ts": "2026-12-15T10:15:36.598743Z",
+      "service": "service-discovery",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-15T10:16:11.005545Z",
+      "service": "payments-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-15T10:16:51.230057Z",
+      "service": "service-discovery",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-12-15T10:17:09.688702Z",
+      "service": "payments-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-15T10:20:00Z",
+      "service": "service-discovery",
+      "level": "INFO",
+      "msg": "rolled back the config reload; catalog re-synced from a healthy replica; backends restored"
+    },
+    {
+      "ts": "2026-12-15T10:21:46.182100Z",
+      "service": "payments-api",
+      "level": "INFO",
+      "msg": "GET /products 200 in 188ms"
+    },
+    {
+      "ts": "2026-12-15T10:24:13.433582Z",
+      "service": "config-cache",
+      "level": "INFO",
+      "msg": "SET key=session:779 ttl=3600"
+    },
+    {
+      "ts": "2026-12-15T10:25:54.826153Z",
+      "service": "service-discovery",
+      "level": "INFO",
+      "msg": "GET /search 200 in 35ms"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "discovery_catalog_completeness",
+      "unit": "ratio",
+      "service": "service-discovery",
+      "points": [
+        [
+          "2026-12-15T09:30:00Z",
+          1.0145
+        ],
+        [
+          "2026-12-15T09:31:00Z",
+          0.9887
+        ],
+        [
+          "2026-12-15T09:32:00Z",
+          1.0111
+        ],
+        [
+          "2026-12-15T09:33:00Z",
+          1.0095
+        ],
+        [
+          "2026-12-15T09:34:00Z",
+          1.008
+        ],
+        [
+          "2026-12-15T09:35:00Z",
+          1.0019
+        ],
+        [
+          "2026-12-15T09:36:00Z",
+          0.9824
+        ],
+        [
+          "2026-12-15T09:37:00Z",
+          1.0146
+        ],
+        [
+          "2026-12-15T09:38:00Z",
+          1.0143
+        ],
+        [
+          "2026-12-15T09:39:00Z",
+          0.9862
+        ],
+        [
+          "2026-12-15T09:40:00Z",
+          1.0144
+        ],
+        [
+          "2026-12-15T09:41:00Z",
+          0.9865
+        ],
+        [
+          "2026-12-15T09:42:00Z",
+          1.0149
+        ],
+        [
+          "2026-12-15T09:43:00Z",
+          1.0056
+        ],
+        [
+          "2026-12-15T09:44:00Z",
+          1.0124
+        ],
+        [
+          "2026-12-15T09:45:00Z",
+          0.9996
+        ],
+        [
+          "2026-12-15T09:46:00Z",
+          0.9916
+        ],
+        [
+          "2026-12-15T09:47:00Z",
+          0.993
+        ],
+        [
+          "2026-12-15T09:48:00Z",
+          1.0137
+        ],
+        [
+          "2026-12-15T09:49:00Z",
+          0.9934
+        ],
+        [
+          "2026-12-15T09:50:00Z",
+          1.0097
+        ],
+        [
+          "2026-12-15T09:51:00Z",
+          1.0113
+        ],
+        [
+          "2026-12-15T09:52:00Z",
+          0.9905
+        ],
+        [
+          "2026-12-15T09:53:00Z",
+          0.9959
+        ],
+        [
+          "2026-12-15T09:54:00Z",
+          1.0021
+        ],
+        [
+          "2026-12-15T09:55:00Z",
+          0.9969
+        ],
+        [
+          "2026-12-15T09:56:00Z",
+          0.9952
+        ],
+        [
+          "2026-12-15T09:57:00Z",
+          1.0014
+        ],
+        [
+          "2026-12-15T09:58:00Z",
+          1.0104
+        ],
+        [
+          "2026-12-15T09:59:00Z",
+          0.9993
+        ],
+        [
+          "2026-12-15T10:00:00Z",
+          1.0188
+        ],
+        [
+          "2026-12-15T10:01:00Z",
+          1.0134
+        ],
+        [
+          "2026-12-15T10:02:00Z",
+          0.6914
+        ],
+        [
+          "2026-12-15T10:03:00Z",
+          0.4049
+        ],
+        [
+          "2026-12-15T10:04:00Z",
+          0.4069
+        ],
+        [
+          "2026-12-15T10:05:00Z",
+          0.3953
+        ],
+        [
+          "2026-12-15T10:06:00Z",
+          0.401
+        ],
+        [
+          "2026-12-15T10:07:00Z",
+          0.3932
+        ],
+        [
+          "2026-12-15T10:08:00Z",
+          0.3923
+        ],
+        [
+          "2026-12-15T10:09:00Z",
+          0.3983
+        ],
+        [
+          "2026-12-15T10:10:00Z",
+          0.4069
+        ],
+        [
+          "2026-12-15T10:11:00Z",
+          0.3997
+        ],
+        [
+          "2026-12-15T10:12:00Z",
+          0.3986
+        ],
+        [
+          "2026-12-15T10:13:00Z",
+          0.4055
+        ],
+        [
+          "2026-12-15T10:14:00Z",
+          0.393
+        ],
+        [
+          "2026-12-15T10:15:00Z",
+          0.3933
+        ],
+        [
+          "2026-12-15T10:16:00Z",
+          0.3934
+        ],
+        [
+          "2026-12-15T10:17:00Z",
+          0.4022
+        ],
+        [
+          "2026-12-15T10:18:00Z",
+          0.3978
+        ],
+        [
+          "2026-12-15T10:19:00Z",
+          0.3962
+        ],
+        [
+          "2026-12-15T10:20:00Z",
+          0.3922
+        ],
+        [
+          "2026-12-15T10:21:00Z",
+          0.4018
+        ],
+        [
+          "2026-12-15T10:22:00Z",
+          0.3989
+        ],
+        [
+          "2026-12-15T10:23:00Z",
+          0.408
+        ],
+        [
+          "2026-12-15T10:24:00Z",
+          0.3933
+        ],
+        [
+          "2026-12-15T10:25:00Z",
+          0.4005
+        ],
+        [
+          "2026-12-15T10:26:00Z",
+          0.4014
+        ],
+        [
+          "2026-12-15T10:27:00Z",
+          0.3938
+        ],
+        [
+          "2026-12-15T10:28:00Z",
+          0.3929
+        ]
+      ]
+    },
+    {
+      "name": "error_rate",
+      "unit": "ratio",
+      "service": "orders-api",
+      "points": [
+        [
+          "2026-12-15T09:30:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:31:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:32:00Z",
+          0.0031
+        ],
+        [
+          "2026-12-15T09:33:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:34:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:35:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:36:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:37:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:38:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:39:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:40:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:41:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:42:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:43:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:44:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:45:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:46:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:47:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:48:00Z",
+          0.0031
+        ],
+        [
+          "2026-12-15T09:49:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:50:00Z",
+          0.0031
+        ],
+        [
+          "2026-12-15T09:51:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:52:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:53:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:54:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:55:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:56:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:57:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:58:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T09:59:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T10:00:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T10:01:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T10:02:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T10:03:00Z",
+          0.003
+        ],
+        [
+          "2026-12-15T10:04:00Z",
+          0.225
+        ],
+        [
+          "2026-12-15T10:05:00Z",
+          0.4546
+        ],
+        [
+          "2026-12-15T10:06:00Z",
+          0.4418
+        ],
+        [
+          "2026-12-15T10:07:00Z",
+          0.4424
+        ],
+        [
+          "2026-12-15T10:08:00Z",
+          0.449
+        ],
+        [
+          "2026-12-15T10:09:00Z",
+          0.442
+        ],
+        [
+          "2026-12-15T10:10:00Z",
+          0.4588
+        ],
+        [
+          "2026-12-15T10:11:00Z",
+          0.4504
+        ],
+        [
+          "2026-12-15T10:12:00Z",
+          0.4489
+        ],
+        [
+          "2026-12-15T10:13:00Z",
+          0.4496
+        ],
+        [
+          "2026-12-15T10:14:00Z",
+          0.4524
+        ],
+        [
+          "2026-12-15T10:15:00Z",
+          0.4538
+        ],
+        [
+          "2026-12-15T10:16:00Z",
+          0.4486
+        ],
+        [
+          "2026-12-15T10:17:00Z",
+          0.4581
+        ],
+        [
+          "2026-12-15T10:18:00Z",
+          0.4412
+        ],
+        [
+          "2026-12-15T10:19:00Z",
+          0.4413
+        ],
+        [
+          "2026-12-15T10:20:00Z",
+          0.4428
+        ],
+        [
+          "2026-12-15T10:21:00Z",
+          0.4501
+        ],
+        [
+          "2026-12-15T10:22:00Z",
+          0.4481
+        ],
+        [
+          "2026-12-15T10:23:00Z",
+          0.4422
+        ],
+        [
+          "2026-12-15T10:24:00Z",
+          0.4419
+        ],
+        [
+          "2026-12-15T10:25:00Z",
+          0.4426
+        ],
+        [
+          "2026-12-15T10:26:00Z",
+          0.4452
+        ],
+        [
+          "2026-12-15T10:27:00Z",
+          0.451
+        ],
+        [
+          "2026-12-15T10:28:00Z",
+          0.4531
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "A config reload on the service-discovery cluster corrupted its health-check subsystem, which then returned empty or partial backend lists for ~30% of services. Clients querying discovery (orders-api and others) saw '0 healthy instances' for dependencies like payments-api that were actually healthy, and stopped routing to them, so those calls all failed. Nothing was wrong with the backend services - the platform's service catalog was stale. Recovery required rolling back the config reload and re-syncing the catalog from a healthy replica.",
+    "evidence_path": [
+      "service-discovery WARN at 10:00: config reload applied, catalog re-sync in progress",
+      "service-discovery ERROR: health-check subsystem returning empty results for 30% of services after the reload",
+      "orders-api sees 0 healthy instances for payments-api and fails all payment calls, though payments-api is healthy",
+      "discovery_catalog_completeness drops to ~40% and dependent error rates rise",
+      "recovery after the config reload is rolled back and the catalog re-synced from a healthy replica"
+    ],
+    "fix": "Roll back the config reload and re-sync the catalog (done). Validate discovery config changes against a canary before fleet apply, have clients keep last-known-good backends when a list suddenly drops to zero, and alert on catalog completeness.",
+    "should_escalate": false
+  }
+}

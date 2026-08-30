@@ -1,0 +1,44 @@
+{
+  "id": "scn_029",
+  "category": "database_issue",
+  "difficulty": "medium",
+  "title": "Fleet growth pushes total connections past the database's server-side limit",
+  "source_url": "https://sre.google/sre-book/addressing-cascading-failures/",
+  "source_note": "Failure pattern (cumulative connection demand from a growing fleet with fixed per-instance pools crossing the database's max_connections, so new connections are refused server-side) is a standard capacity class in the Google SRE Book. All services, numbers, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~11:30 UTC orders-service is intermittently failing with database connection errors - about 15% of requests. No deploys. The fleet was scaled up this morning for load.",
+  "incident_start": "2027-01-14T11:30:00Z",
+  "detected_offset_s": 240,
+  "window_before_s": 2400,
+  "window_after_s": 1500,
+  "primary_service": "orders-db",
+  "distractor_services": [
+    { "name": "catalog-api", "role": "api" },
+    { "name": "fulfillment-worker", "role": "worker" },
+    { "name": "session-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": -1800, "service": "autoscaler", "level": "INFO", "msg": "orders-service scaled 40 -> 52 instances (sustained load)" },
+    { "offset_s": 0, "service": "orders-db", "level": "WARN", "msg": "connection count 495/500 (max_connections); new connections being refused" },
+    { "offset_s": 120, "service": "orders-service", "level": "ERROR", "msg": "FATAL: sorry, too many clients already; ~15% of requests failing to acquire a DB connection" },
+    { "offset_s": 240, "service": "orders-db", "level": "ERROR", "msg": "connection slots exhausted; superuser_reserved_connections in use" },
+    { "offset_s": 360, "service": "orders-db", "level": "INFO", "msg": "total pool demand = 52 instances x 10 connections = 520, exceeds max_connections 500" },
+    { "offset_s": 1200, "service": "orders-db", "level": "INFO", "msg": "operator lowered per-instance pool to 8 and raised max_connections to 600; refusals stopped" }
+  ],
+  "metrics": [
+    { "name": "db_active_connections", "unit": "count", "service": "orders-db", "baseline": 380.0, "spike": 500.0, "spike_at_offset_s": 0, "ramp_s": 120 },
+    { "name": "connection_acquire_error_rate", "unit": "ratio", "service": "orders-service", "baseline": 0.001, "spike": 0.15, "spike_at_offset_s": 120, "ramp_s": 120 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "The database's server-side connection limit (max_connections = 500) was reached. Each orders-service instance holds a static pool of 10 connections; the fleet had grown over the week and an autoscale from 40 to 52 instances that morning brought total pool demand to 52 x 10 = 520, exceeding 500. The database began refusing new connections ('too many clients already'), so ~15% of requests failed to acquire a connection. There was no code deploy - the cause is cumulative connection demand crossing the fixed limit, tipped over by the morning's scale-up. Recovery required lowering the per-instance pool size and raising max_connections.",
+    "evidence_path": [
+      "autoscaler INFO: orders-service scaled 40 -> 52 instances that morning",
+      "orders-db WARN: connection count 495/500 (max_connections), refusing new connections",
+      "orders-service ERROR: 'too many clients already'; ~15% of requests fail to acquire a DB connection",
+      "orders-db notes total pool demand 52 x 10 = 520 exceeds max_connections 500",
+      "refusals stop after the per-instance pool is lowered to 8 and max_connections raised to 600"
+    ],
+    "fix": "Lower the per-instance pool and raise max_connections (done). Put a connection pooler (e.g. PgBouncer) between the fleet and the database so server-side connections do not scale linearly with instance count, and alert when connection count approaches the limit.",
+    "should_escalate": false
+  }
+}

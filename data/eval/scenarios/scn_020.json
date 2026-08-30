@@ -1,0 +1,630 @@
+{
+  "id": "scn_020",
+  "category": "dependency_failure",
+  "difficulty": "easy",
+  "title": "External tax-calculation provider outage fails checkouts at the tax step",
+  "source_url": "https://aws.amazon.com/message/41926/",
+  "source_note": "Failure pattern (a critical third-party API becomes unavailable and every request that depends on it fails, while everything else stays healthy) is a generic downstream-dependency class; the AWS S3 2017 postmortem is a canonical example of a dependency outage's blast radius. All services, provider names, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~13:15 UTC a large share of checkouts are failing. Payments and inventory look fine. The error seems to be at the tax calculation step. No deploys today.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-12-04T12:59:06.033053Z",
+      "service": "payments-gateway",
+      "level": "WARN",
+      "msg": "upstream checkout-api slow 232ms"
+    },
+    {
+      "ts": "2026-12-04T12:59:19.278863Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-04T12:59:28.006485Z",
+      "service": "cart-cache",
+      "level": "INFO",
+      "msg": "SET key=session:333 ttl=3600"
+    },
+    {
+      "ts": "2026-12-04T13:01:02.997266Z",
+      "service": "payments-gateway",
+      "level": "INFO",
+      "msg": "upstream checkout-api 200 197ms"
+    },
+    {
+      "ts": "2026-12-04T13:04:54.585503Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "GET /products 200 in 215ms"
+    },
+    {
+      "ts": "2026-12-04T13:07:24.113783Z",
+      "service": "payments-gateway",
+      "level": "INFO",
+      "msg": "route matched /api/v1/orders -> checkout-api"
+    },
+    {
+      "ts": "2026-12-04T13:11:51.822707Z",
+      "service": "payments-gateway",
+      "level": "WARN",
+      "msg": "upstream checkout-api slow 123ms"
+    },
+    {
+      "ts": "2026-12-04T13:15:00Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "tax-calc provider api.taxly.io returning 503; ~12% of checkouts affected"
+    },
+    {
+      "ts": "2026-12-04T13:18:00Z",
+      "service": "checkout-api",
+      "level": "ERROR",
+      "msg": "tax-calc calls timing out; ~60% of checkout attempts failing at the tax step"
+    },
+    {
+      "ts": "2026-12-04T13:18:38.149958Z",
+      "service": "inventory-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 174ms"
+    },
+    {
+      "ts": "2026-12-04T13:20:00Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "taxly.io status page reports a major outage since 13:12 UTC; ETA unknown"
+    },
+    {
+      "ts": "2026-12-04T13:22:00Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "no deploys today; payments and inventory calls healthy; failure isolated to the tax-calc integration"
+    },
+    {
+      "ts": "2026-12-04T13:22:10.867498Z",
+      "service": "inventory-api",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=137"
+    },
+    {
+      "ts": "2026-12-04T13:23:12.786104Z",
+      "service": "cart-cache",
+      "level": "INFO",
+      "msg": "evicted 150 keys (lru)"
+    },
+    {
+      "ts": "2026-12-04T13:25:53.703602Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-04T13:35:00Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "enabled cached-rate fallback for tax; checkout success recovering to ~95%"
+    },
+    {
+      "ts": "2026-12-04T13:39:10.229039Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "tax_calc_success_rate",
+      "unit": "ratio",
+      "service": "checkout-api",
+      "points": [
+        [
+          "2026-12-04T12:45:00Z",
+          0.9845
+        ],
+        [
+          "2026-12-04T12:46:00Z",
+          0.9837
+        ],
+        [
+          "2026-12-04T12:47:00Z",
+          1.0098
+        ],
+        [
+          "2026-12-04T12:48:00Z",
+          0.9831
+        ],
+        [
+          "2026-12-04T12:49:00Z",
+          0.986
+        ],
+        [
+          "2026-12-04T12:50:00Z",
+          1.0056
+        ],
+        [
+          "2026-12-04T12:51:00Z",
+          0.9819
+        ],
+        [
+          "2026-12-04T12:52:00Z",
+          1.0127
+        ],
+        [
+          "2026-12-04T12:53:00Z",
+          1.0046
+        ],
+        [
+          "2026-12-04T12:54:00Z",
+          0.9965
+        ],
+        [
+          "2026-12-04T12:55:00Z",
+          0.9989
+        ],
+        [
+          "2026-12-04T12:56:00Z",
+          0.9842
+        ],
+        [
+          "2026-12-04T12:57:00Z",
+          1.0056
+        ],
+        [
+          "2026-12-04T12:58:00Z",
+          0.9876
+        ],
+        [
+          "2026-12-04T12:59:00Z",
+          0.9804
+        ],
+        [
+          "2026-12-04T13:00:00Z",
+          0.9847
+        ],
+        [
+          "2026-12-04T13:01:00Z",
+          1.0003
+        ],
+        [
+          "2026-12-04T13:02:00Z",
+          0.9757
+        ],
+        [
+          "2026-12-04T13:03:00Z",
+          0.9782
+        ],
+        [
+          "2026-12-04T13:04:00Z",
+          1.0014
+        ],
+        [
+          "2026-12-04T13:05:00Z",
+          0.9986
+        ],
+        [
+          "2026-12-04T13:06:00Z",
+          1.0018
+        ],
+        [
+          "2026-12-04T13:07:00Z",
+          1.0099
+        ],
+        [
+          "2026-12-04T13:08:00Z",
+          0.9953
+        ],
+        [
+          "2026-12-04T13:09:00Z",
+          0.9871
+        ],
+        [
+          "2026-12-04T13:10:00Z",
+          1.0125
+        ],
+        [
+          "2026-12-04T13:11:00Z",
+          1.013
+        ],
+        [
+          "2026-12-04T13:12:00Z",
+          0.9794
+        ],
+        [
+          "2026-12-04T13:13:00Z",
+          1.0142
+        ],
+        [
+          "2026-12-04T13:14:00Z",
+          1.0048
+        ],
+        [
+          "2026-12-04T13:15:00Z",
+          0.9982
+        ],
+        [
+          "2026-12-04T13:16:00Z",
+          0.7033
+        ],
+        [
+          "2026-12-04T13:17:00Z",
+          0.3915
+        ],
+        [
+          "2026-12-04T13:18:00Z",
+          0.1017
+        ],
+        [
+          "2026-12-04T13:19:00Z",
+          0.0991
+        ],
+        [
+          "2026-12-04T13:20:00Z",
+          0.1004
+        ],
+        [
+          "2026-12-04T13:21:00Z",
+          0.1006
+        ],
+        [
+          "2026-12-04T13:22:00Z",
+          0.1009
+        ],
+        [
+          "2026-12-04T13:23:00Z",
+          0.0991
+        ],
+        [
+          "2026-12-04T13:24:00Z",
+          0.0999
+        ],
+        [
+          "2026-12-04T13:25:00Z",
+          0.1014
+        ],
+        [
+          "2026-12-04T13:26:00Z",
+          0.0989
+        ],
+        [
+          "2026-12-04T13:27:00Z",
+          0.0994
+        ],
+        [
+          "2026-12-04T13:28:00Z",
+          0.0992
+        ],
+        [
+          "2026-12-04T13:29:00Z",
+          0.099
+        ],
+        [
+          "2026-12-04T13:30:00Z",
+          0.1008
+        ],
+        [
+          "2026-12-04T13:31:00Z",
+          0.101
+        ],
+        [
+          "2026-12-04T13:32:00Z",
+          0.0985
+        ],
+        [
+          "2026-12-04T13:33:00Z",
+          0.1011
+        ],
+        [
+          "2026-12-04T13:34:00Z",
+          0.1011
+        ],
+        [
+          "2026-12-04T13:35:00Z",
+          0.1017
+        ],
+        [
+          "2026-12-04T13:36:00Z",
+          0.0993
+        ],
+        [
+          "2026-12-04T13:37:00Z",
+          0.0984
+        ],
+        [
+          "2026-12-04T13:38:00Z",
+          0.101
+        ],
+        [
+          "2026-12-04T13:39:00Z",
+          0.1019
+        ],
+        [
+          "2026-12-04T13:40:00Z",
+          0.1003
+        ],
+        [
+          "2026-12-04T13:41:00Z",
+          0.1008
+        ],
+        [
+          "2026-12-04T13:42:00Z",
+          0.1002
+        ],
+        [
+          "2026-12-04T13:43:00Z",
+          0.1012
+        ],
+        [
+          "2026-12-04T13:44:00Z",
+          0.0981
+        ],
+        [
+          "2026-12-04T13:45:00Z",
+          0.1016
+        ]
+      ]
+    },
+    {
+      "name": "checkout_success_rate",
+      "unit": "ratio",
+      "service": "checkout-api",
+      "points": [
+        [
+          "2026-12-04T12:45:00Z",
+          0.9819
+        ],
+        [
+          "2026-12-04T12:46:00Z",
+          0.9552
+        ],
+        [
+          "2026-12-04T12:47:00Z",
+          0.9804
+        ],
+        [
+          "2026-12-04T12:48:00Z",
+          0.9838
+        ],
+        [
+          "2026-12-04T12:49:00Z",
+          0.9751
+        ],
+        [
+          "2026-12-04T12:50:00Z",
+          0.9834
+        ],
+        [
+          "2026-12-04T12:51:00Z",
+          0.9725
+        ],
+        [
+          "2026-12-04T12:52:00Z",
+          0.9689
+        ],
+        [
+          "2026-12-04T12:53:00Z",
+          0.9509
+        ],
+        [
+          "2026-12-04T12:54:00Z",
+          0.9832
+        ],
+        [
+          "2026-12-04T12:55:00Z",
+          0.9679
+        ],
+        [
+          "2026-12-04T12:56:00Z",
+          0.9768
+        ],
+        [
+          "2026-12-04T12:57:00Z",
+          0.9641
+        ],
+        [
+          "2026-12-04T12:58:00Z",
+          0.9709
+        ],
+        [
+          "2026-12-04T12:59:00Z",
+          0.9552
+        ],
+        [
+          "2026-12-04T13:00:00Z",
+          0.9766
+        ],
+        [
+          "2026-12-04T13:01:00Z",
+          0.9511
+        ],
+        [
+          "2026-12-04T13:02:00Z",
+          0.9761
+        ],
+        [
+          "2026-12-04T13:03:00Z",
+          0.9819
+        ],
+        [
+          "2026-12-04T13:04:00Z",
+          0.953
+        ],
+        [
+          "2026-12-04T13:05:00Z",
+          0.9721
+        ],
+        [
+          "2026-12-04T13:06:00Z",
+          0.9565
+        ],
+        [
+          "2026-12-04T13:07:00Z",
+          0.9753
+        ],
+        [
+          "2026-12-04T13:08:00Z",
+          0.9883
+        ],
+        [
+          "2026-12-04T13:09:00Z",
+          0.9834
+        ],
+        [
+          "2026-12-04T13:10:00Z",
+          0.951
+        ],
+        [
+          "2026-12-04T13:11:00Z",
+          0.9565
+        ],
+        [
+          "2026-12-04T13:12:00Z",
+          0.9532
+        ],
+        [
+          "2026-12-04T13:13:00Z",
+          0.9579
+        ],
+        [
+          "2026-12-04T13:14:00Z",
+          0.9773
+        ],
+        [
+          "2026-12-04T13:15:00Z",
+          0.9796
+        ],
+        [
+          "2026-12-04T13:16:00Z",
+          0.977
+        ],
+        [
+          "2026-12-04T13:17:00Z",
+          0.9685
+        ],
+        [
+          "2026-12-04T13:18:00Z",
+          0.7807
+        ],
+        [
+          "2026-12-04T13:19:00Z",
+          0.5851
+        ],
+        [
+          "2026-12-04T13:20:00Z",
+          0.3764
+        ],
+        [
+          "2026-12-04T13:21:00Z",
+          0.3794
+        ],
+        [
+          "2026-12-04T13:22:00Z",
+          0.3747
+        ],
+        [
+          "2026-12-04T13:23:00Z",
+          0.3727
+        ],
+        [
+          "2026-12-04T13:24:00Z",
+          0.3869
+        ],
+        [
+          "2026-12-04T13:25:00Z",
+          0.3859
+        ],
+        [
+          "2026-12-04T13:26:00Z",
+          0.3759
+        ],
+        [
+          "2026-12-04T13:27:00Z",
+          0.3776
+        ],
+        [
+          "2026-12-04T13:28:00Z",
+          0.3859
+        ],
+        [
+          "2026-12-04T13:29:00Z",
+          0.3871
+        ],
+        [
+          "2026-12-04T13:30:00Z",
+          0.3859
+        ],
+        [
+          "2026-12-04T13:31:00Z",
+          0.3818
+        ],
+        [
+          "2026-12-04T13:32:00Z",
+          0.3757
+        ],
+        [
+          "2026-12-04T13:33:00Z",
+          0.381
+        ],
+        [
+          "2026-12-04T13:34:00Z",
+          0.3789
+        ],
+        [
+          "2026-12-04T13:35:00Z",
+          0.3791
+        ],
+        [
+          "2026-12-04T13:36:00Z",
+          0.3823
+        ],
+        [
+          "2026-12-04T13:37:00Z",
+          0.3785
+        ],
+        [
+          "2026-12-04T13:38:00Z",
+          0.3778
+        ],
+        [
+          "2026-12-04T13:39:00Z",
+          0.3808
+        ],
+        [
+          "2026-12-04T13:40:00Z",
+          0.3812
+        ],
+        [
+          "2026-12-04T13:41:00Z",
+          0.3849
+        ],
+        [
+          "2026-12-04T13:42:00Z",
+          0.3778
+        ],
+        [
+          "2026-12-04T13:43:00Z",
+          0.3809
+        ],
+        [
+          "2026-12-04T13:44:00Z",
+          0.3855
+        ],
+        [
+          "2026-12-04T13:45:00Z",
+          0.3787
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "The external tax-calculation provider (api.taxly.io) had a major outage starting ~13:12 UTC, confirmed on its status page. checkout-api calls the provider for a tax quote on every checkout; those calls returned 503 and then timed out, so up to ~60% of checkout attempts failed at the tax step. The failure is isolated to the tax-calc integration - payments and inventory calls stayed healthy - and there were no deploys. The fix belongs to the provider; the mitigation was to fall back to cached tax rates.",
+    "evidence_path": [
+      "checkout-api WARN: tax-calc provider api.taxly.io returning 503, then timing out",
+      "taxly.io status page confirms a major outage since 13:12 UTC",
+      "tax_calc_success_rate collapses to ~10% and checkout_success_rate drops to ~38% at the tax step",
+      "no deploys today; payments and inventory calls remain healthy - the failure is isolated to one dependency",
+      "checkout recovers to ~95% once a cached-rate fallback is enabled"
+    ],
+    "fix": "Enable the cached-rate fallback for tax quotes (done). Add a circuit breaker around the tax-calc client, cache recent rates for graceful degradation, monitor the provider's status feed, and escalate to the provider for a timeline.",
+    "should_escalate": false
+  }
+}

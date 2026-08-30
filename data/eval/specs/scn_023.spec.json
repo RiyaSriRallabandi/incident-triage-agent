@@ -1,0 +1,43 @@
+{
+  "id": "scn_023",
+  "category": "dependency_failure",
+  "difficulty": "medium",
+  "title": "Service-discovery config reload returns empty backend lists for a third of services",
+  "source_url": "https://blog.roblox.com/2022/01/roblox-return-to-service-10-28-10-31-2021/",
+  "source_note": "Failure pattern (a core service-discovery / coordination system returns stale or empty catalog data after a change, so clients stop routing to healthy backends) is in the spirit of the Roblox 2021 Consul outage. All services, change ids, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~10:03 UTC several services report 'no healthy instances' for dependencies that are actually up. Errors are widespread. No application deploys. The platform team applied a service-discovery config change this morning.",
+  "incident_start": "2026-12-15T10:00:00Z",
+  "detected_offset_s": 180,
+  "window_before_s": 1800,
+  "window_after_s": 1500,
+  "primary_service": "service-discovery",
+  "distractor_services": [
+    { "name": "payments-api", "role": "api" },
+    { "name": "inventory-worker", "role": "worker" },
+    { "name": "config-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "service-discovery", "level": "WARN", "msg": "config reload applied; catalog re-sync in progress" },
+    { "offset_s": 60, "service": "service-discovery", "level": "ERROR", "msg": "health-check subsystem returning empty results for 30% of services after the reload" },
+    { "offset_s": 180, "service": "orders-api", "level": "ERROR", "msg": "0 healthy instances reported for payments-api; all payment calls failing" },
+    { "offset_s": 300, "service": "service-discovery", "level": "CRITICAL", "msg": "stale catalog: many services show 0 or partial backends; dependent traffic mis-routed" },
+    { "offset_s": 1200, "service": "service-discovery", "level": "INFO", "msg": "rolled back the config reload; catalog re-synced from a healthy replica; backends restored" }
+  ],
+  "metrics": [
+    { "name": "discovery_catalog_completeness", "unit": "ratio", "service": "service-discovery", "baseline": 1.0, "spike": 0.4, "spike_at_offset_s": 60, "ramp_s": 120 },
+    { "name": "error_rate", "unit": "ratio", "service": "orders-api", "baseline": 0.003, "spike": 0.45, "spike_at_offset_s": 180, "ramp_s": 120 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "A config reload on the service-discovery cluster corrupted its health-check subsystem, which then returned empty or partial backend lists for ~30% of services. Clients querying discovery (orders-api and others) saw '0 healthy instances' for dependencies like payments-api that were actually healthy, and stopped routing to them, so those calls all failed. Nothing was wrong with the backend services - the platform's service catalog was stale. Recovery required rolling back the config reload and re-syncing the catalog from a healthy replica.",
+    "evidence_path": [
+      "service-discovery WARN at 10:00: config reload applied, catalog re-sync in progress",
+      "service-discovery ERROR: health-check subsystem returning empty results for 30% of services after the reload",
+      "orders-api sees 0 healthy instances for payments-api and fails all payment calls, though payments-api is healthy",
+      "discovery_catalog_completeness drops to ~40% and dependent error rates rise",
+      "recovery after the config reload is rolled back and the catalog re-synced from a healthy replica"
+    ],
+    "fix": "Roll back the config reload and re-sync the catalog (done). Validate discovery config changes against a canary before fleet apply, have clients keep last-known-good backends when a list suddenly drops to zero, and alert on catalog completeness.",
+    "should_escalate": false
+  }
+}

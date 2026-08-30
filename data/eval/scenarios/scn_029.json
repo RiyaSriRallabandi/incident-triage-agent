@@ -1,0 +1,804 @@
+{
+  "id": "scn_029",
+  "category": "database_issue",
+  "difficulty": "medium",
+  "title": "Fleet growth pushes total connections past the database's server-side limit",
+  "source_url": "https://sre.google/sre-book/addressing-cascading-failures/",
+  "source_note": "Failure pattern (cumulative connection demand from a growing fleet with fixed per-instance pools crossing the database's max_connections, so new connections are refused server-side) is a standard capacity class in the Google SRE Book. All services, numbers, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~11:30 UTC orders-service is intermittently failing with database connection errors - about 15% of requests. No deploys. The fleet was scaled up this morning for load.",
+  "synthetic_logs": [
+    {
+      "ts": "2027-01-14T10:51:51.095744Z",
+      "service": "session-cache",
+      "level": "INFO",
+      "msg": "SET key=session:214 ttl=3600"
+    },
+    {
+      "ts": "2027-01-14T10:51:56.537700Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "job webhook.deliver completed in 235ms"
+    },
+    {
+      "ts": "2027-01-14T10:52:38.881366Z",
+      "service": "orders-db",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 112ms"
+    },
+    {
+      "ts": "2027-01-14T10:56:10.501641Z",
+      "service": "session-cache",
+      "level": "INFO",
+      "msg": "evicted 464 keys (lru)"
+    },
+    {
+      "ts": "2027-01-14T11:00:00Z",
+      "service": "autoscaler",
+      "level": "INFO",
+      "msg": "orders-service scaled 40 -> 52 instances (sustained load)"
+    },
+    {
+      "ts": "2027-01-14T11:01:08.448971Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 97ms"
+    },
+    {
+      "ts": "2027-01-14T11:01:50.430402Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2027-01-14T11:04:43.121615Z",
+      "service": "orders-db",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=39"
+    },
+    {
+      "ts": "2027-01-14T11:06:21.157364Z",
+      "service": "orders-db",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 232ms"
+    },
+    {
+      "ts": "2027-01-14T11:08:05.127886Z",
+      "service": "orders-db",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 103ms"
+    },
+    {
+      "ts": "2027-01-14T11:11:30.492636Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-01-14T11:14:01.750837Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "processed batch size=722"
+    },
+    {
+      "ts": "2027-01-14T11:23:22.411301Z",
+      "service": "session-cache",
+      "level": "INFO",
+      "msg": "evicted 157 keys (lru)"
+    },
+    {
+      "ts": "2027-01-14T11:25:56.559476Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2027-01-14T11:26:00.445783Z",
+      "service": "session-cache",
+      "level": "INFO",
+      "msg": "GET key=user:506 hit"
+    },
+    {
+      "ts": "2027-01-14T11:30:00Z",
+      "service": "orders-db",
+      "level": "WARN",
+      "msg": "connection count 495/500 (max_connections); new connections being refused"
+    },
+    {
+      "ts": "2027-01-14T11:31:37.150167Z",
+      "service": "session-cache",
+      "level": "INFO",
+      "msg": "GET key=user:746 hit"
+    },
+    {
+      "ts": "2027-01-14T11:32:00Z",
+      "service": "orders-service",
+      "level": "ERROR",
+      "msg": "FATAL: sorry, too many clients already; ~15% of requests failing to acquire a DB connection"
+    },
+    {
+      "ts": "2027-01-14T11:32:33.685662Z",
+      "service": "orders-db",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-01-14T11:34:00Z",
+      "service": "orders-db",
+      "level": "ERROR",
+      "msg": "connection slots exhausted; superuser_reserved_connections in use"
+    },
+    {
+      "ts": "2027-01-14T11:36:00Z",
+      "service": "orders-db",
+      "level": "INFO",
+      "msg": "total pool demand = 52 instances x 10 connections = 520, exceeds max_connections 500"
+    },
+    {
+      "ts": "2027-01-14T11:38:12.265577Z",
+      "service": "session-cache",
+      "level": "INFO",
+      "msg": "GET key=user:593 hit"
+    },
+    {
+      "ts": "2027-01-14T11:38:12.776564Z",
+      "service": "orders-db",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 10ms"
+    },
+    {
+      "ts": "2027-01-14T11:40:20.145202Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "queue depth=185"
+    },
+    {
+      "ts": "2027-01-14T11:42:44.593720Z",
+      "service": "orders-db",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2027-01-14T11:46:31.373279Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "processed batch size=706"
+    },
+    {
+      "ts": "2027-01-14T11:46:37.952245Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "job webhook.deliver completed in 113ms"
+    },
+    {
+      "ts": "2027-01-14T11:46:53.240605Z",
+      "service": "session-cache",
+      "level": "INFO",
+      "msg": "GET key=user:317 hit"
+    },
+    {
+      "ts": "2027-01-14T11:50:00Z",
+      "service": "orders-db",
+      "level": "INFO",
+      "msg": "operator lowered per-instance pool to 8 and raised max_connections to 600; refusals stopped"
+    },
+    {
+      "ts": "2027-01-14T11:50:22.153245Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-01-14T11:50:23.237403Z",
+      "service": "session-cache",
+      "level": "INFO",
+      "msg": "SET key=session:393 ttl=3600"
+    },
+    {
+      "ts": "2027-01-14T11:50:58.924529Z",
+      "service": "fulfillment-worker",
+      "level": "WARN",
+      "msg": "job cache.warm retried attempt=1"
+    },
+    {
+      "ts": "2027-01-14T11:52:59.167068Z",
+      "service": "orders-db",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 142ms"
+    },
+    {
+      "ts": "2027-01-14T11:58:38.709377Z",
+      "service": "orders-db",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 231ms"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "db_active_connections",
+      "unit": "count",
+      "service": "orders-db",
+      "points": [
+        [
+          "2027-01-14T10:50:00Z",
+          385.2159
+        ],
+        [
+          "2027-01-14T10:51:00Z",
+          376.9624
+        ],
+        [
+          "2027-01-14T10:52:00Z",
+          386.6291
+        ],
+        [
+          "2027-01-14T10:53:00Z",
+          383.8032
+        ],
+        [
+          "2027-01-14T10:54:00Z",
+          373.8472
+        ],
+        [
+          "2027-01-14T10:55:00Z",
+          375.6565
+        ],
+        [
+          "2027-01-14T10:56:00Z",
+          386.0021
+        ],
+        [
+          "2027-01-14T10:57:00Z",
+          385.6274
+        ],
+        [
+          "2027-01-14T10:58:00Z",
+          387.0326
+        ],
+        [
+          "2027-01-14T10:59:00Z",
+          385.067
+        ],
+        [
+          "2027-01-14T11:00:00Z",
+          380.6839
+        ],
+        [
+          "2027-01-14T11:01:00Z",
+          379.4194
+        ],
+        [
+          "2027-01-14T11:02:00Z",
+          373.3244
+        ],
+        [
+          "2027-01-14T11:03:00Z",
+          384.7408
+        ],
+        [
+          "2027-01-14T11:04:00Z",
+          387.3259
+        ],
+        [
+          "2027-01-14T11:05:00Z",
+          386.3953
+        ],
+        [
+          "2027-01-14T11:06:00Z",
+          385.6179
+        ],
+        [
+          "2027-01-14T11:07:00Z",
+          378.8706
+        ],
+        [
+          "2027-01-14T11:08:00Z",
+          378.9529
+        ],
+        [
+          "2027-01-14T11:09:00Z",
+          387.4553
+        ],
+        [
+          "2027-01-14T11:10:00Z",
+          386.5148
+        ],
+        [
+          "2027-01-14T11:11:00Z",
+          379.8504
+        ],
+        [
+          "2027-01-14T11:12:00Z",
+          385.1415
+        ],
+        [
+          "2027-01-14T11:13:00Z",
+          383.8201
+        ],
+        [
+          "2027-01-14T11:14:00Z",
+          384.7257
+        ],
+        [
+          "2027-01-14T11:15:00Z",
+          383.1038
+        ],
+        [
+          "2027-01-14T11:16:00Z",
+          379.9083
+        ],
+        [
+          "2027-01-14T11:17:00Z",
+          373.0157
+        ],
+        [
+          "2027-01-14T11:18:00Z",
+          374.2055
+        ],
+        [
+          "2027-01-14T11:19:00Z",
+          385.6535
+        ],
+        [
+          "2027-01-14T11:20:00Z",
+          382.8961
+        ],
+        [
+          "2027-01-14T11:21:00Z",
+          386.2115
+        ],
+        [
+          "2027-01-14T11:22:00Z",
+          380.6459
+        ],
+        [
+          "2027-01-14T11:23:00Z",
+          381.762
+        ],
+        [
+          "2027-01-14T11:24:00Z",
+          386.0361
+        ],
+        [
+          "2027-01-14T11:25:00Z",
+          383.5384
+        ],
+        [
+          "2027-01-14T11:26:00Z",
+          373.6063
+        ],
+        [
+          "2027-01-14T11:27:00Z",
+          382.6802
+        ],
+        [
+          "2027-01-14T11:28:00Z",
+          379.2699
+        ],
+        [
+          "2027-01-14T11:29:00Z",
+          386.0489
+        ],
+        [
+          "2027-01-14T11:30:00Z",
+          384.0795
+        ],
+        [
+          "2027-01-14T11:31:00Z",
+          446.4502
+        ],
+        [
+          "2027-01-14T11:32:00Z",
+          491.8318
+        ],
+        [
+          "2027-01-14T11:33:00Z",
+          490.8431
+        ],
+        [
+          "2027-01-14T11:34:00Z",
+          500.2207
+        ],
+        [
+          "2027-01-14T11:35:00Z",
+          493.9821
+        ],
+        [
+          "2027-01-14T11:36:00Z",
+          498.5181
+        ],
+        [
+          "2027-01-14T11:37:00Z",
+          497.3369
+        ],
+        [
+          "2027-01-14T11:38:00Z",
+          496.7657
+        ],
+        [
+          "2027-01-14T11:39:00Z",
+          491.357
+        ],
+        [
+          "2027-01-14T11:40:00Z",
+          494.2666
+        ],
+        [
+          "2027-01-14T11:41:00Z",
+          492.6748
+        ],
+        [
+          "2027-01-14T11:42:00Z",
+          508.1926
+        ],
+        [
+          "2027-01-14T11:43:00Z",
+          491.4977
+        ],
+        [
+          "2027-01-14T11:44:00Z",
+          500.2396
+        ],
+        [
+          "2027-01-14T11:45:00Z",
+          504.1071
+        ],
+        [
+          "2027-01-14T11:46:00Z",
+          500.7852
+        ],
+        [
+          "2027-01-14T11:47:00Z",
+          509.1683
+        ],
+        [
+          "2027-01-14T11:48:00Z",
+          501.7679
+        ],
+        [
+          "2027-01-14T11:49:00Z",
+          490.8459
+        ],
+        [
+          "2027-01-14T11:50:00Z",
+          506.8898
+        ],
+        [
+          "2027-01-14T11:51:00Z",
+          497.0341
+        ],
+        [
+          "2027-01-14T11:52:00Z",
+          507.1859
+        ],
+        [
+          "2027-01-14T11:53:00Z",
+          501.8642
+        ],
+        [
+          "2027-01-14T11:54:00Z",
+          491.127
+        ],
+        [
+          "2027-01-14T11:55:00Z",
+          503.9148
+        ],
+        [
+          "2027-01-14T11:56:00Z",
+          498.4019
+        ],
+        [
+          "2027-01-14T11:57:00Z",
+          508.9148
+        ],
+        [
+          "2027-01-14T11:58:00Z",
+          503.8191
+        ],
+        [
+          "2027-01-14T11:59:00Z",
+          504.9487
+        ]
+      ]
+    },
+    {
+      "name": "connection_acquire_error_rate",
+      "unit": "ratio",
+      "service": "orders-service",
+      "points": [
+        [
+          "2027-01-14T10:50:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T10:51:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T10:52:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T10:53:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T10:54:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T10:55:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T10:56:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T10:57:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T10:58:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T10:59:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:00:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:01:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:02:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:03:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:04:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:05:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:06:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:07:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:08:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:09:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:10:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:11:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:12:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:13:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:14:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:15:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:16:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:17:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:18:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:19:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:20:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:21:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:22:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:23:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:24:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:25:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:26:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:27:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:28:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:29:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:30:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:31:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:32:00Z",
+          0.001
+        ],
+        [
+          "2027-01-14T11:33:00Z",
+          0.0753
+        ],
+        [
+          "2027-01-14T11:34:00Z",
+          0.1473
+        ],
+        [
+          "2027-01-14T11:35:00Z",
+          0.1487
+        ],
+        [
+          "2027-01-14T11:36:00Z",
+          0.1517
+        ],
+        [
+          "2027-01-14T11:37:00Z",
+          0.1477
+        ],
+        [
+          "2027-01-14T11:38:00Z",
+          0.1479
+        ],
+        [
+          "2027-01-14T11:39:00Z",
+          0.152
+        ],
+        [
+          "2027-01-14T11:40:00Z",
+          0.1475
+        ],
+        [
+          "2027-01-14T11:41:00Z",
+          0.1478
+        ],
+        [
+          "2027-01-14T11:42:00Z",
+          0.1485
+        ],
+        [
+          "2027-01-14T11:43:00Z",
+          0.152
+        ],
+        [
+          "2027-01-14T11:44:00Z",
+          0.1491
+        ],
+        [
+          "2027-01-14T11:45:00Z",
+          0.1498
+        ],
+        [
+          "2027-01-14T11:46:00Z",
+          0.1507
+        ],
+        [
+          "2027-01-14T11:47:00Z",
+          0.1513
+        ],
+        [
+          "2027-01-14T11:48:00Z",
+          0.1484
+        ],
+        [
+          "2027-01-14T11:49:00Z",
+          0.1495
+        ],
+        [
+          "2027-01-14T11:50:00Z",
+          0.1512
+        ],
+        [
+          "2027-01-14T11:51:00Z",
+          0.1488
+        ],
+        [
+          "2027-01-14T11:52:00Z",
+          0.1486
+        ],
+        [
+          "2027-01-14T11:53:00Z",
+          0.1498
+        ],
+        [
+          "2027-01-14T11:54:00Z",
+          0.1487
+        ],
+        [
+          "2027-01-14T11:55:00Z",
+          0.1521
+        ],
+        [
+          "2027-01-14T11:56:00Z",
+          0.1481
+        ],
+        [
+          "2027-01-14T11:57:00Z",
+          0.1529
+        ],
+        [
+          "2027-01-14T11:58:00Z",
+          0.1496
+        ],
+        [
+          "2027-01-14T11:59:00Z",
+          0.1473
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "The database's server-side connection limit (max_connections = 500) was reached. Each orders-service instance holds a static pool of 10 connections; the fleet had grown over the week and an autoscale from 40 to 52 instances that morning brought total pool demand to 52 x 10 = 520, exceeding 500. The database began refusing new connections ('too many clients already'), so ~15% of requests failed to acquire a connection. There was no code deploy - the cause is cumulative connection demand crossing the fixed limit, tipped over by the morning's scale-up. Recovery required lowering the per-instance pool size and raising max_connections.",
+    "evidence_path": [
+      "autoscaler INFO: orders-service scaled 40 -> 52 instances that morning",
+      "orders-db WARN: connection count 495/500 (max_connections), refusing new connections",
+      "orders-service ERROR: 'too many clients already'; ~15% of requests fail to acquire a DB connection",
+      "orders-db notes total pool demand 52 x 10 = 520 exceeds max_connections 500",
+      "refusals stop after the per-instance pool is lowered to 8 and max_connections raised to 600"
+    ],
+    "fix": "Lower the per-instance pool and raise max_connections (done). Put a connection pooler (e.g. PgBouncer) between the fleet and the database so server-side connections do not scale linearly with instance count, and alert when connection count approaches the limit.",
+    "should_escalate": false
+  }
+}

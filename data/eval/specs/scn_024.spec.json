@@ -1,0 +1,43 @@
+{
+  "id": "scn_024",
+  "category": "dependency_failure",
+  "difficulty": "easy",
+  "title": "CDN provider regional edge degradation breaks asset loads in EU",
+  "source_url": "https://en.wikipedia.org/wiki/2016_Dyn_cyberattack",
+  "source_note": "Failure pattern (a CDN / edge provider has a regional point-of-presence failure, so users in that region get slow or failed asset loads while origin and API paths are healthy) is a generic third-party-edge dependency class. All services, POP names, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~16:20 UTC EU users report the site looks broken - images and styles not loading. US and APAC are fine. API calls work. No deploys.",
+  "incident_start": "2026-12-18T16:20:00Z",
+  "detected_offset_s": 240,
+  "window_before_s": 1800,
+  "window_after_s": 1800,
+  "primary_service": "static-assets",
+  "distractor_services": [
+    { "name": "api-gateway", "role": "gateway" },
+    { "name": "origin-store", "role": "api" },
+    { "name": "search-api", "role": "api" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "rum-monitor", "level": "WARN", "msg": "asset load failure rate 8% in EU regions; other regions normal" },
+    { "offset_s": 180, "service": "rum-monitor", "level": "ERROR", "msg": "EU asset load failures 35%; p95 asset latency 4s (normal ~120ms)" },
+    { "offset_s": 240, "service": "static-assets", "level": "INFO", "msg": "CDN provider status: degraded performance at FRA and AMS edge locations since 16:15 UTC" },
+    { "offset_s": 360, "service": "static-assets", "level": "INFO", "msg": "origin asset serving is healthy; API endpoints unaffected; issue is CDN-edge only, EU only" },
+    { "offset_s": 1500, "service": "static-assets", "level": "INFO", "msg": "CDN provider shifted EU traffic to alternate POPs; asset latency recovering" }
+  ],
+  "metrics": [
+    { "name": "asset_error_rate_eu", "unit": "ratio", "service": "static-assets", "baseline": 0.005, "spike": 0.35, "spike_at_offset_s": 0, "ramp_s": 180 },
+    { "name": "asset_p95_latency_ms_eu", "unit": "milliseconds", "service": "static-assets", "baseline": 120.0, "spike": 4000.0, "spike_at_offset_s": 60, "ramp_s": 180 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "The CDN provider serving static assets had degraded performance at its Frankfurt and Amsterdam edge locations starting ~16:15 UTC (confirmed on the provider's status page). EU users experienced slow or failed asset loads - error rate up to ~35%, p95 latency ~4s - so pages rendered broken for them. The origin asset servers and all API endpoints were healthy; the problem was confined to the CDN edge in EU. Recovery came when the provider shifted EU traffic to alternate POPs.",
+    "evidence_path": [
+      "rum-monitor: asset load failures rise to ~35% specifically in EU regions while other regions stay normal",
+      "CDN provider status reports degraded performance at FRA and AMS edge locations since 16:15 UTC",
+      "asset_p95_latency in EU climbs from ~120ms to ~4s",
+      "origin asset serving and API endpoints are confirmed healthy - the failure is CDN-edge only and EU only",
+      "recovery after the provider shifts EU traffic to alternate POPs"
+    ],
+    "fix": "Escalate to the CDN provider (their fix). Configure multi-CDN failover for static assets so a single provider's regional POP failure can be routed around, and keep an origin-direct fallback for critical assets.",
+    "should_escalate": false
+  }
+}

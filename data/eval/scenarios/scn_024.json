@@ -1,0 +1,662 @@
+{
+  "id": "scn_024",
+  "category": "dependency_failure",
+  "difficulty": "easy",
+  "title": "CDN provider regional edge degradation breaks asset loads in EU",
+  "source_url": "https://en.wikipedia.org/wiki/2016_Dyn_cyberattack",
+  "source_note": "Failure pattern (a CDN / edge provider has a regional point-of-presence failure, so users in that region get slow or failed asset loads while origin and API paths are healthy) is a generic third-party-edge dependency class. All services, POP names, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~16:20 UTC EU users report the site looks broken - images and styles not loading. US and APAC are fine. API calls work. No deploys.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-12-18T15:55:05.477587Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "upstream static-assets slow 175ms"
+    },
+    {
+      "ts": "2026-12-18T16:03:19.449042Z",
+      "service": "static-assets",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-18T16:08:20.778141Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-18T16:14:42.254465Z",
+      "service": "static-assets",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 210ms"
+    },
+    {
+      "ts": "2026-12-18T16:16:03.348627Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "route matched /api/v1/orders -> static-assets"
+    },
+    {
+      "ts": "2026-12-18T16:17:59.600921Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "route matched /search -> static-assets"
+    },
+    {
+      "ts": "2026-12-18T16:20:00Z",
+      "service": "rum-monitor",
+      "level": "WARN",
+      "msg": "asset load failure rate 8% in EU regions; other regions normal"
+    },
+    {
+      "ts": "2026-12-18T16:22:41.104620Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "upstream static-assets slow 190ms"
+    },
+    {
+      "ts": "2026-12-18T16:23:00Z",
+      "service": "rum-monitor",
+      "level": "ERROR",
+      "msg": "EU asset load failures 35%; p95 asset latency 4s (normal ~120ms)"
+    },
+    {
+      "ts": "2026-12-18T16:24:00Z",
+      "service": "static-assets",
+      "level": "INFO",
+      "msg": "CDN provider status: degraded performance at FRA and AMS edge locations since 16:15 UTC"
+    },
+    {
+      "ts": "2026-12-18T16:25:31.461879Z",
+      "service": "static-assets",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 234ms"
+    },
+    {
+      "ts": "2026-12-18T16:26:00Z",
+      "service": "static-assets",
+      "level": "INFO",
+      "msg": "origin asset serving is healthy; API endpoints unaffected; issue is CDN-edge only, EU only"
+    },
+    {
+      "ts": "2026-12-18T16:30:10.856882Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "upstream static-assets slow 225ms"
+    },
+    {
+      "ts": "2026-12-18T16:31:42.284573Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-12-18T16:39:40.832462Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-12-18T16:45:00Z",
+      "service": "static-assets",
+      "level": "INFO",
+      "msg": "CDN provider shifted EU traffic to alternate POPs; asset latency recovering"
+    },
+    {
+      "ts": "2026-12-18T16:46:02.840476Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "asset_error_rate_eu",
+      "unit": "ratio",
+      "service": "static-assets",
+      "points": [
+        [
+          "2026-12-18T15:50:00Z",
+          0.0049
+        ],
+        [
+          "2026-12-18T15:51:00Z",
+          0.005
+        ],
+        [
+          "2026-12-18T15:52:00Z",
+          0.005
+        ],
+        [
+          "2026-12-18T15:53:00Z",
+          0.0049
+        ],
+        [
+          "2026-12-18T15:54:00Z",
+          0.0051
+        ],
+        [
+          "2026-12-18T15:55:00Z",
+          0.0051
+        ],
+        [
+          "2026-12-18T15:56:00Z",
+          0.0051
+        ],
+        [
+          "2026-12-18T15:57:00Z",
+          0.0051
+        ],
+        [
+          "2026-12-18T15:58:00Z",
+          0.0051
+        ],
+        [
+          "2026-12-18T15:59:00Z",
+          0.0049
+        ],
+        [
+          "2026-12-18T16:00:00Z",
+          0.005
+        ],
+        [
+          "2026-12-18T16:01:00Z",
+          0.0049
+        ],
+        [
+          "2026-12-18T16:02:00Z",
+          0.0051
+        ],
+        [
+          "2026-12-18T16:03:00Z",
+          0.0049
+        ],
+        [
+          "2026-12-18T16:04:00Z",
+          0.0049
+        ],
+        [
+          "2026-12-18T16:05:00Z",
+          0.0051
+        ],
+        [
+          "2026-12-18T16:06:00Z",
+          0.0049
+        ],
+        [
+          "2026-12-18T16:07:00Z",
+          0.005
+        ],
+        [
+          "2026-12-18T16:08:00Z",
+          0.0049
+        ],
+        [
+          "2026-12-18T16:09:00Z",
+          0.0051
+        ],
+        [
+          "2026-12-18T16:10:00Z",
+          0.0051
+        ],
+        [
+          "2026-12-18T16:11:00Z",
+          0.0051
+        ],
+        [
+          "2026-12-18T16:12:00Z",
+          0.0051
+        ],
+        [
+          "2026-12-18T16:13:00Z",
+          0.0049
+        ],
+        [
+          "2026-12-18T16:14:00Z",
+          0.0049
+        ],
+        [
+          "2026-12-18T16:15:00Z",
+          0.0049
+        ],
+        [
+          "2026-12-18T16:16:00Z",
+          0.0049
+        ],
+        [
+          "2026-12-18T16:17:00Z",
+          0.005
+        ],
+        [
+          "2026-12-18T16:18:00Z",
+          0.005
+        ],
+        [
+          "2026-12-18T16:19:00Z",
+          0.005
+        ],
+        [
+          "2026-12-18T16:20:00Z",
+          0.0051
+        ],
+        [
+          "2026-12-18T16:21:00Z",
+          0.1204
+        ],
+        [
+          "2026-12-18T16:22:00Z",
+          0.2319
+        ],
+        [
+          "2026-12-18T16:23:00Z",
+          0.3434
+        ],
+        [
+          "2026-12-18T16:24:00Z",
+          0.3486
+        ],
+        [
+          "2026-12-18T16:25:00Z",
+          0.3483
+        ],
+        [
+          "2026-12-18T16:26:00Z",
+          0.3442
+        ],
+        [
+          "2026-12-18T16:27:00Z",
+          0.3507
+        ],
+        [
+          "2026-12-18T16:28:00Z",
+          0.3561
+        ],
+        [
+          "2026-12-18T16:29:00Z",
+          0.3567
+        ],
+        [
+          "2026-12-18T16:30:00Z",
+          0.3441
+        ],
+        [
+          "2026-12-18T16:31:00Z",
+          0.3557
+        ],
+        [
+          "2026-12-18T16:32:00Z",
+          0.3545
+        ],
+        [
+          "2026-12-18T16:33:00Z",
+          0.3463
+        ],
+        [
+          "2026-12-18T16:34:00Z",
+          0.3519
+        ],
+        [
+          "2026-12-18T16:35:00Z",
+          0.3493
+        ],
+        [
+          "2026-12-18T16:36:00Z",
+          0.354
+        ],
+        [
+          "2026-12-18T16:37:00Z",
+          0.3475
+        ],
+        [
+          "2026-12-18T16:38:00Z",
+          0.3483
+        ],
+        [
+          "2026-12-18T16:39:00Z",
+          0.3446
+        ],
+        [
+          "2026-12-18T16:40:00Z",
+          0.3517
+        ],
+        [
+          "2026-12-18T16:41:00Z",
+          0.3452
+        ],
+        [
+          "2026-12-18T16:42:00Z",
+          0.345
+        ],
+        [
+          "2026-12-18T16:43:00Z",
+          0.3476
+        ],
+        [
+          "2026-12-18T16:44:00Z",
+          0.3524
+        ],
+        [
+          "2026-12-18T16:45:00Z",
+          0.3458
+        ],
+        [
+          "2026-12-18T16:46:00Z",
+          0.3556
+        ],
+        [
+          "2026-12-18T16:47:00Z",
+          0.3521
+        ],
+        [
+          "2026-12-18T16:48:00Z",
+          0.3491
+        ],
+        [
+          "2026-12-18T16:49:00Z",
+          0.3493
+        ],
+        [
+          "2026-12-18T16:50:00Z",
+          0.3456
+        ],
+        [
+          "2026-12-18T16:51:00Z",
+          0.3553
+        ],
+        [
+          "2026-12-18T16:52:00Z",
+          0.348
+        ],
+        [
+          "2026-12-18T16:53:00Z",
+          0.3548
+        ],
+        [
+          "2026-12-18T16:54:00Z",
+          0.3544
+        ]
+      ]
+    },
+    {
+      "name": "asset_p95_latency_ms_eu",
+      "unit": "milliseconds",
+      "service": "static-assets",
+      "points": [
+        [
+          "2026-12-18T15:50:00Z",
+          120.8842
+        ],
+        [
+          "2026-12-18T15:51:00Z",
+          118.4086
+        ],
+        [
+          "2026-12-18T15:52:00Z",
+          121.7701
+        ],
+        [
+          "2026-12-18T15:53:00Z",
+          121.4568
+        ],
+        [
+          "2026-12-18T15:54:00Z",
+          122.0572
+        ],
+        [
+          "2026-12-18T15:55:00Z",
+          120.5546
+        ],
+        [
+          "2026-12-18T15:56:00Z",
+          118.7759
+        ],
+        [
+          "2026-12-18T15:57:00Z",
+          119.5199
+        ],
+        [
+          "2026-12-18T15:58:00Z",
+          121.0454
+        ],
+        [
+          "2026-12-18T15:59:00Z",
+          122.2816
+        ],
+        [
+          "2026-12-18T16:00:00Z",
+          121.6053
+        ],
+        [
+          "2026-12-18T16:01:00Z",
+          117.9984
+        ],
+        [
+          "2026-12-18T16:02:00Z",
+          119.7136
+        ],
+        [
+          "2026-12-18T16:03:00Z",
+          121.907
+        ],
+        [
+          "2026-12-18T16:04:00Z",
+          117.8598
+        ],
+        [
+          "2026-12-18T16:05:00Z",
+          119.2604
+        ],
+        [
+          "2026-12-18T16:06:00Z",
+          118.8428
+        ],
+        [
+          "2026-12-18T16:07:00Z",
+          119.6996
+        ],
+        [
+          "2026-12-18T16:08:00Z",
+          118.2486
+        ],
+        [
+          "2026-12-18T16:09:00Z",
+          121.2159
+        ],
+        [
+          "2026-12-18T16:10:00Z",
+          120.1444
+        ],
+        [
+          "2026-12-18T16:11:00Z",
+          118.9132
+        ],
+        [
+          "2026-12-18T16:12:00Z",
+          119.3455
+        ],
+        [
+          "2026-12-18T16:13:00Z",
+          122.0269
+        ],
+        [
+          "2026-12-18T16:14:00Z",
+          120.2376
+        ],
+        [
+          "2026-12-18T16:15:00Z",
+          119.6907
+        ],
+        [
+          "2026-12-18T16:16:00Z",
+          120.0675
+        ],
+        [
+          "2026-12-18T16:17:00Z",
+          120.5631
+        ],
+        [
+          "2026-12-18T16:18:00Z",
+          119.8045
+        ],
+        [
+          "2026-12-18T16:19:00Z",
+          118.4904
+        ],
+        [
+          "2026-12-18T16:20:00Z",
+          121.1123
+        ],
+        [
+          "2026-12-18T16:21:00Z",
+          120.2313
+        ],
+        [
+          "2026-12-18T16:22:00Z",
+          1421.9359
+        ],
+        [
+          "2026-12-18T16:23:00Z",
+          2667.6437
+        ],
+        [
+          "2026-12-18T16:24:00Z",
+          3974.4866
+        ],
+        [
+          "2026-12-18T16:25:00Z",
+          4061.4071
+        ],
+        [
+          "2026-12-18T16:26:00Z",
+          3988.9399
+        ],
+        [
+          "2026-12-18T16:27:00Z",
+          3951.8026
+        ],
+        [
+          "2026-12-18T16:28:00Z",
+          3989.7897
+        ],
+        [
+          "2026-12-18T16:29:00Z",
+          4030.5072
+        ],
+        [
+          "2026-12-18T16:30:00Z",
+          3942.4602
+        ],
+        [
+          "2026-12-18T16:31:00Z",
+          3947.6114
+        ],
+        [
+          "2026-12-18T16:32:00Z",
+          3933.2382
+        ],
+        [
+          "2026-12-18T16:33:00Z",
+          3991.7344
+        ],
+        [
+          "2026-12-18T16:34:00Z",
+          4079.548
+        ],
+        [
+          "2026-12-18T16:35:00Z",
+          4023.0251
+        ],
+        [
+          "2026-12-18T16:36:00Z",
+          4008.2095
+        ],
+        [
+          "2026-12-18T16:37:00Z",
+          3969.8936
+        ],
+        [
+          "2026-12-18T16:38:00Z",
+          4038.0212
+        ],
+        [
+          "2026-12-18T16:39:00Z",
+          4025.1867
+        ],
+        [
+          "2026-12-18T16:40:00Z",
+          4013.6292
+        ],
+        [
+          "2026-12-18T16:41:00Z",
+          3949.0676
+        ],
+        [
+          "2026-12-18T16:42:00Z",
+          3967.285
+        ],
+        [
+          "2026-12-18T16:43:00Z",
+          4045.5902
+        ],
+        [
+          "2026-12-18T16:44:00Z",
+          4033.7183
+        ],
+        [
+          "2026-12-18T16:45:00Z",
+          4051.819
+        ],
+        [
+          "2026-12-18T16:46:00Z",
+          4024.8963
+        ],
+        [
+          "2026-12-18T16:47:00Z",
+          4027.7937
+        ],
+        [
+          "2026-12-18T16:48:00Z",
+          4069.887
+        ],
+        [
+          "2026-12-18T16:49:00Z",
+          3943.8456
+        ],
+        [
+          "2026-12-18T16:50:00Z",
+          3980.9147
+        ],
+        [
+          "2026-12-18T16:51:00Z",
+          4057.2807
+        ],
+        [
+          "2026-12-18T16:52:00Z",
+          3953.7456
+        ],
+        [
+          "2026-12-18T16:53:00Z",
+          3921.5478
+        ],
+        [
+          "2026-12-18T16:54:00Z",
+          3988.3423
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "The CDN provider serving static assets had degraded performance at its Frankfurt and Amsterdam edge locations starting ~16:15 UTC (confirmed on the provider's status page). EU users experienced slow or failed asset loads - error rate up to ~35%, p95 latency ~4s - so pages rendered broken for them. The origin asset servers and all API endpoints were healthy; the problem was confined to the CDN edge in EU. Recovery came when the provider shifted EU traffic to alternate POPs.",
+    "evidence_path": [
+      "rum-monitor: asset load failures rise to ~35% specifically in EU regions while other regions stay normal",
+      "CDN provider status reports degraded performance at FRA and AMS edge locations since 16:15 UTC",
+      "asset_p95_latency in EU climbs from ~120ms to ~4s",
+      "origin asset serving and API endpoints are confirmed healthy - the failure is CDN-edge only and EU only",
+      "recovery after the provider shifts EU traffic to alternate POPs"
+    ],
+    "fix": "Escalate to the CDN provider (their fix). Configure multi-CDN failover for static assets so a single provider's regional POP failure can be routed around, and keep an origin-direct fallback for critical assets.",
+    "should_escalate": false
+  }
+}

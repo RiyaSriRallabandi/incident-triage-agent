@@ -1,0 +1,972 @@
+{
+  "id": "scn_017",
+  "category": "resource_exhaustion",
+  "difficulty": "medium",
+  "title": "Debug logging left enabled fills the log disk and breaks request handling",
+  "source_url": "https://sre.google/sre-book/effective-troubleshooting/",
+  "source_note": "Failure pattern (a temporary diagnostic setting - here verbose logging - left enabled after an earlier investigation, filling a disk until the service cannot write) is a common operational class in the Google SRE Book's troubleshooting chapter. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~14:03 UTC api-server is throwing 5xx on a growing share of requests. It looks host-specific - some hosts are fine. No deploys. There was a troubleshooting session on this service about an hour ago.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-11-24T13:00:00Z",
+      "service": "api-server",
+      "level": "INFO",
+      "msg": "log level set to DEBUG on host pool (troubleshooting session)"
+    },
+    {
+      "ts": "2026-11-24T13:02:24.362273Z",
+      "service": "api-server",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 142ms"
+    },
+    {
+      "ts": "2026-11-24T13:04:20.550577Z",
+      "service": "object-cache",
+      "level": "INFO",
+      "msg": "SET key=session:852 ttl=3600"
+    },
+    {
+      "ts": "2026-11-24T13:06:03.470766Z",
+      "service": "batch-worker",
+      "level": "INFO",
+      "msg": "job webhook.deliver completed in 109ms"
+    },
+    {
+      "ts": "2026-11-24T13:06:25.408498Z",
+      "service": "api-server",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 85ms"
+    },
+    {
+      "ts": "2026-11-24T13:06:38.961583Z",
+      "service": "api-server",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-11-24T13:07:12.122637Z",
+      "service": "api-server",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 71ms"
+    },
+    {
+      "ts": "2026-11-24T13:09:29.258500Z",
+      "service": "edge-gateway",
+      "level": "INFO",
+      "msg": "upstream api-server 200 220ms"
+    },
+    {
+      "ts": "2026-11-24T13:12:31.298583Z",
+      "service": "edge-gateway",
+      "level": "WARN",
+      "msg": "upstream api-server slow 29ms"
+    },
+    {
+      "ts": "2026-11-24T13:24:28.812859Z",
+      "service": "object-cache",
+      "level": "INFO",
+      "msg": "SET key=session:192 ttl=3600"
+    },
+    {
+      "ts": "2026-11-24T13:24:40.217019Z",
+      "service": "object-cache",
+      "level": "WARN",
+      "msg": "GET key=user:175 miss"
+    },
+    {
+      "ts": "2026-11-24T13:27:25.191222Z",
+      "service": "api-server",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=181"
+    },
+    {
+      "ts": "2026-11-24T13:31:06.858696Z",
+      "service": "batch-worker",
+      "level": "WARN",
+      "msg": "job invoice.render retried attempt=1"
+    },
+    {
+      "ts": "2026-11-24T13:32:00.500771Z",
+      "service": "edge-gateway",
+      "level": "INFO",
+      "msg": "route matched /cart -> api-server"
+    },
+    {
+      "ts": "2026-11-24T13:36:16.381248Z",
+      "service": "api-server",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-11-24T13:39:33.230138Z",
+      "service": "batch-worker",
+      "level": "INFO",
+      "msg": "queue depth=329"
+    },
+    {
+      "ts": "2026-11-24T13:42:25.108675Z",
+      "service": "api-server",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 215ms"
+    },
+    {
+      "ts": "2026-11-24T13:46:18.877554Z",
+      "service": "api-server",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 124ms"
+    },
+    {
+      "ts": "2026-11-24T13:46:32.561886Z",
+      "service": "edge-gateway",
+      "level": "INFO",
+      "msg": "route matched /products -> api-server"
+    },
+    {
+      "ts": "2026-11-24T13:47:30.207287Z",
+      "service": "object-cache",
+      "level": "INFO",
+      "msg": "SET key=session:263 ttl=3600"
+    },
+    {
+      "ts": "2026-11-24T13:58:16.141071Z",
+      "service": "edge-gateway",
+      "level": "INFO",
+      "msg": "route matched /checkout -> api-server"
+    },
+    {
+      "ts": "2026-11-24T13:58:54.418286Z",
+      "service": "batch-worker",
+      "level": "INFO",
+      "msg": "queue depth=60"
+    },
+    {
+      "ts": "2026-11-24T14:00:00Z",
+      "service": "api-server",
+      "level": "WARN",
+      "msg": "disk usage on /var/log at 92%"
+    },
+    {
+      "ts": "2026-11-24T14:03:00Z",
+      "service": "api-server",
+      "level": "ERROR",
+      "msg": "disk full: cannot write request log; /var/log at 100%"
+    },
+    {
+      "ts": "2026-11-24T14:05:00Z",
+      "service": "api-server",
+      "level": "ERROR",
+      "msg": "request handling failing: cannot create temp file (No space left on device)"
+    },
+    {
+      "ts": "2026-11-24T14:05:04.733592Z",
+      "service": "batch-worker",
+      "level": "INFO",
+      "msg": "queue depth=53"
+    },
+    {
+      "ts": "2026-11-24T14:07:00Z",
+      "service": "api-server",
+      "level": "WARN",
+      "msg": "5xx rate 22%; errors correlate with hosts at 100% disk"
+    },
+    {
+      "ts": "2026-11-24T14:08:27.853372Z",
+      "service": "object-cache",
+      "level": "WARN",
+      "msg": "GET key=user:864 miss"
+    },
+    {
+      "ts": "2026-11-24T14:10:09.745372Z",
+      "service": "batch-worker",
+      "level": "INFO",
+      "msg": "processed batch size=399"
+    },
+    {
+      "ts": "2026-11-24T14:12:36.157629Z",
+      "service": "edge-gateway",
+      "level": "INFO",
+      "msg": "route matched /api/v1/users/me -> api-server"
+    },
+    {
+      "ts": "2026-11-24T14:17:13.286620Z",
+      "service": "batch-worker",
+      "level": "INFO",
+      "msg": "job report.build completed in 10ms"
+    },
+    {
+      "ts": "2026-11-24T14:19:01.481772Z",
+      "service": "edge-gateway",
+      "level": "INFO",
+      "msg": "upstream api-server 200 87ms"
+    },
+    {
+      "ts": "2026-11-24T14:20:00Z",
+      "service": "api-server",
+      "level": "INFO",
+      "msg": "log level reverted to INFO; old debug logs rotated; disk at 61%"
+    },
+    {
+      "ts": "2026-11-24T14:28:39.686454Z",
+      "service": "edge-gateway",
+      "level": "WARN",
+      "msg": "upstream api-server slow 38ms"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "disk_used_pct",
+      "unit": "percent",
+      "service": "api-server",
+      "points": [
+        [
+          "2026-11-24T13:00:00Z",
+          54.1359
+        ],
+        [
+          "2026-11-24T13:01:00Z",
+          53.9293
+        ],
+        [
+          "2026-11-24T13:02:00Z",
+          55.3025
+        ],
+        [
+          "2026-11-24T13:03:00Z",
+          54.6174
+        ],
+        [
+          "2026-11-24T13:04:00Z",
+          54.331
+        ],
+        [
+          "2026-11-24T13:05:00Z",
+          54.2388
+        ],
+        [
+          "2026-11-24T13:06:00Z",
+          54.927
+        ],
+        [
+          "2026-11-24T13:07:00Z",
+          54.9678
+        ],
+        [
+          "2026-11-24T13:08:00Z",
+          55.2739
+        ],
+        [
+          "2026-11-24T13:09:00Z",
+          55.3909
+        ],
+        [
+          "2026-11-24T13:10:00Z",
+          54.3122
+        ],
+        [
+          "2026-11-24T13:11:00Z",
+          55.1429
+        ],
+        [
+          "2026-11-24T13:12:00Z",
+          54.9633
+        ],
+        [
+          "2026-11-24T13:13:00Z",
+          54.9089
+        ],
+        [
+          "2026-11-24T13:14:00Z",
+          54.3345
+        ],
+        [
+          "2026-11-24T13:15:00Z",
+          54.3964
+        ],
+        [
+          "2026-11-24T13:16:00Z",
+          54.1209
+        ],
+        [
+          "2026-11-24T13:17:00Z",
+          55.045
+        ],
+        [
+          "2026-11-24T13:18:00Z",
+          54.9363
+        ],
+        [
+          "2026-11-24T13:19:00Z",
+          54.9286
+        ],
+        [
+          "2026-11-24T13:20:00Z",
+          54.4677
+        ],
+        [
+          "2026-11-24T13:21:00Z",
+          55.1055
+        ],
+        [
+          "2026-11-24T13:22:00Z",
+          54.1476
+        ],
+        [
+          "2026-11-24T13:23:00Z",
+          54.3783
+        ],
+        [
+          "2026-11-24T13:24:00Z",
+          54.7052
+        ],
+        [
+          "2026-11-24T13:25:00Z",
+          55.3909
+        ],
+        [
+          "2026-11-24T13:26:00Z",
+          54.1379
+        ],
+        [
+          "2026-11-24T13:27:00Z",
+          55.8207
+        ],
+        [
+          "2026-11-24T13:28:00Z",
+          55.6331
+        ],
+        [
+          "2026-11-24T13:29:00Z",
+          54.4507
+        ],
+        [
+          "2026-11-24T13:30:00Z",
+          54.7352
+        ],
+        [
+          "2026-11-24T13:31:00Z",
+          54.2296
+        ],
+        [
+          "2026-11-24T13:32:00Z",
+          54.6642
+        ],
+        [
+          "2026-11-24T13:33:00Z",
+          55.5791
+        ],
+        [
+          "2026-11-24T13:34:00Z",
+          55.1199
+        ],
+        [
+          "2026-11-24T13:35:00Z",
+          55.1571
+        ],
+        [
+          "2026-11-24T13:36:00Z",
+          55.4821
+        ],
+        [
+          "2026-11-24T13:37:00Z",
+          54.9859
+        ],
+        [
+          "2026-11-24T13:38:00Z",
+          54.4617
+        ],
+        [
+          "2026-11-24T13:39:00Z",
+          55.0384
+        ],
+        [
+          "2026-11-24T13:40:00Z",
+          55.7239
+        ],
+        [
+          "2026-11-24T13:41:00Z",
+          55.5627
+        ],
+        [
+          "2026-11-24T13:42:00Z",
+          56.0196
+        ],
+        [
+          "2026-11-24T13:43:00Z",
+          55.9085
+        ],
+        [
+          "2026-11-24T13:44:00Z",
+          54.9006
+        ],
+        [
+          "2026-11-24T13:45:00Z",
+          55.0599
+        ],
+        [
+          "2026-11-24T13:46:00Z",
+          55.4589
+        ],
+        [
+          "2026-11-24T13:47:00Z",
+          55.5545
+        ],
+        [
+          "2026-11-24T13:48:00Z",
+          55.3303
+        ],
+        [
+          "2026-11-24T13:49:00Z",
+          55.0022
+        ],
+        [
+          "2026-11-24T13:50:00Z",
+          55.2993
+        ],
+        [
+          "2026-11-24T13:51:00Z",
+          55.0574
+        ],
+        [
+          "2026-11-24T13:52:00Z",
+          54.8449
+        ],
+        [
+          "2026-11-24T13:53:00Z",
+          55.1803
+        ],
+        [
+          "2026-11-24T13:54:00Z",
+          56.0494
+        ],
+        [
+          "2026-11-24T13:55:00Z",
+          54.2003
+        ],
+        [
+          "2026-11-24T13:56:00Z",
+          54.9165
+        ],
+        [
+          "2026-11-24T13:57:00Z",
+          54.7963
+        ],
+        [
+          "2026-11-24T13:58:00Z",
+          55.6305
+        ],
+        [
+          "2026-11-24T13:59:00Z",
+          54.5995
+        ],
+        [
+          "2026-11-24T14:00:00Z",
+          54.154
+        ],
+        [
+          "2026-11-24T14:01:00Z",
+          67.0084
+        ],
+        [
+          "2026-11-24T14:02:00Z",
+          78.0578
+        ],
+        [
+          "2026-11-24T14:03:00Z",
+          87.0691
+        ],
+        [
+          "2026-11-24T14:04:00Z",
+          100.4696
+        ],
+        [
+          "2026-11-24T14:05:00Z",
+          99.0739
+        ],
+        [
+          "2026-11-24T14:06:00Z",
+          98.1376
+        ],
+        [
+          "2026-11-24T14:07:00Z",
+          98.2551
+        ],
+        [
+          "2026-11-24T14:08:00Z",
+          99.8249
+        ],
+        [
+          "2026-11-24T14:09:00Z",
+          101.8217
+        ],
+        [
+          "2026-11-24T14:10:00Z",
+          100.0837
+        ],
+        [
+          "2026-11-24T14:11:00Z",
+          100.0207
+        ],
+        [
+          "2026-11-24T14:12:00Z",
+          101.408
+        ],
+        [
+          "2026-11-24T14:13:00Z",
+          101.5092
+        ],
+        [
+          "2026-11-24T14:14:00Z",
+          98.6135
+        ],
+        [
+          "2026-11-24T14:15:00Z",
+          100.159
+        ],
+        [
+          "2026-11-24T14:16:00Z",
+          99.5416
+        ],
+        [
+          "2026-11-24T14:17:00Z",
+          101.4529
+        ],
+        [
+          "2026-11-24T14:18:00Z",
+          100.6731
+        ],
+        [
+          "2026-11-24T14:19:00Z",
+          100.3388
+        ],
+        [
+          "2026-11-24T14:20:00Z",
+          99.0758
+        ],
+        [
+          "2026-11-24T14:21:00Z",
+          101.5132
+        ],
+        [
+          "2026-11-24T14:22:00Z",
+          101.7479
+        ],
+        [
+          "2026-11-24T14:23:00Z",
+          100.3511
+        ],
+        [
+          "2026-11-24T14:24:00Z",
+          101.2627
+        ],
+        [
+          "2026-11-24T14:25:00Z",
+          99.8061
+        ],
+        [
+          "2026-11-24T14:26:00Z",
+          98.6591
+        ],
+        [
+          "2026-11-24T14:27:00Z",
+          101.1967
+        ],
+        [
+          "2026-11-24T14:28:00Z",
+          101.1343
+        ],
+        [
+          "2026-11-24T14:29:00Z",
+          98.0681
+        ],
+        [
+          "2026-11-24T14:30:00Z",
+          98.1916
+        ]
+      ]
+    },
+    {
+      "name": "error_rate",
+      "unit": "ratio",
+      "service": "api-server",
+      "points": [
+        [
+          "2026-11-24T13:00:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:01:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:02:00Z",
+          0.0029
+        ],
+        [
+          "2026-11-24T13:03:00Z",
+          0.0029
+        ],
+        [
+          "2026-11-24T13:04:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:05:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:06:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:07:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:08:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:09:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:10:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:11:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:12:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:13:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:14:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:15:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:16:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:17:00Z",
+          0.0031
+        ],
+        [
+          "2026-11-24T13:18:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:19:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:20:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:21:00Z",
+          0.0029
+        ],
+        [
+          "2026-11-24T13:22:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:23:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:24:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:25:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:26:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:27:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:28:00Z",
+          0.0031
+        ],
+        [
+          "2026-11-24T13:29:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:30:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:31:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:32:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:33:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:34:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:35:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:36:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:37:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:38:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:39:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:40:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:41:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:42:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:43:00Z",
+          0.0029
+        ],
+        [
+          "2026-11-24T13:44:00Z",
+          0.0029
+        ],
+        [
+          "2026-11-24T13:45:00Z",
+          0.0031
+        ],
+        [
+          "2026-11-24T13:46:00Z",
+          0.0029
+        ],
+        [
+          "2026-11-24T13:47:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:48:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:49:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:50:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:51:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:52:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:53:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:54:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:55:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:56:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:57:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:58:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T13:59:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T14:00:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T14:01:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T14:02:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T14:03:00Z",
+          0.003
+        ],
+        [
+          "2026-11-24T14:04:00Z",
+          0.112
+        ],
+        [
+          "2026-11-24T14:05:00Z",
+          0.2216
+        ],
+        [
+          "2026-11-24T14:06:00Z",
+          0.2221
+        ],
+        [
+          "2026-11-24T14:07:00Z",
+          0.2207
+        ],
+        [
+          "2026-11-24T14:08:00Z",
+          0.2222
+        ],
+        [
+          "2026-11-24T14:09:00Z",
+          0.2227
+        ],
+        [
+          "2026-11-24T14:10:00Z",
+          0.222
+        ],
+        [
+          "2026-11-24T14:11:00Z",
+          0.2235
+        ],
+        [
+          "2026-11-24T14:12:00Z",
+          0.2157
+        ],
+        [
+          "2026-11-24T14:13:00Z",
+          0.2213
+        ],
+        [
+          "2026-11-24T14:14:00Z",
+          0.2228
+        ],
+        [
+          "2026-11-24T14:15:00Z",
+          0.2188
+        ],
+        [
+          "2026-11-24T14:16:00Z",
+          0.2244
+        ],
+        [
+          "2026-11-24T14:17:00Z",
+          0.217
+        ],
+        [
+          "2026-11-24T14:18:00Z",
+          0.2211
+        ],
+        [
+          "2026-11-24T14:19:00Z",
+          0.2197
+        ],
+        [
+          "2026-11-24T14:20:00Z",
+          0.2211
+        ],
+        [
+          "2026-11-24T14:21:00Z",
+          0.2201
+        ],
+        [
+          "2026-11-24T14:22:00Z",
+          0.2238
+        ],
+        [
+          "2026-11-24T14:23:00Z",
+          0.2178
+        ],
+        [
+          "2026-11-24T14:24:00Z",
+          0.222
+        ],
+        [
+          "2026-11-24T14:25:00Z",
+          0.2215
+        ],
+        [
+          "2026-11-24T14:26:00Z",
+          0.2223
+        ],
+        [
+          "2026-11-24T14:27:00Z",
+          0.2171
+        ],
+        [
+          "2026-11-24T14:28:00Z",
+          0.2164
+        ],
+        [
+          "2026-11-24T14:29:00Z",
+          0.2239
+        ],
+        [
+          "2026-11-24T14:30:00Z",
+          0.2228
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "DEBUG-level logging was enabled on the api-server host pool during an earlier troubleshooting session (~1 hour before) and never reverted. The elevated log volume filled the /var/log disk to 100%. With the disk full, api-server could not write its request log or create temp files ('No space left on device'), so a growing fraction of requests failed - tracking exactly the hosts that hit 100% disk. Recovery required reverting the log level and rotating the accumulated debug logs.",
+    "evidence_path": [
+      "api-server INFO ~1h before: log level set to DEBUG on the host pool for a troubleshooting session",
+      "disk_used_pct on /var/log climbs from ~55% to 100%",
+      "api-server ERROR: disk full, cannot write request log / create temp files (No space left on device)",
+      "error_rate rises to ~22%, correlated with the hosts at 100% disk",
+      "recovery after the log level is reverted to INFO and old debug logs are rotated"
+    ],
+    "fix": "Revert the log level and rotate the debug logs (done). Make elevated log levels time-boxed with automatic revert, alert on disk usage well before 100%, and keep application temp files off the log volume.",
+    "should_escalate": false
+  }
+}

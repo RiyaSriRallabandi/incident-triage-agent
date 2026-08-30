@@ -42,22 +42,42 @@ support, fix, escalation flag) using the Groq judge model. It flags; a human
 confirms. The same rubric seeds the Task 8 LLM-judge.
 
 
-## Current set (12 scenarios)
+## Current set (30 scenarios)
 
-| id | category | difficulty | escalate? | modeled on |
-|----|----------|-----------|-----------|------------|
-| scn_001 | bad_deploy | medium | no | Cloudflare 2019-07-02 (WAF regex → CPU exhaustion) |
-| scn_002 | resource_exhaustion | hard | no | AWS Builders' Library retry-storm pattern |
-| scn_003 | dependency_failure | medium | no | AWS S3 2017-02-28 (operator command removed too much capacity) |
-| scn_004 | ambiguous | hard | **yes** | "Gray Failure" (Microsoft Research) — under-determined |
-| scn_005 | network_dns | medium | no | Facebook 2021-10-04 (backbone push withdraws DNS routes) |
-| scn_006 | network_dns | medium | no | security-group change removes egress to a dependency |
-| scn_007 | cert_config_expiry | easy | no | Microsoft Teams 2020-02-03 (expired TLS cert) |
-| scn_008 | cert_config_expiry | hard | no | internal mTLS CA rotation with trust-bundle skew |
-| scn_009 | database_issue | medium | no | GitLab 2017 (blocking index migration locks a hot table) |
-| scn_010 | database_issue | hard | no | Stripe 2019 (backfill → replica lag → fail-safe → primary overload) |
-| scn_011 | bad_deploy | hard | no | Knight Capital 2012 (repurposed flag + partial rollout) |
-| scn_012 | ambiguous | hard | **yes** | two candidate causes, neither confirmable |
+7 failure categories · 4 easy / 13 medium / 13 hard · 3 escalate-by-design.
 
-`scn_004` and `scn_012` have no single correct root cause by design: they test
-whether the agent escalates rather than fabricating one.
+| id | category | diff | esc? | modeled on |
+|----|----------|------|------|------------|
+| scn_001 | bad_deploy | med | no | Cloudflare 2019-07-02 (WAF regex → CPU) |
+| scn_002 | resource_exhaustion | hard | no | AWS Builders' Library retry-storm |
+| scn_003 | dependency_failure | med | no | AWS S3 2017-02-28 (over-removed capacity) |
+| scn_004 | ambiguous | hard | **yes** | "Gray Failure" (MS Research) |
+| scn_005 | network_dns | med | no | Facebook 2021-10-04 (DNS routes withdrawn) |
+| scn_006 | network_dns | med | no | security-group change removes egress |
+| scn_007 | cert_config_expiry | easy | no | MS Teams 2020-02-03 (expired TLS cert) |
+| scn_008 | cert_config_expiry | hard | no | mTLS CA rotation, trust-bundle skew |
+| scn_009 | database_issue | med | no | GitLab 2017 (blocking index migration) |
+| scn_010 | database_issue | hard | no | Stripe 2019 (backfill → replica lag) |
+| scn_011 | bad_deploy | hard | no | Knight Capital 2012 (repurposed flag) |
+| scn_012 | ambiguous | hard | **yes** | two unconfirmable candidate causes |
+| scn_013 | bad_deploy | med | no | Reddit 2023 Pi-Day (ingress upgrade) |
+| scn_014 | bad_deploy | easy | no | refactor drops a cache → DB load 12x |
+| scn_015 | bad_deploy | med | no | non-backwards-compatible column rename |
+| scn_016 | resource_exhaustion | hard | no | unbounded dedup set → OOM loop |
+| scn_017 | resource_exhaustion | med | no | debug logging left on → disk full |
+| scn_018 | resource_exhaustion | hard | no | fd leak on an error path → EMFILE |
+| scn_019 | resource_exhaustion | med | no | decompression-bomb image pins CPU |
+| scn_020 | dependency_failure | easy | no | third-party tax API outage |
+| scn_021 | dependency_failure | hard | no | Roblox 2021-style cache-cluster failure |
+| scn_022 | dependency_failure | med | no | Dyn 2016 (managed DNS provider DDoS) |
+| scn_023 | dependency_failure | med | no | service-discovery returns empty catalog |
+| scn_024 | dependency_failure | easy | no | CDN regional POP degradation (EU) |
+| scn_025 | network_dns | hard | no | LB health check on a warming readiness path |
+| scn_026 | network_dns | hard | no | firewall failover → asymmetric routing |
+| scn_027 | ambiguous | hard | **yes** | periodic error spikes, no correlating signal |
+| scn_028 | cert_config_expiry | hard | no | OAuth secret rotation, stale pods |
+| scn_029 | database_issue | med | no | fleet growth → DB max_connections |
+| scn_030 | database_issue | med | no | plan regression after ANALYZE → seq scan |
+
+`scn_004`, `scn_012`, and `scn_027` have no single correct root cause by design:
+they test whether the agent escalates rather than fabricating one.

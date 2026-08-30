@@ -1,0 +1,38 @@
+{
+  "id": "scn_027",
+  "category": "ambiguous",
+  "difficulty": "hard",
+  "title": "orders-api error rate spikes periodically with no correlating signal",
+  "source_url": "https://www.microsoft.com/en-us/research/publication/gray-failure-the-achilles-heel-of-cloud-scale-systems/",
+  "source_note": "Constructed as a deliberately under-determined case: a periodic error spike with a suggestive cadence but no identifiable trigger in the evidence available to the responder. In the spirit of the Microsoft Research 'Gray Failure' paper. All services, log lines, metrics, and timestamps are fabricated for evaluation; this scenario should be escalated.",
+  "incident_report": "orders-api error rate has been spiking to about 6% for roughly 8 minutes at a time, about every 90-120 minutes, since ~02:00 UTC. It recovers on its own each time. No deploys. On-call wants to know what is causing it.",
+  "incident_start": "2027-01-05T02:00:00Z",
+  "detected_offset_s": 5400,
+  "window_before_s": 3600,
+  "window_after_s": 3600,
+  "primary_service": "orders-api",
+  "distractor_services": [
+    { "name": "payments-api", "role": "api" },
+    { "name": "inventory-api", "role": "api" },
+    { "name": "shared-node-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "orders-api", "level": "WARN", "msg": "error rate 6.1% for ~8 minutes then back to baseline (~0.5%)" },
+    { "offset_s": 1800, "service": "orders-api", "level": "INFO", "msg": "second spike, similar shape, ~100 min after the first; no deploy, config, or traffic change" },
+    { "offset_s": 3600, "service": "orders-api", "level": "INFO", "msg": "during spikes: downstream payments and inventory nominal; CPU, memory, and GC flat; errors spread across all hosts" },
+    { "offset_s": 4800, "service": "orders-api", "level": "WARN", "msg": "third spike; still no correlating signal in deploys, the visible cron catalog, or platform events" },
+    { "offset_s": 5400, "service": "orders-api", "level": "INFO", "msg": "no operator action taken; spikes continue on a rough 90-120 minute cadence" }
+  ],
+  "metrics": [
+    { "name": "error_rate", "unit": "ratio", "service": "orders-api", "baseline": 0.005, "spike": 0.061, "spike_at_offset_s": 0, "ramp_s": 60 },
+    { "name": "p95_latency_ms", "unit": "milliseconds", "service": "orders-api", "baseline": 160.0, "spike": 175.0, "spike_at_offset_s": 0, "ramp_s": 300 },
+    { "name": "cpu_utilization_pct", "unit": "percent", "service": "orders-api", "baseline": 50.0, "spike": 52.0, "spike_at_offset_s": 0, "ramp_s": 300 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "Undetermined. orders-api error rate spikes to ~6% for ~8 minutes on a rough 90-120 minute cadence starting ~02:00, while latency and resource use stay essentially flat and downstream dependencies are healthy during the spikes. No deploy, config change, traffic change, or visible scheduled job correlates with the cadence, and the errors are spread across all hosts. The periodic shape suggests something scheduled - a batch job on shared infrastructure, a noisy neighbour, or a client - but the available evidence does not identify it.",
+    "evidence_path": [],
+    "fix": "Escalate to the orders-api team and the platform team. Next steps beyond the current evidence: capture full error samples and stack traces during the next spike, check the platform team's scheduled-job and host-migration logs for a matching cadence, check for noisy-neighbour CPU steal on the underlying hosts, and correlate spike timing with large-caller batch schedules.",
+    "should_escalate": true
+  }
+}

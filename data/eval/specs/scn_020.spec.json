@@ -1,0 +1,43 @@
+{
+  "id": "scn_020",
+  "category": "dependency_failure",
+  "difficulty": "easy",
+  "title": "External tax-calculation provider outage fails checkouts at the tax step",
+  "source_url": "https://aws.amazon.com/message/41926/",
+  "source_note": "Failure pattern (a critical third-party API becomes unavailable and every request that depends on it fails, while everything else stays healthy) is a generic downstream-dependency class; the AWS S3 2017 postmortem is a canonical example of a dependency outage's blast radius. All services, provider names, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~13:15 UTC a large share of checkouts are failing. Payments and inventory look fine. The error seems to be at the tax calculation step. No deploys today.",
+  "incident_start": "2026-12-04T13:15:00Z",
+  "detected_offset_s": 300,
+  "window_before_s": 1800,
+  "window_after_s": 1500,
+  "primary_service": "checkout-api",
+  "distractor_services": [
+    { "name": "payments-gateway", "role": "gateway" },
+    { "name": "inventory-api", "role": "api" },
+    { "name": "cart-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "checkout-api", "level": "WARN", "msg": "tax-calc provider api.taxly.io returning 503; ~12% of checkouts affected" },
+    { "offset_s": 180, "service": "checkout-api", "level": "ERROR", "msg": "tax-calc calls timing out; ~60% of checkout attempts failing at the tax step" },
+    { "offset_s": 300, "service": "checkout-api", "level": "INFO", "msg": "taxly.io status page reports a major outage since 13:12 UTC; ETA unknown" },
+    { "offset_s": 420, "service": "checkout-api", "level": "INFO", "msg": "no deploys today; payments and inventory calls healthy; failure isolated to the tax-calc integration" },
+    { "offset_s": 1200, "service": "checkout-api", "level": "INFO", "msg": "enabled cached-rate fallback for tax; checkout success recovering to ~95%" }
+  ],
+  "metrics": [
+    { "name": "tax_calc_success_rate", "unit": "ratio", "service": "checkout-api", "baseline": 0.995, "spike": 0.1, "spike_at_offset_s": 0, "ramp_s": 180 },
+    { "name": "checkout_success_rate", "unit": "ratio", "service": "checkout-api", "baseline": 0.97, "spike": 0.38, "spike_at_offset_s": 120, "ramp_s": 180 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "The external tax-calculation provider (api.taxly.io) had a major outage starting ~13:12 UTC, confirmed on its status page. checkout-api calls the provider for a tax quote on every checkout; those calls returned 503 and then timed out, so up to ~60% of checkout attempts failed at the tax step. The failure is isolated to the tax-calc integration - payments and inventory calls stayed healthy - and there were no deploys. The fix belongs to the provider; the mitigation was to fall back to cached tax rates.",
+    "evidence_path": [
+      "checkout-api WARN: tax-calc provider api.taxly.io returning 503, then timing out",
+      "taxly.io status page confirms a major outage since 13:12 UTC",
+      "tax_calc_success_rate collapses to ~10% and checkout_success_rate drops to ~38% at the tax step",
+      "no deploys today; payments and inventory calls remain healthy - the failure is isolated to one dependency",
+      "checkout recovers to ~95% once a cached-rate fallback is enabled"
+    ],
+    "fix": "Enable the cached-rate fallback for tax quotes (done). Add a circuit breaker around the tax-calc client, cache recent rates for graceful degradation, monitor the provider's status feed, and escalate to the provider for a timeline.",
+    "should_escalate": false
+  }
+}

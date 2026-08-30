@@ -1,0 +1,1018 @@
+{
+  "id": "scn_026",
+  "category": "network_dns",
+  "difficulty": "hard",
+  "title": "Firewall failover leaves routing asymmetric; long-lived flows get reset",
+  "source_url": "https://sre.google/sre-book/managing-incidents/",
+  "source_note": "Failure pattern (a network appliance failover that leaves outbound and return traffic on different paths, so stateful firewalls drop the 'unseen-direction' packets and connections needing many round-trips fail while short ones succeed) is a classic asymmetric-routing incident. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~09:19 UTC large file uploads and streaming responses are failing about 40% of the time with connection resets. Small quick requests mostly work. No deploys. Network team did a planned firewall failover this morning.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-12-27T08:45:38.379912Z",
+      "service": "edge-cache",
+      "level": "INFO",
+      "msg": "SET key=session:289 ttl=3600"
+    },
+    {
+      "ts": "2026-12-27T08:45:52.117185Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2026-12-27T08:47:48.842921Z",
+      "service": "upload-api",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=214"
+    },
+    {
+      "ts": "2026-12-27T08:49:42.457850Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-27T08:51:07.541280Z",
+      "service": "region-gateway",
+      "level": "INFO",
+      "msg": "POST /search 201 in 203ms"
+    },
+    {
+      "ts": "2026-12-27T08:51:46.199708Z",
+      "service": "edge-cache",
+      "level": "WARN",
+      "msg": "GET key=user:388 miss"
+    },
+    {
+      "ts": "2026-12-27T08:51:48.576426Z",
+      "service": "edge-cache",
+      "level": "INFO",
+      "msg": "evicted 671 keys (lru)"
+    },
+    {
+      "ts": "2026-12-27T08:54:14.418430Z",
+      "service": "stream-service",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=50"
+    },
+    {
+      "ts": "2026-12-27T08:57:14.586608Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 163ms"
+    },
+    {
+      "ts": "2026-12-27T08:57:28.379621Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 190ms"
+    },
+    {
+      "ts": "2026-12-27T09:01:20.167475Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-27T09:01:45.415227Z",
+      "service": "region-gateway",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=150"
+    },
+    {
+      "ts": "2026-12-27T09:03:08.823107Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-27T09:03:27.867018Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-27T09:04:43.180397Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-12-27T09:05:52.066103Z",
+      "service": "region-gateway",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=26"
+    },
+    {
+      "ts": "2026-12-27T09:06:03.929056Z",
+      "service": "region-gateway",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 199ms"
+    },
+    {
+      "ts": "2026-12-27T09:06:36.821411Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "GET /search 200 in 58ms"
+    },
+    {
+      "ts": "2026-12-27T09:08:35.121510Z",
+      "service": "edge-cache",
+      "level": "INFO",
+      "msg": "SET key=session:553 ttl=3600"
+    },
+    {
+      "ts": "2026-12-27T09:09:49.746011Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 11ms"
+    },
+    {
+      "ts": "2026-12-27T09:11:53.055324Z",
+      "service": "stream-service",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=32"
+    },
+    {
+      "ts": "2026-12-27T09:12:21.093894Z",
+      "service": "upload-api",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=220"
+    },
+    {
+      "ts": "2026-12-27T09:15:00Z",
+      "service": "network-ops",
+      "level": "INFO",
+      "msg": "planned failover of the edge firewall pair to the secondary unit completed"
+    },
+    {
+      "ts": "2026-12-27T09:17:41.951849Z",
+      "service": "region-gateway",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=7"
+    },
+    {
+      "ts": "2026-12-27T09:18:49.486377Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2026-12-27T09:19:00Z",
+      "service": "region-gateway",
+      "level": "WARN",
+      "msg": "elevated connection resets on long-lived flows; short requests mostly OK"
+    },
+    {
+      "ts": "2026-12-27T09:22:30.261639Z",
+      "service": "edge-cache",
+      "level": "INFO",
+      "msg": "evicted 445 keys (lru)"
+    },
+    {
+      "ts": "2026-12-27T09:25:00Z",
+      "service": "region-gateway",
+      "level": "ERROR",
+      "msg": "large uploads and streaming responses failing ~40%; TCP resets mid-transfer"
+    },
+    {
+      "ts": "2026-12-27T09:25:46.120898Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 106ms"
+    },
+    {
+      "ts": "2026-12-27T09:27:00Z",
+      "service": "network-ops",
+      "level": "INFO",
+      "msg": "packet capture: return traffic routes via the primary firewall while outbound uses the secondary - asymmetric path; stateful inspection drops return packets"
+    },
+    {
+      "ts": "2026-12-27T09:28:14.079362Z",
+      "service": "edge-cache",
+      "level": "INFO",
+      "msg": "GET key=user:754 hit"
+    },
+    {
+      "ts": "2026-12-27T09:28:48.010087Z",
+      "service": "edge-cache",
+      "level": "WARN",
+      "msg": "GET key=user:133 miss"
+    },
+    {
+      "ts": "2026-12-27T09:36:03.255736Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-27T09:36:55.142583Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-27T09:39:43.681096Z",
+      "service": "region-gateway",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 52ms"
+    },
+    {
+      "ts": "2026-12-27T09:39:56.254103Z",
+      "service": "region-gateway",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2026-12-27T09:42:00.227618Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 218ms"
+    },
+    {
+      "ts": "2026-12-27T09:42:11.747852Z",
+      "service": "region-gateway",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-12-27T09:43:06.494554Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "GET /search 200 in 104ms"
+    },
+    {
+      "ts": "2026-12-27T09:43:46.185670Z",
+      "service": "edge-cache",
+      "level": "INFO",
+      "msg": "SET key=session:462 ttl=3600"
+    },
+    {
+      "ts": "2026-12-27T09:45:00Z",
+      "service": "network-ops",
+      "level": "INFO",
+      "msg": "corrected the return route to match outbound; failing flows recovering"
+    },
+    {
+      "ts": "2026-12-27T09:45:44.101014Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 197ms"
+    },
+    {
+      "ts": "2026-12-27T09:46:26.253935Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-27T09:47:10.680872Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "POST /products 201 in 47ms"
+    },
+    {
+      "ts": "2026-12-27T09:47:43.433636Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-12-27T09:48:33.815112Z",
+      "service": "edge-cache",
+      "level": "INFO",
+      "msg": "evicted 567 keys (lru)"
+    },
+    {
+      "ts": "2026-12-27T09:49:00.298046Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 95ms"
+    },
+    {
+      "ts": "2026-12-27T09:49:42.030614Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-12-27T09:49:48.513548Z",
+      "service": "stream-service",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=95"
+    },
+    {
+      "ts": "2026-12-27T09:52:17.374471Z",
+      "service": "upload-api",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=123"
+    },
+    {
+      "ts": "2026-12-27T09:54:49.906556Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2026-12-27T09:56:31.168530Z",
+      "service": "edge-cache",
+      "level": "WARN",
+      "msg": "GET key=user:441 miss"
+    },
+    {
+      "ts": "2026-12-27T09:57:56.821743Z",
+      "service": "upload-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-27T10:02:19.306692Z",
+      "service": "stream-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-12-27T10:04:38.238066Z",
+      "service": "edge-cache",
+      "level": "WARN",
+      "msg": "GET key=user:503 miss"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "long_flow_error_rate",
+      "unit": "ratio",
+      "service": "region-gateway",
+      "points": [
+        [
+          "2026-12-27T08:45:00Z",
+          0.0098
+        ],
+        [
+          "2026-12-27T08:46:00Z",
+          0.01
+        ],
+        [
+          "2026-12-27T08:47:00Z",
+          0.01
+        ],
+        [
+          "2026-12-27T08:48:00Z",
+          0.0102
+        ],
+        [
+          "2026-12-27T08:49:00Z",
+          0.0102
+        ],
+        [
+          "2026-12-27T08:50:00Z",
+          0.0101
+        ],
+        [
+          "2026-12-27T08:51:00Z",
+          0.01
+        ],
+        [
+          "2026-12-27T08:52:00Z",
+          0.0101
+        ],
+        [
+          "2026-12-27T08:53:00Z",
+          0.01
+        ],
+        [
+          "2026-12-27T08:54:00Z",
+          0.0101
+        ],
+        [
+          "2026-12-27T08:55:00Z",
+          0.0099
+        ],
+        [
+          "2026-12-27T08:56:00Z",
+          0.0099
+        ],
+        [
+          "2026-12-27T08:57:00Z",
+          0.0101
+        ],
+        [
+          "2026-12-27T08:58:00Z",
+          0.0099
+        ],
+        [
+          "2026-12-27T08:59:00Z",
+          0.01
+        ],
+        [
+          "2026-12-27T09:00:00Z",
+          0.0099
+        ],
+        [
+          "2026-12-27T09:01:00Z",
+          0.0102
+        ],
+        [
+          "2026-12-27T09:02:00Z",
+          0.0099
+        ],
+        [
+          "2026-12-27T09:03:00Z",
+          0.0101
+        ],
+        [
+          "2026-12-27T09:04:00Z",
+          0.0099
+        ],
+        [
+          "2026-12-27T09:05:00Z",
+          0.01
+        ],
+        [
+          "2026-12-27T09:06:00Z",
+          0.0099
+        ],
+        [
+          "2026-12-27T09:07:00Z",
+          0.01
+        ],
+        [
+          "2026-12-27T09:08:00Z",
+          0.0102
+        ],
+        [
+          "2026-12-27T09:09:00Z",
+          0.0099
+        ],
+        [
+          "2026-12-27T09:10:00Z",
+          0.01
+        ],
+        [
+          "2026-12-27T09:11:00Z",
+          0.0102
+        ],
+        [
+          "2026-12-27T09:12:00Z",
+          0.0099
+        ],
+        [
+          "2026-12-27T09:13:00Z",
+          0.01
+        ],
+        [
+          "2026-12-27T09:14:00Z",
+          0.0099
+        ],
+        [
+          "2026-12-27T09:15:00Z",
+          0.0101
+        ],
+        [
+          "2026-12-27T09:16:00Z",
+          0.0101
+        ],
+        [
+          "2026-12-27T09:17:00Z",
+          0.01
+        ],
+        [
+          "2026-12-27T09:18:00Z",
+          0.01
+        ],
+        [
+          "2026-12-27T09:19:00Z",
+          0.0098
+        ],
+        [
+          "2026-12-27T09:20:00Z",
+          0.0875
+        ],
+        [
+          "2026-12-27T09:21:00Z",
+          0.1692
+        ],
+        [
+          "2026-12-27T09:22:00Z",
+          0.2466
+        ],
+        [
+          "2026-12-27T09:23:00Z",
+          0.318
+        ],
+        [
+          "2026-12-27T09:24:00Z",
+          0.3986
+        ],
+        [
+          "2026-12-27T09:25:00Z",
+          0.4043
+        ],
+        [
+          "2026-12-27T09:26:00Z",
+          0.3949
+        ],
+        [
+          "2026-12-27T09:27:00Z",
+          0.4048
+        ],
+        [
+          "2026-12-27T09:28:00Z",
+          0.401
+        ],
+        [
+          "2026-12-27T09:29:00Z",
+          0.3954
+        ],
+        [
+          "2026-12-27T09:30:00Z",
+          0.4062
+        ],
+        [
+          "2026-12-27T09:31:00Z",
+          0.3946
+        ],
+        [
+          "2026-12-27T09:32:00Z",
+          0.3969
+        ],
+        [
+          "2026-12-27T09:33:00Z",
+          0.4069
+        ],
+        [
+          "2026-12-27T09:34:00Z",
+          0.4004
+        ],
+        [
+          "2026-12-27T09:35:00Z",
+          0.395
+        ],
+        [
+          "2026-12-27T09:36:00Z",
+          0.3958
+        ],
+        [
+          "2026-12-27T09:37:00Z",
+          0.4004
+        ],
+        [
+          "2026-12-27T09:38:00Z",
+          0.4028
+        ],
+        [
+          "2026-12-27T09:39:00Z",
+          0.4073
+        ],
+        [
+          "2026-12-27T09:40:00Z",
+          0.406
+        ],
+        [
+          "2026-12-27T09:41:00Z",
+          0.3969
+        ],
+        [
+          "2026-12-27T09:42:00Z",
+          0.3953
+        ],
+        [
+          "2026-12-27T09:43:00Z",
+          0.3979
+        ],
+        [
+          "2026-12-27T09:44:00Z",
+          0.4015
+        ],
+        [
+          "2026-12-27T09:45:00Z",
+          0.3929
+        ],
+        [
+          "2026-12-27T09:46:00Z",
+          0.4002
+        ],
+        [
+          "2026-12-27T09:47:00Z",
+          0.3969
+        ],
+        [
+          "2026-12-27T09:48:00Z",
+          0.3981
+        ],
+        [
+          "2026-12-27T09:49:00Z",
+          0.3972
+        ],
+        [
+          "2026-12-27T09:50:00Z",
+          0.4001
+        ],
+        [
+          "2026-12-27T09:51:00Z",
+          0.3975
+        ],
+        [
+          "2026-12-27T09:52:00Z",
+          0.4032
+        ],
+        [
+          "2026-12-27T09:53:00Z",
+          0.4037
+        ],
+        [
+          "2026-12-27T09:54:00Z",
+          0.3927
+        ],
+        [
+          "2026-12-27T09:55:00Z",
+          0.4003
+        ],
+        [
+          "2026-12-27T09:56:00Z",
+          0.4058
+        ],
+        [
+          "2026-12-27T09:57:00Z",
+          0.3929
+        ],
+        [
+          "2026-12-27T09:58:00Z",
+          0.3979
+        ],
+        [
+          "2026-12-27T09:59:00Z",
+          0.3989
+        ],
+        [
+          "2026-12-27T10:00:00Z",
+          0.4064
+        ],
+        [
+          "2026-12-27T10:01:00Z",
+          0.4048
+        ],
+        [
+          "2026-12-27T10:02:00Z",
+          0.3942
+        ],
+        [
+          "2026-12-27T10:03:00Z",
+          0.3954
+        ],
+        [
+          "2026-12-27T10:04:00Z",
+          0.4062
+        ],
+        [
+          "2026-12-27T10:05:00Z",
+          0.3943
+        ]
+      ]
+    },
+    {
+      "name": "tcp_resets_per_s",
+      "unit": "count_per_second",
+      "service": "region-gateway",
+      "points": [
+        [
+          "2026-12-27T08:45:00Z",
+          5.084
+        ],
+        [
+          "2026-12-27T08:46:00Z",
+          4.9219
+        ],
+        [
+          "2026-12-27T08:47:00Z",
+          5.0771
+        ],
+        [
+          "2026-12-27T08:48:00Z",
+          4.9042
+        ],
+        [
+          "2026-12-27T08:49:00Z",
+          5.0908
+        ],
+        [
+          "2026-12-27T08:50:00Z",
+          5.0502
+        ],
+        [
+          "2026-12-27T08:51:00Z",
+          4.9005
+        ],
+        [
+          "2026-12-27T08:52:00Z",
+          5.0262
+        ],
+        [
+          "2026-12-27T08:53:00Z",
+          5.0598
+        ],
+        [
+          "2026-12-27T08:54:00Z",
+          5.0149
+        ],
+        [
+          "2026-12-27T08:55:00Z",
+          4.9093
+        ],
+        [
+          "2026-12-27T08:56:00Z",
+          5.0478
+        ],
+        [
+          "2026-12-27T08:57:00Z",
+          4.9204
+        ],
+        [
+          "2026-12-27T08:58:00Z",
+          5.0838
+        ],
+        [
+          "2026-12-27T08:59:00Z",
+          4.9155
+        ],
+        [
+          "2026-12-27T09:00:00Z",
+          4.9104
+        ],
+        [
+          "2026-12-27T09:01:00Z",
+          5.0237
+        ],
+        [
+          "2026-12-27T09:02:00Z",
+          5.0239
+        ],
+        [
+          "2026-12-27T09:03:00Z",
+          4.9257
+        ],
+        [
+          "2026-12-27T09:04:00Z",
+          5.0187
+        ],
+        [
+          "2026-12-27T09:05:00Z",
+          5.0083
+        ],
+        [
+          "2026-12-27T09:06:00Z",
+          5.0304
+        ],
+        [
+          "2026-12-27T09:07:00Z",
+          4.9437
+        ],
+        [
+          "2026-12-27T09:08:00Z",
+          5.052
+        ],
+        [
+          "2026-12-27T09:09:00Z",
+          5.0189
+        ],
+        [
+          "2026-12-27T09:10:00Z",
+          5.0491
+        ],
+        [
+          "2026-12-27T09:11:00Z",
+          5.0575
+        ],
+        [
+          "2026-12-27T09:12:00Z",
+          4.9222
+        ],
+        [
+          "2026-12-27T09:13:00Z",
+          5.0245
+        ],
+        [
+          "2026-12-27T09:14:00Z",
+          4.9485
+        ],
+        [
+          "2026-12-27T09:15:00Z",
+          5.0186
+        ],
+        [
+          "2026-12-27T09:16:00Z",
+          4.9652
+        ],
+        [
+          "2026-12-27T09:17:00Z",
+          5.0169
+        ],
+        [
+          "2026-12-27T09:18:00Z",
+          4.9616
+        ],
+        [
+          "2026-12-27T09:19:00Z",
+          5.0062
+        ],
+        [
+          "2026-12-27T09:20:00Z",
+          45.9298
+        ],
+        [
+          "2026-12-27T09:21:00Z",
+          85.3012
+        ],
+        [
+          "2026-12-27T09:22:00Z",
+          130.5519
+        ],
+        [
+          "2026-12-27T09:23:00Z",
+          167.6857
+        ],
+        [
+          "2026-12-27T09:24:00Z",
+          208.8136
+        ],
+        [
+          "2026-12-27T09:25:00Z",
+          212.1171
+        ],
+        [
+          "2026-12-27T09:26:00Z",
+          214.095
+        ],
+        [
+          "2026-12-27T09:27:00Z",
+          211.7219
+        ],
+        [
+          "2026-12-27T09:28:00Z",
+          213.4052
+        ],
+        [
+          "2026-12-27T09:29:00Z",
+          210.0148
+        ],
+        [
+          "2026-12-27T09:30:00Z",
+          211.8129
+        ],
+        [
+          "2026-12-27T09:31:00Z",
+          209.3551
+        ],
+        [
+          "2026-12-27T09:32:00Z",
+          211.8063
+        ],
+        [
+          "2026-12-27T09:33:00Z",
+          213.6493
+        ],
+        [
+          "2026-12-27T09:34:00Z",
+          206.1228
+        ],
+        [
+          "2026-12-27T09:35:00Z",
+          205.8311
+        ],
+        [
+          "2026-12-27T09:36:00Z",
+          209.3486
+        ],
+        [
+          "2026-12-27T09:37:00Z",
+          212.4444
+        ],
+        [
+          "2026-12-27T09:38:00Z",
+          207.3238
+        ],
+        [
+          "2026-12-27T09:39:00Z",
+          213.8023
+        ],
+        [
+          "2026-12-27T09:40:00Z",
+          210.8648
+        ],
+        [
+          "2026-12-27T09:41:00Z",
+          207.9684
+        ],
+        [
+          "2026-12-27T09:42:00Z",
+          207.1513
+        ],
+        [
+          "2026-12-27T09:43:00Z",
+          211.2273
+        ],
+        [
+          "2026-12-27T09:44:00Z",
+          211.9317
+        ],
+        [
+          "2026-12-27T09:45:00Z",
+          213.5977
+        ],
+        [
+          "2026-12-27T09:46:00Z",
+          212.7886
+        ],
+        [
+          "2026-12-27T09:47:00Z",
+          208.4758
+        ],
+        [
+          "2026-12-27T09:48:00Z",
+          210.1719
+        ],
+        [
+          "2026-12-27T09:49:00Z",
+          206.5843
+        ],
+        [
+          "2026-12-27T09:50:00Z",
+          211.1472
+        ],
+        [
+          "2026-12-27T09:51:00Z",
+          208.4336
+        ],
+        [
+          "2026-12-27T09:52:00Z",
+          209.6431
+        ],
+        [
+          "2026-12-27T09:53:00Z",
+          206.7956
+        ],
+        [
+          "2026-12-27T09:54:00Z",
+          210.8064
+        ],
+        [
+          "2026-12-27T09:55:00Z",
+          211.9815
+        ],
+        [
+          "2026-12-27T09:56:00Z",
+          210.1121
+        ],
+        [
+          "2026-12-27T09:57:00Z",
+          212.9325
+        ],
+        [
+          "2026-12-27T09:58:00Z",
+          208.0883
+        ],
+        [
+          "2026-12-27T09:59:00Z",
+          209.0375
+        ],
+        [
+          "2026-12-27T10:00:00Z",
+          206.0878
+        ],
+        [
+          "2026-12-27T10:01:00Z",
+          212.7314
+        ],
+        [
+          "2026-12-27T10:02:00Z",
+          210.623
+        ],
+        [
+          "2026-12-27T10:03:00Z",
+          209.3251
+        ],
+        [
+          "2026-12-27T10:04:00Z",
+          207.5964
+        ],
+        [
+          "2026-12-27T10:05:00Z",
+          206.8698
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "A planned failover of the edge firewall pair to the secondary unit created an asymmetric network path: outbound traffic went through the secondary firewall while return traffic still routed through the primary. Each stateful firewall only saw one direction of a connection, so it dropped the 'unexpected' return packets. Connections needing many round-trips (large uploads, streaming responses) failed with mid-transfer TCP resets at ~40%, while short request/response pairs usually completed before hitting the problem. The trigger is the failover leaving routing asymmetric. Recovery required correcting the return route to match the outbound path.",
+    "evidence_path": [
+      "network-ops INFO at 09:15: planned failover of the edge firewall pair to the secondary completed",
+      "region-gateway WARN: elevated connection resets on long-lived flows while short requests are mostly fine",
+      "large uploads and streaming responses fail ~40% with mid-transfer TCP resets",
+      "packet capture shows return traffic via the primary firewall and outbound via the secondary - an asymmetric path; stateful inspection drops the return packets",
+      "recovery after the return route is corrected to match outbound"
+    ],
+    "fix": "Correct the return route so both directions traverse the same firewall (done). Make firewall failover switch both directions atomically, add a post-failover synthetic check for large-transfer and long-lived connections, and enable stateful-session sync between the firewall pair.",
+    "should_escalate": false
+  }
+}

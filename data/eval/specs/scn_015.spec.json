@@ -1,0 +1,45 @@
+{
+  "id": "scn_015",
+  "category": "bad_deploy",
+  "difficulty": "medium",
+  "title": "Non-backwards-compatible column rename breaks old instances mid-rollout",
+  "source_url": "https://github.blog/2020-02-14-automating-mysql-schema-migrations-with-github-actions-and-more/",
+  "source_note": "Failure pattern (a schema change shipped in one step with its code, so old instances still serving during a rolling deploy query a column that no longer exists) is the classic expand/contract migration violation discussed in GitHub's schema-migration engineering writeups. All services, commit hashes, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~22:01 UTC about half of invoice-creation requests are failing. A billing-api deploy with a database migration started at 22:00 and is still rolling out. Reads seem fine.",
+  "incident_start": "2026-11-17T22:00:00Z",
+  "detected_offset_s": 120,
+  "window_before_s": 1800,
+  "window_after_s": 1200,
+  "primary_service": "billing-api",
+  "distractor_services": [
+    { "name": "orders-api", "role": "api" },
+    { "name": "email-worker", "role": "worker" },
+    { "name": "pricing-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "deploy-system", "level": "INFO", "msg": "billing-api a7b8c9d rolling out; migration 20261117 applied (rename invoices.amount -> amount_cents)" },
+    { "offset_s": 60, "service": "billing-api", "level": "ERROR", "msg": "old instances: column invoices.amount does not exist (SQLSTATE 42703); invoice writes failing" },
+    { "offset_s": 120, "service": "billing-api", "level": "ERROR", "msg": "~50% of invoice creation requests failing during the rollout" },
+    { "offset_s": 180, "service": "deploy-system", "level": "WARN", "msg": "rollout at 6/12 hosts; version skew is causing a schema mismatch" },
+    { "offset_s": 600, "service": "deploy-system", "level": "INFO", "msg": "rollout completed to all hosts; errors cleared once every instance is on the new code" }
+  ],
+  "metrics": [
+    { "name": "invoice_write_error_rate", "unit": "ratio", "service": "billing-api", "baseline": 0.001, "spike": 0.5, "spike_at_offset_s": 60, "ramp_s": 60 },
+    { "name": "schema_errors_per_s", "unit": "count_per_second", "service": "billing-api", "baseline": 0.0, "spike": 30.0, "spike_at_offset_s": 60, "ramp_s": 30 }
+  ],
+  "deploys": [
+    { "service": "billing-api", "offset_s": 0, "commit": "a7b8c9d", "summary": "rename invoices.amount -> amount_cents (migration + code in one release)" }
+  ],
+  "ground_truth": {
+    "root_cause": "Deploy a7b8c9d renamed the invoices.amount column to amount_cents in a single step - the migration and the code change shipped together. During the rolling deploy, instances still on the old code queried invoices.amount, which no longer existed, so ~50% of invoice writes (the fraction on old instances) failed with 'column does not exist'. This is an expand/contract violation: the rename was not backwards-compatible with the in-flight old version. Errors cleared once every instance was on the new code.",
+    "evidence_path": [
+      "deploy a7b8c9d at 22:00 applies migration 20261117 renaming invoices.amount, rolling out",
+      "billing-api ERROR: old instances hit 'column invoices.amount does not exist' (42703)",
+      "~50% of invoice writes fail during the rollout, matching the old/new instance split",
+      "schema_errors_per_s spikes then falls as the rollout completes",
+      "errors clear once all 12 hosts are on the new code"
+    ],
+    "fix": "Complete the rollout to stop the bleeding (done). Split such changes: add amount_cents alongside amount, deploy code that writes both and reads the new one, backfill, then drop amount in a later release. Add a migration lint that blocks non-backwards-compatible renames.",
+    "should_escalate": false
+  }
+}

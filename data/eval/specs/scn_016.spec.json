@@ -1,0 +1,45 @@
+{
+  "id": "scn_016",
+  "category": "resource_exhaustion",
+  "difficulty": "hard",
+  "title": "Unbounded in-memory dedup set leaks memory until the worker OOM-loops",
+  "source_url": "https://sre.google/sre-book/addressing-cascading-failures/",
+  "source_note": "Failure pattern (an unbounded in-memory collection grows with traffic until the process hits its memory limit and is OOM-killed on a repeating sawtooth, with GC pressure degrading throughput on the way up) is a standard resource-exhaustion class covered in the Google SRE Book. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "notification-worker has been restarting repeatedly since around 05:00 UTC and the notification queue is falling behind. No deploys today; the last one was 3 days ago. Latency on the rest of the platform is normal.",
+  "incident_start": "2026-11-20T05:00:00Z",
+  "detected_offset_s": 2400,
+  "window_before_s": 1800,
+  "window_after_s": 2400,
+  "primary_service": "notification-worker",
+  "distractor_services": [
+    { "name": "email-gateway", "role": "gateway" },
+    { "name": "push-gateway", "role": "gateway" },
+    { "name": "prefs-db", "role": "db" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "notification-worker", "level": "WARN", "msg": "heap usage 78% and climbing steadily; does not track queue depth" },
+    { "offset_s": 600, "service": "notification-worker", "level": "ERROR", "msg": "OOMKilled; container restarted (restart #1 this hour)" },
+    { "offset_s": 1200, "service": "notification-worker", "level": "WARN", "msg": "heap 82%; GC pause time 400ms/min; processing lag growing" },
+    { "offset_s": 2400, "service": "notification-worker", "level": "ERROR", "msg": "OOMKilled; restart #4; in-memory dedup set holds 14M entries and never evicts" },
+    { "offset_s": 3600, "service": "notification-worker", "level": "INFO", "msg": "operator added a size bound and TTL to the dedup set; heap stable" }
+  ],
+  "metrics": [
+    { "name": "heap_used_pct", "unit": "percent", "service": "notification-worker", "baseline": 45.0, "spike": 95.0, "spike_at_offset_s": 0, "ramp_s": 1800 },
+    { "name": "oom_restarts_total", "unit": "count", "service": "notification-worker", "baseline": 0.0, "spike": 5.0, "spike_at_offset_s": 600, "ramp_s": 3000 },
+    { "name": "queue_lag_s", "unit": "seconds", "service": "notification-worker", "baseline": 2.0, "spike": 220.0, "spike_at_offset_s": 600, "ramp_s": 1800 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "notification-worker has a memory leak: an in-memory de-duplication set that is never bounded or evicted (observed holding 14M entries). As notification volume grew, the set's footprint climbed until the container hit its memory limit and was OOM-killed, restarting on a sawtooth. During each growth phase, GC pressure slowed processing and the work queue backed up. The leak predates today - the last deploy was 3 days ago - and only became visible now as volume crossed the threshold. Recovery required bounding the set with a size cap and TTL.",
+    "evidence_path": [
+      "notification-worker heap climbs steadily from ~45%, independent of queue depth - a leak signature, not load",
+      "repeated OOMKilled restarts on a sawtooth (restart #1 ... #4)",
+      "the dedup set is observed holding 14M entries and never evicting",
+      "queue_lag grows during each heap-growth phase from GC pressure",
+      "no deploy today; the last deploy was 3 days ago",
+      "heap stabilises after a size bound and TTL are added to the set"
+    ],
+    "fix": "Bound the dedup set with a max size and TTL (done). Add a heap-growth-rate alert, audit other unbounded in-memory collections, and set the container memory limit from the real bounded working set.",
+    "should_escalate": false
+  }
+}

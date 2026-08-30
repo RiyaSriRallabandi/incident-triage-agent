@@ -1,0 +1,677 @@
+{
+  "id": "scn_013",
+  "category": "bad_deploy",
+  "difficulty": "medium",
+  "title": "Ingress-controller major upgrade silently drops routes using a legacy annotation",
+  "source_url": "https://www.reddit.com/r/RedditEng/comments/11xx5o0/you_broke_reddit_the_piday_outage/",
+  "source_note": "Failure pattern (a platform component upgrade that changes how existing config is interpreted, silently breaking a large fraction of routing) is in the spirit of Reddit's 2023 Pi-Day outage. All services, versions, annotations, commit hashes, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~16:03 UTC roughly 40% of services are returning 503s. The rest are fine. No application deploys. The platform team did some infrastructure work this afternoon.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-11-10T15:30:14.039100Z",
+      "service": "payments-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-11-10T15:34:52.156100Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 43ms"
+    },
+    {
+      "ts": "2026-11-10T15:35:04.645998Z",
+      "service": "ingress-controller",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-11-10T15:35:05.218209Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-11-10T15:35:44.503047Z",
+      "service": "config-cache",
+      "level": "WARN",
+      "msg": "GET key=user:261 miss"
+    },
+    {
+      "ts": "2026-11-10T15:39:24.325156Z",
+      "service": "config-cache",
+      "level": "INFO",
+      "msg": "SET key=session:790 ttl=3600"
+    },
+    {
+      "ts": "2026-11-10T15:44:10.320585Z",
+      "service": "payments-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 82ms"
+    },
+    {
+      "ts": "2026-11-10T15:44:37.804549Z",
+      "service": "config-cache",
+      "level": "INFO",
+      "msg": "evicted 18 keys (lru)"
+    },
+    {
+      "ts": "2026-11-10T15:44:56.867929Z",
+      "service": "config-cache",
+      "level": "WARN",
+      "msg": "GET key=user:718 miss"
+    },
+    {
+      "ts": "2026-11-10T15:47:33.576426Z",
+      "service": "config-cache",
+      "level": "INFO",
+      "msg": "GET key=user:12 hit"
+    },
+    {
+      "ts": "2026-11-10T15:48:15.234799Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 120ms"
+    },
+    {
+      "ts": "2026-11-10T15:56:19.100665Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "POST /products 201 in 14ms"
+    },
+    {
+      "ts": "2026-11-10T15:57:58.103001Z",
+      "service": "config-cache",
+      "level": "WARN",
+      "msg": "GET key=user:201 miss"
+    },
+    {
+      "ts": "2026-11-10T15:59:16.357995Z",
+      "service": "ingress-controller",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-11-10T16:00:00Z",
+      "service": "deploy-system",
+      "level": "INFO",
+      "msg": "ingress-controller upgraded 3.11 -> 4.2 across the fleet"
+    },
+    {
+      "ts": "2026-11-10T16:01:45.852321Z",
+      "service": "ingress-controller",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=38"
+    },
+    {
+      "ts": "2026-11-10T16:02:00Z",
+      "service": "ingress-controller",
+      "level": "WARN",
+      "msg": "42 route rules did not match any backend after upgrade (legacy annotation 'route.class' ignored in 4.x)"
+    },
+    {
+      "ts": "2026-11-10T16:02:03.555969Z",
+      "service": "config-cache",
+      "level": "INFO",
+      "msg": "GET key=user:300 hit"
+    },
+    {
+      "ts": "2026-11-10T16:02:25.913814Z",
+      "service": "payments-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=193"
+    },
+    {
+      "ts": "2026-11-10T16:02:31.973366Z",
+      "service": "ingress-controller",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-11-10T16:03:00Z",
+      "service": "web-frontend",
+      "level": "ERROR",
+      "msg": "calls to orders-api and payments-api returning 503 (no route)"
+    },
+    {
+      "ts": "2026-11-10T16:05:00Z",
+      "service": "ingress-controller",
+      "level": "ERROR",
+      "msg": "40% of configured routes inactive; affected services returning 503"
+    },
+    {
+      "ts": "2026-11-10T16:05:04.386781Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "GET /search 200 in 109ms"
+    },
+    {
+      "ts": "2026-11-10T16:06:50.717861Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 162ms"
+    },
+    {
+      "ts": "2026-11-10T16:07:35.579981Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "POST /search 201 in 5ms"
+    },
+    {
+      "ts": "2026-11-10T16:08:53.304934Z",
+      "service": "payments-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-11-10T16:10:57.934688Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 5ms"
+    },
+    {
+      "ts": "2026-11-10T16:12:17.070017Z",
+      "service": "orders-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=165"
+    },
+    {
+      "ts": "2026-11-10T16:12:22.027542Z",
+      "service": "config-cache",
+      "level": "WARN",
+      "msg": "GET key=user:422 miss"
+    },
+    {
+      "ts": "2026-11-10T16:15:00Z",
+      "service": "deploy-system",
+      "level": "INFO",
+      "msg": "ingress-controller rolled back to 3.11; routes restored"
+    },
+    {
+      "ts": "2026-11-10T16:15:19.749294Z",
+      "service": "orders-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=169"
+    },
+    {
+      "ts": "2026-11-10T16:18:13.119059Z",
+      "service": "payments-api",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 172ms"
+    },
+    {
+      "ts": "2026-11-10T16:19:58.580877Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "POST /products 201 in 65ms"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "http_5xx_rate",
+      "unit": "ratio",
+      "service": "edge-ingress",
+      "points": [
+        [
+          "2026-11-10T15:30:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:31:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:32:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:33:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:34:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:35:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:36:00Z",
+          0.0041
+        ],
+        [
+          "2026-11-10T15:37:00Z",
+          0.0039
+        ],
+        [
+          "2026-11-10T15:38:00Z",
+          0.0041
+        ],
+        [
+          "2026-11-10T15:39:00Z",
+          0.0039
+        ],
+        [
+          "2026-11-10T15:40:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:41:00Z",
+          0.0039
+        ],
+        [
+          "2026-11-10T15:42:00Z",
+          0.0041
+        ],
+        [
+          "2026-11-10T15:43:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:44:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:45:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:46:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:47:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:48:00Z",
+          0.0039
+        ],
+        [
+          "2026-11-10T15:49:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:50:00Z",
+          0.0041
+        ],
+        [
+          "2026-11-10T15:51:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:52:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:53:00Z",
+          0.0041
+        ],
+        [
+          "2026-11-10T15:54:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:55:00Z",
+          0.0041
+        ],
+        [
+          "2026-11-10T15:56:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:57:00Z",
+          0.0041
+        ],
+        [
+          "2026-11-10T15:58:00Z",
+          0.004
+        ],
+        [
+          "2026-11-10T15:59:00Z",
+          0.0039
+        ],
+        [
+          "2026-11-10T16:00:00Z",
+          0.0041
+        ],
+        [
+          "2026-11-10T16:01:00Z",
+          0.0039
+        ],
+        [
+          "2026-11-10T16:02:00Z",
+          0.0039
+        ],
+        [
+          "2026-11-10T16:03:00Z",
+          0.2091
+        ],
+        [
+          "2026-11-10T16:04:00Z",
+          0.4128
+        ],
+        [
+          "2026-11-10T16:05:00Z",
+          0.4087
+        ],
+        [
+          "2026-11-10T16:06:00Z",
+          0.4069
+        ],
+        [
+          "2026-11-10T16:07:00Z",
+          0.4022
+        ],
+        [
+          "2026-11-10T16:08:00Z",
+          0.408
+        ],
+        [
+          "2026-11-10T16:09:00Z",
+          0.4113
+        ],
+        [
+          "2026-11-10T16:10:00Z",
+          0.4063
+        ],
+        [
+          "2026-11-10T16:11:00Z",
+          0.4112
+        ],
+        [
+          "2026-11-10T16:12:00Z",
+          0.4021
+        ],
+        [
+          "2026-11-10T16:13:00Z",
+          0.4049
+        ],
+        [
+          "2026-11-10T16:14:00Z",
+          0.408
+        ],
+        [
+          "2026-11-10T16:15:00Z",
+          0.4141
+        ],
+        [
+          "2026-11-10T16:16:00Z",
+          0.4027
+        ],
+        [
+          "2026-11-10T16:17:00Z",
+          0.4083
+        ],
+        [
+          "2026-11-10T16:18:00Z",
+          0.409
+        ],
+        [
+          "2026-11-10T16:19:00Z",
+          0.4173
+        ],
+        [
+          "2026-11-10T16:20:00Z",
+          0.4051
+        ],
+        [
+          "2026-11-10T16:21:00Z",
+          0.4179
+        ],
+        [
+          "2026-11-10T16:22:00Z",
+          0.4142
+        ],
+        [
+          "2026-11-10T16:23:00Z",
+          0.4089
+        ]
+      ]
+    },
+    {
+      "name": "active_route_rules",
+      "unit": "count",
+      "service": "ingress-controller",
+      "points": [
+        [
+          "2026-11-10T15:30:00Z",
+          105.6389
+        ],
+        [
+          "2026-11-10T15:31:00Z",
+          106.7978
+        ],
+        [
+          "2026-11-10T15:32:00Z",
+          105.0157
+        ],
+        [
+          "2026-11-10T15:33:00Z",
+          103.5898
+        ],
+        [
+          "2026-11-10T15:34:00Z",
+          104.0723
+        ],
+        [
+          "2026-11-10T15:35:00Z",
+          106.5533
+        ],
+        [
+          "2026-11-10T15:36:00Z",
+          103.1244
+        ],
+        [
+          "2026-11-10T15:37:00Z",
+          103.6802
+        ],
+        [
+          "2026-11-10T15:38:00Z",
+          106.1102
+        ],
+        [
+          "2026-11-10T15:39:00Z",
+          105.9949
+        ],
+        [
+          "2026-11-10T15:40:00Z",
+          106.6
+        ],
+        [
+          "2026-11-10T15:41:00Z",
+          104.5891
+        ],
+        [
+          "2026-11-10T15:42:00Z",
+          105.8665
+        ],
+        [
+          "2026-11-10T15:43:00Z",
+          106.7191
+        ],
+        [
+          "2026-11-10T15:44:00Z",
+          104.4301
+        ],
+        [
+          "2026-11-10T15:45:00Z",
+          105.9694
+        ],
+        [
+          "2026-11-10T15:46:00Z",
+          104.7304
+        ],
+        [
+          "2026-11-10T15:47:00Z",
+          106.6863
+        ],
+        [
+          "2026-11-10T15:48:00Z",
+          102.9233
+        ],
+        [
+          "2026-11-10T15:49:00Z",
+          104.3553
+        ],
+        [
+          "2026-11-10T15:50:00Z",
+          105.9834
+        ],
+        [
+          "2026-11-10T15:51:00Z",
+          106.5785
+        ],
+        [
+          "2026-11-10T15:52:00Z",
+          106.1869
+        ],
+        [
+          "2026-11-10T15:53:00Z",
+          105.354
+        ],
+        [
+          "2026-11-10T15:54:00Z",
+          104.5733
+        ],
+        [
+          "2026-11-10T15:55:00Z",
+          103.7671
+        ],
+        [
+          "2026-11-10T15:56:00Z",
+          103.6396
+        ],
+        [
+          "2026-11-10T15:57:00Z",
+          105.3984
+        ],
+        [
+          "2026-11-10T15:58:00Z",
+          104.1742
+        ],
+        [
+          "2026-11-10T15:59:00Z",
+          105.0239
+        ],
+        [
+          "2026-11-10T16:00:00Z",
+          103.3927
+        ],
+        [
+          "2026-11-10T16:01:00Z",
+          106.5516
+        ],
+        [
+          "2026-11-10T16:02:00Z",
+          105.0123
+        ],
+        [
+          "2026-11-10T16:03:00Z",
+          63.3267
+        ],
+        [
+          "2026-11-10T16:04:00Z",
+          63.1483
+        ],
+        [
+          "2026-11-10T16:05:00Z",
+          63.662
+        ],
+        [
+          "2026-11-10T16:06:00Z",
+          64.1029
+        ],
+        [
+          "2026-11-10T16:07:00Z",
+          62.0353
+        ],
+        [
+          "2026-11-10T16:08:00Z",
+          62.9695
+        ],
+        [
+          "2026-11-10T16:09:00Z",
+          62.9081
+        ],
+        [
+          "2026-11-10T16:10:00Z",
+          64.2138
+        ],
+        [
+          "2026-11-10T16:11:00Z",
+          63.9469
+        ],
+        [
+          "2026-11-10T16:12:00Z",
+          62.2461
+        ],
+        [
+          "2026-11-10T16:13:00Z",
+          61.8466
+        ],
+        [
+          "2026-11-10T16:14:00Z",
+          63.2502
+        ],
+        [
+          "2026-11-10T16:15:00Z",
+          61.7944
+        ],
+        [
+          "2026-11-10T16:16:00Z",
+          63.068
+        ],
+        [
+          "2026-11-10T16:17:00Z",
+          62.6722
+        ],
+        [
+          "2026-11-10T16:18:00Z",
+          62.5679
+        ],
+        [
+          "2026-11-10T16:19:00Z",
+          62.9599
+        ],
+        [
+          "2026-11-10T16:20:00Z",
+          62.8743
+        ],
+        [
+          "2026-11-10T16:21:00Z",
+          63.2986
+        ],
+        [
+          "2026-11-10T16:22:00Z",
+          63.7851
+        ],
+        [
+          "2026-11-10T16:23:00Z",
+          62.2288
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [
+    {
+      "service": "ingress-controller",
+      "ts": "2026-11-10T16:00:00Z",
+      "commit": "b1c2d3e",
+      "summary": "upgrade ingress-controller 3.x -> 4.x (annotation syntax change)"
+    }
+  ],
+  "ground_truth": {
+    "root_cause": "The ingress-controller was upgraded from 3.x to 4.x (deploy b1c2d3e). Version 4.x changed how a routing annotation is interpreted and silently ignored the legacy 'route.class' annotation still used by ~40% of services. Those services' route rules stopped matching any backend, so the ingress returned 503 (no route) for them. Services already on the new annotation form were unaffected. Recovery required rolling back the ingress-controller.",
+    "evidence_path": [
+      "deploy b1c2d3e at 16:00 upgrades ingress-controller 3.11 -> 4.2 fleet-wide",
+      "ingress-controller WARN: 42 route rules no longer match a backend; legacy 'route.class' annotation ignored in 4.x",
+      "web-frontend calls to orders-api and payments-api return 503 (no route)",
+      "active_route_rules drops from ~105 to ~63 and http_5xx_rate rises to ~40%",
+      "recovery after the ingress-controller is rolled back to 3.11"
+    ],
+    "fix": "Roll back the ingress-controller (done). Before re-upgrading, migrate every service to the 4.x annotation form and add a pre-upgrade check that fails if any route rule would become unmatched.",
+    "should_escalate": false
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "id": "scn_021",
+  "category": "dependency_failure",
+  "difficulty": "hard",
+  "title": "Shared cache cluster fails, and the cache-miss stampede overwhelms the databases",
+  "source_url": "https://blog.roblox.com/2022/01/roblox-return-to-service-10-28-10-31-2021/",
+  "source_note": "Failure pattern (a core shared infrastructure service fails, removing a load-absorbing layer, so every miss stampedes the origin and cascades across dependents) is in the spirit of Roblox's 2021 Consul outage. All services, node names, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~07:42 UTC multiple services are slow or erroring - auth, profiles, feed. Databases report very high load. No deploys. Someone mentioned the cache cluster had a node problem.",
+  "incident_start": "2026-12-08T07:40:00Z",
+  "detected_offset_s": 120,
+  "window_before_s": 1800,
+  "window_after_s": 2400,
+  "primary_service": "session-store",
+  "distractor_services": [
+    { "name": "catalog-api", "role": "api" },
+    { "name": "feed-worker", "role": "worker" },
+    { "name": "orders-api", "role": "api" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "session-store", "level": "ERROR", "msg": "primary node redis-01 unresponsive; automatic failover to redis-02 did not complete (split-brain guard)" },
+    { "offset_s": 60, "service": "web-frontend", "level": "WARN", "msg": "session lookups failing over to the database; auth latency 5x" },
+    { "offset_s": 120, "service": "users-db", "level": "WARN", "msg": "connection count 480/500; query latency rising from cache-miss traffic" },
+    { "offset_s": 240, "service": "profile-api", "level": "ERROR", "msg": "database timeouts; 25% error rate with the cache unavailable" },
+    { "offset_s": 300, "service": "session-store", "level": "CRITICAL", "msg": "cache unavailable cluster-wide; all reads hitting origin databases" },
+    { "offset_s": 1500, "service": "session-store", "level": "INFO", "msg": "operator manually promoted redis-02; cache warming; database load falling" }
+  ],
+  "metrics": [
+    { "name": "cache_availability", "unit": "ratio", "service": "session-store", "baseline": 0.999, "spike": 0.0, "spike_at_offset_s": 0, "ramp_s": 60 },
+    { "name": "db_connection_utilization", "unit": "ratio", "service": "users-db", "baseline": 0.4, "spike": 0.98, "spike_at_offset_s": 120, "ramp_s": 180 },
+    { "name": "error_rate", "unit": "ratio", "service": "profile-api", "baseline": 0.003, "spike": 0.25, "spike_at_offset_s": 240, "ramp_s": 180 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "The shared Redis cluster used for sessions and hot caches lost its primary node (redis-01), and automatic failover to redis-02 stalled on a split-brain guard, so the cache was unavailable cluster-wide. Every read that would have been a cache hit fell through to the origin databases. That cache-miss stampede pushed users-db to its connection limit (480/500), so query latency climbed and dependent services (profile-api, web-frontend auth) timed out - a thundering herd triggered by the cache outage, not by any change on the services themselves. Recovery required manually promoting redis-02 and letting the cache warm.",
+    "evidence_path": [
+      "session-store ERROR: redis-01 unresponsive and automatic failover to redis-02 did not complete",
+      "cache_availability drops to 0 cluster-wide; all reads fall through to origin databases",
+      "users-db connection utilization jumps to ~98% (480/500) from cache-miss traffic",
+      "profile-api and web-frontend auth start timing out; profile-api error rate ~25%",
+      "recovery after the operator manually promotes redis-02 and the cache warms"
+    ],
+    "fix": "Manually promote redis-02 and warm the cache (done). Fix failover so the split-brain guard cannot indefinitely block promotion, add request coalescing / stale-while-revalidate to blunt the herd on a cache outage, and set per-caller database connection limits.",
+    "should_escalate": false
+  }
+}

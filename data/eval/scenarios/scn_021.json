@@ -1,0 +1,1259 @@
+{
+  "id": "scn_021",
+  "category": "dependency_failure",
+  "difficulty": "hard",
+  "title": "Shared cache cluster fails, and the cache-miss stampede overwhelms the databases",
+  "source_url": "https://blog.roblox.com/2022/01/roblox-return-to-service-10-28-10-31-2021/",
+  "source_note": "Failure pattern (a core shared infrastructure service fails, removing a load-absorbing layer, so every miss stampedes the origin and cascades across dependents) is in the spirit of Roblox's 2021 Consul outage. All services, node names, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~07:42 UTC multiple services are slow or erroring - auth, profiles, feed. Databases report very high load. No deploys. Someone mentioned the cache cluster had a node problem.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-12-08T07:12:55.907280Z",
+      "service": "session-store",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 8ms"
+    },
+    {
+      "ts": "2026-12-08T07:14:29.390370Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-12-08T07:15:47.024993Z",
+      "service": "session-store",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=43"
+    },
+    {
+      "ts": "2026-12-08T07:16:36.112872Z",
+      "service": "session-store",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-08T07:17:09.787065Z",
+      "service": "feed-worker",
+      "level": "INFO",
+      "msg": "job report.build completed in 158ms"
+    },
+    {
+      "ts": "2026-12-08T07:20:46.357714Z",
+      "service": "feed-worker",
+      "level": "INFO",
+      "msg": "queue depth=706"
+    },
+    {
+      "ts": "2026-12-08T07:21:44.511711Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 12ms"
+    },
+    {
+      "ts": "2026-12-08T07:22:35.177472Z",
+      "service": "orders-api",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=120"
+    },
+    {
+      "ts": "2026-12-08T07:22:43.531638Z",
+      "service": "feed-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2026-12-08T07:26:18.588926Z",
+      "service": "session-store",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 194ms"
+    },
+    {
+      "ts": "2026-12-08T07:26:32.288022Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2026-12-08T07:26:46.387269Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2026-12-08T07:29:16.765465Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 77ms"
+    },
+    {
+      "ts": "2026-12-08T07:29:17.152175Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-12-08T07:33:07.413598Z",
+      "service": "session-store",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-08T07:34:19.985686Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=44"
+    },
+    {
+      "ts": "2026-12-08T07:34:56.151693Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "POST /products 201 in 108ms"
+    },
+    {
+      "ts": "2026-12-08T07:35:56.748475Z",
+      "service": "session-store",
+      "level": "INFO",
+      "msg": "GET /products 200 in 155ms"
+    },
+    {
+      "ts": "2026-12-08T07:38:20.588394Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-12-08T07:40:00Z",
+      "service": "session-store",
+      "level": "ERROR",
+      "msg": "primary node redis-01 unresponsive; automatic failover to redis-02 did not complete (split-brain guard)"
+    },
+    {
+      "ts": "2026-12-08T07:40:31.337999Z",
+      "service": "session-store",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-08T07:41:00Z",
+      "service": "web-frontend",
+      "level": "WARN",
+      "msg": "session lookups failing over to the database; auth latency 5x"
+    },
+    {
+      "ts": "2026-12-08T07:42:00Z",
+      "service": "users-db",
+      "level": "WARN",
+      "msg": "connection count 480/500; query latency rising from cache-miss traffic"
+    },
+    {
+      "ts": "2026-12-08T07:43:15.243574Z",
+      "service": "session-store",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 76ms"
+    },
+    {
+      "ts": "2026-12-08T07:44:00Z",
+      "service": "profile-api",
+      "level": "ERROR",
+      "msg": "database timeouts; 25% error rate with the cache unavailable"
+    },
+    {
+      "ts": "2026-12-08T07:44:08.617555Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-12-08T07:44:24.892767Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 93ms"
+    },
+    {
+      "ts": "2026-12-08T07:45:00Z",
+      "service": "session-store",
+      "level": "CRITICAL",
+      "msg": "cache unavailable cluster-wide; all reads hitting origin databases"
+    },
+    {
+      "ts": "2026-12-08T07:46:01.818060Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2026-12-08T07:46:19.109567Z",
+      "service": "session-store",
+      "level": "WARN",
+      "msg": "slow request path=/products duration_ms=172"
+    },
+    {
+      "ts": "2026-12-08T07:46:49.158546Z",
+      "service": "session-store",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 205ms"
+    },
+    {
+      "ts": "2026-12-08T07:47:25.358025Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 85ms"
+    },
+    {
+      "ts": "2026-12-08T07:47:41.516214Z",
+      "service": "session-store",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2026-12-08T07:50:16.919700Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-08T07:51:08.515297Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 54ms"
+    },
+    {
+      "ts": "2026-12-08T07:51:38.226686Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 37ms"
+    },
+    {
+      "ts": "2026-12-08T07:55:10.960681Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 184ms"
+    },
+    {
+      "ts": "2026-12-08T07:58:51.023770Z",
+      "service": "orders-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=115"
+    },
+    {
+      "ts": "2026-12-08T08:03:09.093396Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 165ms"
+    },
+    {
+      "ts": "2026-12-08T08:03:23.131476Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=35"
+    },
+    {
+      "ts": "2026-12-08T08:03:59.707487Z",
+      "service": "feed-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2026-12-08T08:05:00Z",
+      "service": "session-store",
+      "level": "INFO",
+      "msg": "operator manually promoted redis-02; cache warming; database load falling"
+    },
+    {
+      "ts": "2026-12-08T08:07:47.204120Z",
+      "service": "feed-worker",
+      "level": "INFO",
+      "msg": "processed batch size=110"
+    },
+    {
+      "ts": "2026-12-08T08:08:34.841208Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=190"
+    },
+    {
+      "ts": "2026-12-08T08:10:20.047344Z",
+      "service": "session-store",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-08T08:11:42.411977Z",
+      "service": "session-store",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=14"
+    },
+    {
+      "ts": "2026-12-08T08:13:23.114359Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-12-08T08:14:44.015516Z",
+      "service": "session-store",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=168"
+    },
+    {
+      "ts": "2026-12-08T08:14:44.747662Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-12-08T08:16:19.277993Z",
+      "service": "feed-worker",
+      "level": "INFO",
+      "msg": "processed batch size=252"
+    },
+    {
+      "ts": "2026-12-08T08:17:30.149071Z",
+      "service": "feed-worker",
+      "level": "WARN",
+      "msg": "job cache.warm retried attempt=1"
+    },
+    {
+      "ts": "2026-12-08T08:18:08.226775Z",
+      "service": "feed-worker",
+      "level": "INFO",
+      "msg": "job email.send completed in 4ms"
+    },
+    {
+      "ts": "2026-12-08T08:18:16.671125Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 46ms"
+    },
+    {
+      "ts": "2026-12-08T08:19:15.074838Z",
+      "service": "orders-api",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=130"
+    },
+    {
+      "ts": "2026-12-08T08:20:58.117683Z",
+      "service": "session-store",
+      "level": "INFO",
+      "msg": "GET /products 200 in 217ms"
+    },
+    {
+      "ts": "2026-12-08T08:21:36.122114Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=23"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "cache_availability",
+      "unit": "ratio",
+      "service": "session-store",
+      "points": [
+        [
+          "2026-12-08T07:10:00Z",
+          0.9995
+        ],
+        [
+          "2026-12-08T07:11:00Z",
+          0.9953
+        ],
+        [
+          "2026-12-08T07:12:00Z",
+          1.012
+        ],
+        [
+          "2026-12-08T07:13:00Z",
+          0.9819
+        ],
+        [
+          "2026-12-08T07:14:00Z",
+          1.0154
+        ],
+        [
+          "2026-12-08T07:15:00Z",
+          1.0072
+        ],
+        [
+          "2026-12-08T07:16:00Z",
+          0.9792
+        ],
+        [
+          "2026-12-08T07:17:00Z",
+          0.9882
+        ],
+        [
+          "2026-12-08T07:18:00Z",
+          0.9918
+        ],
+        [
+          "2026-12-08T07:19:00Z",
+          0.9794
+        ],
+        [
+          "2026-12-08T07:20:00Z",
+          0.9928
+        ],
+        [
+          "2026-12-08T07:21:00Z",
+          1.0189
+        ],
+        [
+          "2026-12-08T07:22:00Z",
+          0.9941
+        ],
+        [
+          "2026-12-08T07:23:00Z",
+          0.9905
+        ],
+        [
+          "2026-12-08T07:24:00Z",
+          0.9808
+        ],
+        [
+          "2026-12-08T07:25:00Z",
+          0.9986
+        ],
+        [
+          "2026-12-08T07:26:00Z",
+          1.0027
+        ],
+        [
+          "2026-12-08T07:27:00Z",
+          0.9974
+        ],
+        [
+          "2026-12-08T07:28:00Z",
+          0.9958
+        ],
+        [
+          "2026-12-08T07:29:00Z",
+          0.9875
+        ],
+        [
+          "2026-12-08T07:30:00Z",
+          1.0155
+        ],
+        [
+          "2026-12-08T07:31:00Z",
+          1.0081
+        ],
+        [
+          "2026-12-08T07:32:00Z",
+          1.0047
+        ],
+        [
+          "2026-12-08T07:33:00Z",
+          1.0139
+        ],
+        [
+          "2026-12-08T07:34:00Z",
+          0.9876
+        ],
+        [
+          "2026-12-08T07:35:00Z",
+          1.0175
+        ],
+        [
+          "2026-12-08T07:36:00Z",
+          1.0163
+        ],
+        [
+          "2026-12-08T07:37:00Z",
+          1.001
+        ],
+        [
+          "2026-12-08T07:38:00Z",
+          1.0024
+        ],
+        [
+          "2026-12-08T07:39:00Z",
+          1.0034
+        ],
+        [
+          "2026-12-08T07:40:00Z",
+          1.0049
+        ],
+        [
+          "2026-12-08T07:41:00Z",
+          0.0024
+        ],
+        [
+          "2026-12-08T07:42:00Z",
+          -0.0056
+        ],
+        [
+          "2026-12-08T07:43:00Z",
+          0.0064
+        ],
+        [
+          "2026-12-08T07:44:00Z",
+          -0.0179
+        ],
+        [
+          "2026-12-08T07:45:00Z",
+          0.0076
+        ],
+        [
+          "2026-12-08T07:46:00Z",
+          -0.0137
+        ],
+        [
+          "2026-12-08T07:47:00Z",
+          -0.0064
+        ],
+        [
+          "2026-12-08T07:48:00Z",
+          -0.0009
+        ],
+        [
+          "2026-12-08T07:49:00Z",
+          0.0071
+        ],
+        [
+          "2026-12-08T07:50:00Z",
+          0.0172
+        ],
+        [
+          "2026-12-08T07:51:00Z",
+          -0.0039
+        ],
+        [
+          "2026-12-08T07:52:00Z",
+          -0.0132
+        ],
+        [
+          "2026-12-08T07:53:00Z",
+          0.0011
+        ],
+        [
+          "2026-12-08T07:54:00Z",
+          0.0135
+        ],
+        [
+          "2026-12-08T07:55:00Z",
+          -0.0112
+        ],
+        [
+          "2026-12-08T07:56:00Z",
+          -0.0194
+        ],
+        [
+          "2026-12-08T07:57:00Z",
+          0.0049
+        ],
+        [
+          "2026-12-08T07:58:00Z",
+          -0.0188
+        ],
+        [
+          "2026-12-08T07:59:00Z",
+          -0.0171
+        ],
+        [
+          "2026-12-08T08:00:00Z",
+          0.0074
+        ],
+        [
+          "2026-12-08T08:01:00Z",
+          0.0106
+        ],
+        [
+          "2026-12-08T08:02:00Z",
+          0.0153
+        ],
+        [
+          "2026-12-08T08:03:00Z",
+          0.0021
+        ],
+        [
+          "2026-12-08T08:04:00Z",
+          0.0108
+        ],
+        [
+          "2026-12-08T08:05:00Z",
+          -0.0047
+        ],
+        [
+          "2026-12-08T08:06:00Z",
+          -0.0067
+        ],
+        [
+          "2026-12-08T08:07:00Z",
+          0.0058
+        ],
+        [
+          "2026-12-08T08:08:00Z",
+          -0.014
+        ],
+        [
+          "2026-12-08T08:09:00Z",
+          0.0192
+        ],
+        [
+          "2026-12-08T08:10:00Z",
+          -0.0176
+        ],
+        [
+          "2026-12-08T08:11:00Z",
+          0.0145
+        ],
+        [
+          "2026-12-08T08:12:00Z",
+          -0.0013
+        ],
+        [
+          "2026-12-08T08:13:00Z",
+          0.0198
+        ],
+        [
+          "2026-12-08T08:14:00Z",
+          0.0132
+        ],
+        [
+          "2026-12-08T08:15:00Z",
+          -0.0093
+        ],
+        [
+          "2026-12-08T08:16:00Z",
+          -0.0149
+        ],
+        [
+          "2026-12-08T08:17:00Z",
+          -0.0102
+        ],
+        [
+          "2026-12-08T08:18:00Z",
+          -0.015
+        ],
+        [
+          "2026-12-08T08:19:00Z",
+          -0.0029
+        ],
+        [
+          "2026-12-08T08:20:00Z",
+          -0.0083
+        ],
+        [
+          "2026-12-08T08:21:00Z",
+          -0.0057
+        ],
+        [
+          "2026-12-08T08:22:00Z",
+          -0.0047
+        ]
+      ]
+    },
+    {
+      "name": "db_connection_utilization",
+      "unit": "ratio",
+      "service": "users-db",
+      "points": [
+        [
+          "2026-12-08T07:10:00Z",
+          0.3941
+        ],
+        [
+          "2026-12-08T07:11:00Z",
+          0.3952
+        ],
+        [
+          "2026-12-08T07:12:00Z",
+          0.3998
+        ],
+        [
+          "2026-12-08T07:13:00Z",
+          0.4064
+        ],
+        [
+          "2026-12-08T07:14:00Z",
+          0.4055
+        ],
+        [
+          "2026-12-08T07:15:00Z",
+          0.4014
+        ],
+        [
+          "2026-12-08T07:16:00Z",
+          0.3934
+        ],
+        [
+          "2026-12-08T07:17:00Z",
+          0.3933
+        ],
+        [
+          "2026-12-08T07:18:00Z",
+          0.4038
+        ],
+        [
+          "2026-12-08T07:19:00Z",
+          0.3927
+        ],
+        [
+          "2026-12-08T07:20:00Z",
+          0.405
+        ],
+        [
+          "2026-12-08T07:21:00Z",
+          0.4015
+        ],
+        [
+          "2026-12-08T07:22:00Z",
+          0.3968
+        ],
+        [
+          "2026-12-08T07:23:00Z",
+          0.4002
+        ],
+        [
+          "2026-12-08T07:24:00Z",
+          0.3946
+        ],
+        [
+          "2026-12-08T07:25:00Z",
+          0.3921
+        ],
+        [
+          "2026-12-08T07:26:00Z",
+          0.4054
+        ],
+        [
+          "2026-12-08T07:27:00Z",
+          0.4037
+        ],
+        [
+          "2026-12-08T07:28:00Z",
+          0.3957
+        ],
+        [
+          "2026-12-08T07:29:00Z",
+          0.4001
+        ],
+        [
+          "2026-12-08T07:30:00Z",
+          0.4009
+        ],
+        [
+          "2026-12-08T07:31:00Z",
+          0.4045
+        ],
+        [
+          "2026-12-08T07:32:00Z",
+          0.3947
+        ],
+        [
+          "2026-12-08T07:33:00Z",
+          0.4021
+        ],
+        [
+          "2026-12-08T07:34:00Z",
+          0.3982
+        ],
+        [
+          "2026-12-08T07:35:00Z",
+          0.3971
+        ],
+        [
+          "2026-12-08T07:36:00Z",
+          0.3984
+        ],
+        [
+          "2026-12-08T07:37:00Z",
+          0.4078
+        ],
+        [
+          "2026-12-08T07:38:00Z",
+          0.406
+        ],
+        [
+          "2026-12-08T07:39:00Z",
+          0.4029
+        ],
+        [
+          "2026-12-08T07:40:00Z",
+          0.3965
+        ],
+        [
+          "2026-12-08T07:41:00Z",
+          0.4035
+        ],
+        [
+          "2026-12-08T07:42:00Z",
+          0.4079
+        ],
+        [
+          "2026-12-08T07:43:00Z",
+          0.5984
+        ],
+        [
+          "2026-12-08T07:44:00Z",
+          0.7838
+        ],
+        [
+          "2026-12-08T07:45:00Z",
+          0.985
+        ],
+        [
+          "2026-12-08T07:46:00Z",
+          0.9848
+        ],
+        [
+          "2026-12-08T07:47:00Z",
+          0.9636
+        ],
+        [
+          "2026-12-08T07:48:00Z",
+          0.9693
+        ],
+        [
+          "2026-12-08T07:49:00Z",
+          0.9691
+        ],
+        [
+          "2026-12-08T07:50:00Z",
+          0.9756
+        ],
+        [
+          "2026-12-08T07:51:00Z",
+          0.9942
+        ],
+        [
+          "2026-12-08T07:52:00Z",
+          0.9707
+        ],
+        [
+          "2026-12-08T07:53:00Z",
+          0.983
+        ],
+        [
+          "2026-12-08T07:54:00Z",
+          0.9611
+        ],
+        [
+          "2026-12-08T07:55:00Z",
+          0.9606
+        ],
+        [
+          "2026-12-08T07:56:00Z",
+          0.9699
+        ],
+        [
+          "2026-12-08T07:57:00Z",
+          0.983
+        ],
+        [
+          "2026-12-08T07:58:00Z",
+          0.9729
+        ],
+        [
+          "2026-12-08T07:59:00Z",
+          0.9992
+        ],
+        [
+          "2026-12-08T08:00:00Z",
+          0.9963
+        ],
+        [
+          "2026-12-08T08:01:00Z",
+          0.9647
+        ],
+        [
+          "2026-12-08T08:02:00Z",
+          0.9874
+        ],
+        [
+          "2026-12-08T08:03:00Z",
+          0.9964
+        ],
+        [
+          "2026-12-08T08:04:00Z",
+          0.9909
+        ],
+        [
+          "2026-12-08T08:05:00Z",
+          0.9806
+        ],
+        [
+          "2026-12-08T08:06:00Z",
+          0.9901
+        ],
+        [
+          "2026-12-08T08:07:00Z",
+          0.9931
+        ],
+        [
+          "2026-12-08T08:08:00Z",
+          0.9652
+        ],
+        [
+          "2026-12-08T08:09:00Z",
+          0.9971
+        ],
+        [
+          "2026-12-08T08:10:00Z",
+          0.9809
+        ],
+        [
+          "2026-12-08T08:11:00Z",
+          0.9611
+        ],
+        [
+          "2026-12-08T08:12:00Z",
+          0.9976
+        ],
+        [
+          "2026-12-08T08:13:00Z",
+          0.9768
+        ],
+        [
+          "2026-12-08T08:14:00Z",
+          0.9681
+        ],
+        [
+          "2026-12-08T08:15:00Z",
+          0.9635
+        ],
+        [
+          "2026-12-08T08:16:00Z",
+          0.9784
+        ],
+        [
+          "2026-12-08T08:17:00Z",
+          0.9726
+        ],
+        [
+          "2026-12-08T08:18:00Z",
+          0.9692
+        ],
+        [
+          "2026-12-08T08:19:00Z",
+          0.9825
+        ],
+        [
+          "2026-12-08T08:20:00Z",
+          0.9808
+        ],
+        [
+          "2026-12-08T08:21:00Z",
+          0.9767
+        ],
+        [
+          "2026-12-08T08:22:00Z",
+          0.9812
+        ]
+      ]
+    },
+    {
+      "name": "error_rate",
+      "unit": "ratio",
+      "service": "profile-api",
+      "points": [
+        [
+          "2026-12-08T07:10:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:11:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:12:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:13:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:14:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:15:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:16:00Z",
+          0.0031
+        ],
+        [
+          "2026-12-08T07:17:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:18:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:19:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:20:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:21:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:22:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:23:00Z",
+          0.0031
+        ],
+        [
+          "2026-12-08T07:24:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:25:00Z",
+          0.0029
+        ],
+        [
+          "2026-12-08T07:26:00Z",
+          0.0031
+        ],
+        [
+          "2026-12-08T07:27:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:28:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:29:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:30:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:31:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:32:00Z",
+          0.0031
+        ],
+        [
+          "2026-12-08T07:33:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:34:00Z",
+          0.0029
+        ],
+        [
+          "2026-12-08T07:35:00Z",
+          0.0031
+        ],
+        [
+          "2026-12-08T07:36:00Z",
+          0.0029
+        ],
+        [
+          "2026-12-08T07:37:00Z",
+          0.0029
+        ],
+        [
+          "2026-12-08T07:38:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:39:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:40:00Z",
+          0.0029
+        ],
+        [
+          "2026-12-08T07:41:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:42:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:43:00Z",
+          0.0029
+        ],
+        [
+          "2026-12-08T07:44:00Z",
+          0.003
+        ],
+        [
+          "2026-12-08T07:45:00Z",
+          0.0848
+        ],
+        [
+          "2026-12-08T07:46:00Z",
+          0.1648
+        ],
+        [
+          "2026-12-08T07:47:00Z",
+          0.2484
+        ],
+        [
+          "2026-12-08T07:48:00Z",
+          0.2461
+        ],
+        [
+          "2026-12-08T07:49:00Z",
+          0.2508
+        ],
+        [
+          "2026-12-08T07:50:00Z",
+          0.2452
+        ],
+        [
+          "2026-12-08T07:51:00Z",
+          0.2548
+        ],
+        [
+          "2026-12-08T07:52:00Z",
+          0.2503
+        ],
+        [
+          "2026-12-08T07:53:00Z",
+          0.2536
+        ],
+        [
+          "2026-12-08T07:54:00Z",
+          0.2541
+        ],
+        [
+          "2026-12-08T07:55:00Z",
+          0.246
+        ],
+        [
+          "2026-12-08T07:56:00Z",
+          0.2541
+        ],
+        [
+          "2026-12-08T07:57:00Z",
+          0.2507
+        ],
+        [
+          "2026-12-08T07:58:00Z",
+          0.2462
+        ],
+        [
+          "2026-12-08T07:59:00Z",
+          0.2451
+        ],
+        [
+          "2026-12-08T08:00:00Z",
+          0.2498
+        ],
+        [
+          "2026-12-08T08:01:00Z",
+          0.2455
+        ],
+        [
+          "2026-12-08T08:02:00Z",
+          0.2542
+        ],
+        [
+          "2026-12-08T08:03:00Z",
+          0.2481
+        ],
+        [
+          "2026-12-08T08:04:00Z",
+          0.245
+        ],
+        [
+          "2026-12-08T08:05:00Z",
+          0.2481
+        ],
+        [
+          "2026-12-08T08:06:00Z",
+          0.2519
+        ],
+        [
+          "2026-12-08T08:07:00Z",
+          0.2494
+        ],
+        [
+          "2026-12-08T08:08:00Z",
+          0.2522
+        ],
+        [
+          "2026-12-08T08:09:00Z",
+          0.2535
+        ],
+        [
+          "2026-12-08T08:10:00Z",
+          0.2544
+        ],
+        [
+          "2026-12-08T08:11:00Z",
+          0.2455
+        ],
+        [
+          "2026-12-08T08:12:00Z",
+          0.2452
+        ],
+        [
+          "2026-12-08T08:13:00Z",
+          0.2466
+        ],
+        [
+          "2026-12-08T08:14:00Z",
+          0.2453
+        ],
+        [
+          "2026-12-08T08:15:00Z",
+          0.2531
+        ],
+        [
+          "2026-12-08T08:16:00Z",
+          0.2479
+        ],
+        [
+          "2026-12-08T08:17:00Z",
+          0.2496
+        ],
+        [
+          "2026-12-08T08:18:00Z",
+          0.2506
+        ],
+        [
+          "2026-12-08T08:19:00Z",
+          0.2531
+        ],
+        [
+          "2026-12-08T08:20:00Z",
+          0.2496
+        ],
+        [
+          "2026-12-08T08:21:00Z",
+          0.2487
+        ],
+        [
+          "2026-12-08T08:22:00Z",
+          0.2534
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "The shared Redis cluster used for sessions and hot caches lost its primary node (redis-01), and automatic failover to redis-02 stalled on a split-brain guard, so the cache was unavailable cluster-wide. Every read that would have been a cache hit fell through to the origin databases. That cache-miss stampede pushed users-db to its connection limit (480/500), so query latency climbed and dependent services (profile-api, web-frontend auth) timed out - a thundering herd triggered by the cache outage, not by any change on the services themselves. Recovery required manually promoting redis-02 and letting the cache warm.",
+    "evidence_path": [
+      "session-store ERROR: redis-01 unresponsive and automatic failover to redis-02 did not complete",
+      "cache_availability drops to 0 cluster-wide; all reads fall through to origin databases",
+      "users-db connection utilization jumps to ~98% (480/500) from cache-miss traffic",
+      "profile-api and web-frontend auth start timing out; profile-api error rate ~25%",
+      "recovery after the operator manually promotes redis-02 and the cache warms"
+    ],
+    "fix": "Manually promote redis-02 and warm the cache (done). Fix failover so the split-brain guard cannot indefinitely block promotion, add request coalescing / stale-while-revalidate to blunt the herd on a cache outage, and set per-caller database connection limits.",
+    "should_escalate": false
+  }
+}

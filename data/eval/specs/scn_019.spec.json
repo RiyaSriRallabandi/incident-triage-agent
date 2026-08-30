@@ -1,0 +1,43 @@
+{
+  "id": "scn_019",
+  "category": "resource_exhaustion",
+  "difficulty": "medium",
+  "title": "A decompression-bomb image pins every resize worker's CPU",
+  "source_url": "https://cwe.mitre.org/data/definitions/409.html",
+  "source_note": "Failure pattern (a small crafted input that expands enormously on decode, consuming CPU and memory per attempt - a decompression bomb, CWE-409) applied to an image-processing service. All services, asset ids, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~19:32 UTC image resizing is extremely slow platform-wide and the resize queue is huge. No deploys. CPU on the resize fleet is pinned.",
+  "incident_start": "2026-12-01T19:30:00Z",
+  "detected_offset_s": 300,
+  "window_before_s": 1800,
+  "window_after_s": 1200,
+  "primary_service": "image-resizer",
+  "distractor_services": [
+    { "name": "upload-api", "role": "api" },
+    { "name": "thumbnail-worker", "role": "worker" },
+    { "name": "asset-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "image-resizer", "level": "WARN", "msg": "worker CPU 80%; several resize jobs running >30s (normal <500ms)" },
+    { "offset_s": 120, "service": "image-resizer", "level": "ERROR", "msg": "decode job for asset a91f exceeded 60s; image declares 48000x48000 px from a 40KB file" },
+    { "offset_s": 300, "service": "image-resizer", "level": "CRITICAL", "msg": "all workers busy on oversized-decode jobs; resize queue depth 9000; CPU pinned" },
+    { "offset_s": 420, "service": "image-resizer", "level": "WARN", "msg": "asset a91f resubmitted 140 times (client retry)" },
+    { "offset_s": 900, "service": "image-resizer", "level": "INFO", "msg": "operator added a max-decoded-dimension guard and blocklisted asset a91f; CPU recovering" }
+  ],
+  "metrics": [
+    { "name": "cpu_utilization_pct", "unit": "percent", "service": "image-resizer", "baseline": 40.0, "spike": 100.0, "spike_at_offset_s": 0, "ramp_s": 180 },
+    { "name": "resize_p95_latency_ms", "unit": "milliseconds", "service": "image-resizer", "baseline": 480.0, "spike": 45000.0, "spike_at_offset_s": 60, "ramp_s": 240 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "A user uploaded a decompression-bomb image: a ~40KB file that declares 48000x48000 pixel dimensions. image-resizer attempted to fully decode it, consuming enormous CPU and holding a worker for tens of seconds per attempt. The client retried the same asset ~140 times, so many workers were simultaneously stuck on oversized-decode jobs, CPU saturated, and the resize queue backed up for all users. There was no deploy - the trigger was the crafted input plus the absence of a decoded-size guard. Recovery required adding a max-decoded-dimension check and blocklisting the asset.",
+    "evidence_path": [
+      "image-resizer resize jobs suddenly take >30s against a <500ms baseline and worker CPU climbs",
+      "image-resizer ERROR: a 40KB asset declares 48000x48000 px and its decode exceeds 60s",
+      "the same asset was resubmitted ~140 times by client retries",
+      "all workers become stuck on oversized-decode jobs; CPU pins and the queue grows to 9000",
+      "no deploy; recovery after a max-decoded-dimension guard is added and the asset is blocklisted"
+    ],
+    "fix": "Add a decoded-dimension / pixel-count limit before decoding and reject oversized images (done). Blocklist the offending asset, add per-job CPU and time budgets, and rate-limit repeated submissions of the same asset.",
+    "should_escalate": false
+  }
+}
