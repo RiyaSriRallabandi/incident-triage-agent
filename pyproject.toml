@@ -5,6 +5,9 @@ description = "A multi-step AI agent that investigates on-call incidents via too
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "langchain-core>=1.6.1",
+    "langchain-google-genai>=4.3.7",
+    "langchain-groq>=1.1.3",
     "pydantic>=2.9",
     "pydantic-settings>=2.5",
 ]

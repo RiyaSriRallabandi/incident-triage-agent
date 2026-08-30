@@ -30,8 +30,14 @@ Everything runs on free tiers. Target cost: $0.
 ## Setup
 
 ```bash
-uv sync
+uv sync --dev
 cp .env.example .env   # then fill in API keys
+```
+
+Verify LLM access once keys are set:
+
+```bash
+uv run python scripts/smoke_llm.py
 ```
 
 ## Data
