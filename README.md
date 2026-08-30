@@ -46,6 +46,17 @@ Build the runbook retrieval index (downloads the embedding model on first run):
 uv run python scripts/build_runbook_index.py
 ```
 
+Run the agent on a scenario:
+
+```python
+from triage.dataset import load_scenarios
+from triage.agent.run import investigate
+
+scenarios = {s.id: s for s in load_scenarios()}
+result = investigate(scenarios["scn_001"])
+print(result.outcome, result.diagnosis or result.escalation)
+```
+
 ## Data
 
 All incident data is synthetic or derived from public postmortems. No production

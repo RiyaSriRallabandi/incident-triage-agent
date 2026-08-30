@@ -1,3 +1,6 @@
+import pytest
+from langchain_core.tools import ToolException
+
 from triage.dataset import load_scenarios
 from triage.tools.toolset import TOOL_NAMES, build_toolset
 
@@ -31,10 +34,10 @@ def test_deploys_tool_reports_nothing_shipped_for_scn_002():
     assert out == "No deploys found in the given scope."
 
 
-def test_metrics_tool_bad_input_returns_message_not_exception():
-    out = _toolset("scn_001")["query_metrics"].invoke({"service": "edge-proxy", "metric": "cpu"})
-    assert "no metric named 'cpu'" in out
-    assert "cpu_utilization_pct" in out
+def test_metrics_tool_bad_input_raises_tool_exception():
+    tool = _toolset("scn_001")["query_metrics"]
+    with pytest.raises(ToolException, match="no metric named 'cpu'"):
+        tool.invoke({"service": "edge-proxy", "metric": "cpu"})
 
 
 def test_runbook_tool_present_and_retrieves(runbook_index):
@@ -44,7 +47,7 @@ def test_runbook_tool_present_and_retrieves(runbook_index):
     assert ".md >" in out
 
 
-def test_runbook_tool_missing_index_returns_message(tmp_path):
+def test_runbook_tool_missing_index_raises_tool_exception(tmp_path):
     tools = _toolset("scn_001", runbook_index_dir=tmp_path / "nope")
-    out = tools["retrieve_runbook"].invoke({"query": "anything"})
-    assert "build_runbook_index" in out
+    with pytest.raises(ToolException, match="build_runbook_index"):
+        tools["retrieve_runbook"].invoke({"query": "anything"})

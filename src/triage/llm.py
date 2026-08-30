@@ -103,9 +103,18 @@ def with_structured_output[Schema: BaseModel](
 ) -> Runnable[object, Schema]:
     """Bind a Pydantic output schema to a chat model.
 
-    Groq's OSS models are unreliable at tool-calling for this; their native
-    JSON-schema mode is not. Gemini uses the default method.
+    Groq's OSS models need native JSON-schema mode (they are unreliable at
+    tool-calling), and even then occasionally emit a stray tool call that the API
+    rejects with a 400 - so the Groq path retries a few times. Gemini uses the
+    default method.
     """
-    if provider == "groq":
-        return model.with_structured_output(schema, method="json_schema")
-    return model.with_structured_output(schema)
+    if provider != "groq":
+        return model.with_structured_output(schema)
+
+    import groq
+
+    return model.with_structured_output(schema, method="json_schema").with_retry(
+        retry_if_exception_type=(groq.BadRequestError, groq.InternalServerError),
+        stop_after_attempt=4,
+        wait_exponential_jitter=True,
+    )

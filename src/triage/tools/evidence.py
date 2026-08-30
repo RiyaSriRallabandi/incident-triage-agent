@@ -168,7 +168,10 @@ def query_metrics(
 
     points = [(ts, val) for ts, val in series.points if _in_window(ts, start_dt, end_dt)]
     if not points:
-        raise ToolInputError("no metric samples fall inside the given start/end window")
+        raise ToolInputError(
+            f"no {metric!r} samples for {service!r} in the given window; "
+            f"the series spans {_iso(series.points[0][0])} to {_iso(series.points[-1][0])}"
+        )
 
     values = [v for _, v in points]
     first = values[0]

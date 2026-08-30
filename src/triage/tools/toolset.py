@@ -134,20 +134,13 @@ def build_toolset(
             raise ToolException(str(exc)) from exc
         return _format_runbook(hits)
 
+    # No handle_tool_error: a ToolException propagates to the agent's act node,
+    # which records it as a failed evidence step (error=True) the planner can see.
     return [
+        StructuredTool.from_function(search_logs, name="search_logs", parse_docstring=True),
+        StructuredTool.from_function(query_metrics, name="query_metrics", parse_docstring=True),
         StructuredTool.from_function(
-            search_logs, name="search_logs", parse_docstring=True, handle_tool_error=True
+            get_recent_deploys, name="get_recent_deploys", parse_docstring=True
         ),
-        StructuredTool.from_function(
-            query_metrics, name="query_metrics", parse_docstring=True, handle_tool_error=True
-        ),
-        StructuredTool.from_function(
-            get_recent_deploys,
-            name="get_recent_deploys",
-            parse_docstring=True,
-            handle_tool_error=True,
-        ),
-        StructuredTool.from_function(
-            runbook_search, name="retrieve_runbook", parse_docstring=True, handle_tool_error=True
-        ),
+        StructuredTool.from_function(runbook_search, name="retrieve_runbook", parse_docstring=True),
     ]

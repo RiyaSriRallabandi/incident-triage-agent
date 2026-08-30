@@ -1,1 +1,1 @@
-"""agent subpackage (placeholder — populated in a later task)."""
+"""Agent: LangGraph state machine, nodes, prompts, entry point."""
