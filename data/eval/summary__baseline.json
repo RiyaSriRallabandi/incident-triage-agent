@@ -2,8 +2,8 @@
   "tag": "baseline",
   "n_runs": 12,
   "n_crashed": 0,
-  "root_cause_accuracy": 0.778,
-  "root_cause_partial_rate": 0.222,
+  "root_cause_accuracy": 0.222,
+  "root_cause_partial_rate": 0.778,
   "escalation_decision_accuracy": 1.0,
   "false_confident_wrong_rate": 0.0,
   "mean_tool_calls": 5.0,
@@ -17,7 +17,8 @@
       "scenario_id": "scn_001",
       "n_runs": 3,
       "root_cause_grades": {
-        "correct": 3
+        "correct": 1,
+        "partial": 2
       },
       "escalation_calls": {
         "correct": 3
@@ -29,8 +30,7 @@
       "scenario_id": "scn_002",
       "n_runs": 3,
       "root_cause_grades": {
-        "partial": 1,
-        "correct": 2
+        "partial": 3
       },
       "escalation_calls": {
         "correct": 3
@@ -42,8 +42,8 @@
       "scenario_id": "scn_003",
       "n_runs": 3,
       "root_cause_grades": {
-        "correct": 2,
-        "partial": 1
+        "partial": 2,
+        "correct": 1
       },
       "escalation_calls": {
         "correct": 3
@@ -66,34 +66,8 @@
   ],
   "calibration": {
     "n": 12,
-    "raw_agreement": 0.5833333333333334,
-    "cohen_kappa": 0.2499999999999999,
-    "disagreements": [
-      [
-        "scn_001__run2",
-        "partial",
-        "correct"
-      ],
-      [
-        "scn_001__run3",
-        "partial",
-        "correct"
-      ],
-      [
-        "scn_002__run2",
-        "partial",
-        "correct"
-      ],
-      [
-        "scn_002__run3",
-        "partial",
-        "correct"
-      ],
-      [
-        "scn_003__run1",
-        "partial",
-        "correct"
-      ]
-    ]
+    "raw_agreement": 1.0,
+    "cohen_kappa": 1.0,
+    "disagreements": []
   }
 }

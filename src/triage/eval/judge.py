@@ -17,7 +17,7 @@ from triage.eval.runner import CachedRun
 from triage.llm import get_judge_model, with_structured_output
 from triage.schema import Scenario
 
-JUDGE_ROOT_CAUSE_PROMPT = "judge_root_cause_v1"
+JUDGE_ROOT_CAUSE_PROMPT = "judge_root_cause_v2"  # v1 kept: skewed lenient vs hand grading
 JUDGE_FAILURE_STAGE_PROMPT = "judge_failure_stage_v1"
 
 RootCauseGrade = Literal["correct", "partial", "incorrect", "n/a"]
