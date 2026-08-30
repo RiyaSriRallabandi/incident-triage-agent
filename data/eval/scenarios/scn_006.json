@@ -1,0 +1,732 @@
+{
+  "id": "scn_006",
+  "category": "network_dns",
+  "difficulty": "medium",
+  "title": "Security-group change removes egress rule to the external payment processor",
+  "source_url": "https://sre.google/sre-book/managing-incidents/",
+  "source_note": "Failure pattern (an infrastructure access-control change silently removes a required network path to a critical dependency, so connections time out while DNS still resolves) is a common operational class discussed in the Google SRE Book. All services, change IDs, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~11:07 UTC all card payments are failing at checkout with 'try again later'. Non-payment traffic is fine. No application deploys. Cloud infra team pushed a security-group change this morning.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-09-22T10:36:01.980133Z",
+      "service": "payments-gateway",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 207ms"
+    },
+    {
+      "ts": "2026-09-22T10:36:15.039590Z",
+      "service": "orders-worker",
+      "level": "WARN",
+      "msg": "job email.send retried attempt=1"
+    },
+    {
+      "ts": "2026-09-22T10:36:47.361846Z",
+      "service": "payments-gateway",
+      "level": "INFO",
+      "msg": "POST /search 201 in 146ms"
+    },
+    {
+      "ts": "2026-09-22T10:39:15.665701Z",
+      "service": "payments-gateway",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 106ms"
+    },
+    {
+      "ts": "2026-09-22T10:41:22.591403Z",
+      "service": "ledger-db",
+      "level": "INFO",
+      "msg": "autovacuum: table \"events\" done"
+    },
+    {
+      "ts": "2026-09-22T10:41:45.093572Z",
+      "service": "payments-gateway",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 193ms"
+    },
+    {
+      "ts": "2026-09-22T10:42:11.242655Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=155"
+    },
+    {
+      "ts": "2026-09-22T10:42:19.983137Z",
+      "service": "ledger-db",
+      "level": "INFO",
+      "msg": "checkpoint complete: wrote 419 buffers"
+    },
+    {
+      "ts": "2026-09-22T10:48:43.584676Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 32ms"
+    },
+    {
+      "ts": "2026-09-22T10:49:45.251314Z",
+      "service": "ledger-db",
+      "level": "WARN",
+      "msg": "long-running query 239ms: SELECT ..."
+    },
+    {
+      "ts": "2026-09-22T10:50:15.568130Z",
+      "service": "ledger-db",
+      "level": "WARN",
+      "msg": "long-running query 100ms: SELECT ..."
+    },
+    {
+      "ts": "2026-09-22T10:52:02.301336Z",
+      "service": "ledger-db",
+      "level": "INFO",
+      "msg": "connection received: host=10.0.761.82"
+    },
+    {
+      "ts": "2026-09-22T10:53:48.131678Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=78"
+    },
+    {
+      "ts": "2026-09-22T10:57:35.585628Z",
+      "service": "payments-gateway",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2026-09-22T11:01:27.639742Z",
+      "service": "payments-gateway",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 15ms"
+    },
+    {
+      "ts": "2026-09-22T11:03:01.123096Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 37ms"
+    },
+    {
+      "ts": "2026-09-22T11:05:00Z",
+      "service": "cloud-infra",
+      "level": "INFO",
+      "msg": "security group sg-pay-egress updated: 1 rule removed, 2 added (change CR-4821)"
+    },
+    {
+      "ts": "2026-09-22T11:05:31.994343Z",
+      "service": "ledger-db",
+      "level": "INFO",
+      "msg": "checkpoint complete: wrote 870 buffers"
+    },
+    {
+      "ts": "2026-09-22T11:07:00Z",
+      "service": "payments-gateway",
+      "level": "WARN",
+      "msg": "outbound connection to processor.acme-pay.com timing out (connect timeout 10s)"
+    },
+    {
+      "ts": "2026-09-22T11:07:01.282401Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "processed batch size=501"
+    },
+    {
+      "ts": "2026-09-22T11:10:00Z",
+      "service": "payments-gateway",
+      "level": "ERROR",
+      "msg": "100% of payment authorizations failing: upstream connect timeout"
+    },
+    {
+      "ts": "2026-09-22T11:11:00Z",
+      "service": "payments-gateway",
+      "level": "INFO",
+      "msg": "DNS resolves processor.acme-pay.com fine; TCP connect never completes"
+    },
+    {
+      "ts": "2026-09-22T11:12:00Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "payment step failing; showing 'try again later' to users"
+    },
+    {
+      "ts": "2026-09-22T11:12:42.845955Z",
+      "service": "ledger-db",
+      "level": "INFO",
+      "msg": "connection received: host=10.0.757.236"
+    },
+    {
+      "ts": "2026-09-22T11:22:46.144912Z",
+      "service": "payments-gateway",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 30ms"
+    },
+    {
+      "ts": "2026-09-22T11:23:13.839448Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "processed batch size=142"
+    },
+    {
+      "ts": "2026-09-22T11:24:53.488895Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-09-22T11:25:00Z",
+      "service": "cloud-infra",
+      "level": "INFO",
+      "msg": "CR-4821 rolled back; egress rule for the processor CIDR restored"
+    },
+    {
+      "ts": "2026-09-22T11:25:26.065229Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "queue depth=583"
+    },
+    {
+      "ts": "2026-09-22T11:25:36.172405Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 169ms"
+    },
+    {
+      "ts": "2026-09-22T11:25:43.400569Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=228"
+    },
+    {
+      "ts": "2026-09-22T11:27:00.655801Z",
+      "service": "ledger-db",
+      "level": "WARN",
+      "msg": "long-running query 119ms: SELECT ..."
+    },
+    {
+      "ts": "2026-09-22T11:28:25.853583Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-09-22T11:33:51.185708Z",
+      "service": "ledger-db",
+      "level": "INFO",
+      "msg": "autovacuum: table \"events\" done"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "payment_auth_success_rate",
+      "unit": "ratio",
+      "service": "payments-gateway",
+      "points": [
+        [
+          "2026-09-22T10:35:00Z",
+          0.9936
+        ],
+        [
+          "2026-09-22T10:36:00Z",
+          0.971
+        ],
+        [
+          "2026-09-22T10:37:00Z",
+          0.9813
+        ],
+        [
+          "2026-09-22T10:38:00Z",
+          0.9775
+        ],
+        [
+          "2026-09-22T10:39:00Z",
+          0.9738
+        ],
+        [
+          "2026-09-22T10:40:00Z",
+          0.9846
+        ],
+        [
+          "2026-09-22T10:41:00Z",
+          1.0044
+        ],
+        [
+          "2026-09-22T10:42:00Z",
+          0.9813
+        ],
+        [
+          "2026-09-22T10:43:00Z",
+          0.9734
+        ],
+        [
+          "2026-09-22T10:44:00Z",
+          1.0028
+        ],
+        [
+          "2026-09-22T10:45:00Z",
+          0.9842
+        ],
+        [
+          "2026-09-22T10:46:00Z",
+          0.9987
+        ],
+        [
+          "2026-09-22T10:47:00Z",
+          0.9749
+        ],
+        [
+          "2026-09-22T10:48:00Z",
+          1.0011
+        ],
+        [
+          "2026-09-22T10:49:00Z",
+          0.9874
+        ],
+        [
+          "2026-09-22T10:50:00Z",
+          0.9983
+        ],
+        [
+          "2026-09-22T10:51:00Z",
+          0.9777
+        ],
+        [
+          "2026-09-22T10:52:00Z",
+          0.9827
+        ],
+        [
+          "2026-09-22T10:53:00Z",
+          0.987
+        ],
+        [
+          "2026-09-22T10:54:00Z",
+          0.9884
+        ],
+        [
+          "2026-09-22T10:55:00Z",
+          0.9812
+        ],
+        [
+          "2026-09-22T10:56:00Z",
+          0.9769
+        ],
+        [
+          "2026-09-22T10:57:00Z",
+          0.9882
+        ],
+        [
+          "2026-09-22T10:58:00Z",
+          0.9719
+        ],
+        [
+          "2026-09-22T10:59:00Z",
+          0.9896
+        ],
+        [
+          "2026-09-22T11:00:00Z",
+          0.9884
+        ],
+        [
+          "2026-09-22T11:01:00Z",
+          0.987
+        ],
+        [
+          "2026-09-22T11:02:00Z",
+          0.9742
+        ],
+        [
+          "2026-09-22T11:03:00Z",
+          0.9738
+        ],
+        [
+          "2026-09-22T11:04:00Z",
+          0.9921
+        ],
+        [
+          "2026-09-22T11:05:00Z",
+          0.976
+        ],
+        [
+          "2026-09-22T11:06:00Z",
+          1.0026
+        ],
+        [
+          "2026-09-22T11:07:00Z",
+          0.9976
+        ],
+        [
+          "2026-09-22T11:08:00Z",
+          0.7399
+        ],
+        [
+          "2026-09-22T11:09:00Z",
+          0.4856
+        ],
+        [
+          "2026-09-22T11:10:00Z",
+          0.2489
+        ],
+        [
+          "2026-09-22T11:11:00Z",
+          0.0168
+        ],
+        [
+          "2026-09-22T11:12:00Z",
+          -0.0046
+        ],
+        [
+          "2026-09-22T11:13:00Z",
+          0.0169
+        ],
+        [
+          "2026-09-22T11:14:00Z",
+          -0.0015
+        ],
+        [
+          "2026-09-22T11:15:00Z",
+          0.0177
+        ],
+        [
+          "2026-09-22T11:16:00Z",
+          0.0114
+        ],
+        [
+          "2026-09-22T11:17:00Z",
+          -0.0186
+        ],
+        [
+          "2026-09-22T11:18:00Z",
+          -0.0097
+        ],
+        [
+          "2026-09-22T11:19:00Z",
+          0.007
+        ],
+        [
+          "2026-09-22T11:20:00Z",
+          0.0176
+        ],
+        [
+          "2026-09-22T11:21:00Z",
+          0.0034
+        ],
+        [
+          "2026-09-22T11:22:00Z",
+          -0.0199
+        ],
+        [
+          "2026-09-22T11:23:00Z",
+          0.0113
+        ],
+        [
+          "2026-09-22T11:24:00Z",
+          0.0193
+        ],
+        [
+          "2026-09-22T11:25:00Z",
+          -0.0116
+        ],
+        [
+          "2026-09-22T11:26:00Z",
+          0.0192
+        ],
+        [
+          "2026-09-22T11:27:00Z",
+          -0.0093
+        ],
+        [
+          "2026-09-22T11:28:00Z",
+          -0.006
+        ],
+        [
+          "2026-09-22T11:29:00Z",
+          0.0005
+        ],
+        [
+          "2026-09-22T11:30:00Z",
+          0.0071
+        ],
+        [
+          "2026-09-22T11:31:00Z",
+          0.0019
+        ],
+        [
+          "2026-09-22T11:32:00Z",
+          -0.0105
+        ],
+        [
+          "2026-09-22T11:33:00Z",
+          0.0092
+        ],
+        [
+          "2026-09-22T11:34:00Z",
+          0.0056
+        ],
+        [
+          "2026-09-22T11:35:00Z",
+          0.0123
+        ]
+      ]
+    },
+    {
+      "name": "outbound_connect_errors_per_s",
+      "unit": "count_per_second",
+      "service": "payments-gateway",
+      "points": [
+        [
+          "2026-09-22T10:35:00Z",
+          0.2003
+        ],
+        [
+          "2026-09-22T10:36:00Z",
+          0.2021
+        ],
+        [
+          "2026-09-22T10:37:00Z",
+          0.2007
+        ],
+        [
+          "2026-09-22T10:38:00Z",
+          0.1972
+        ],
+        [
+          "2026-09-22T10:39:00Z",
+          0.2027
+        ],
+        [
+          "2026-09-22T10:40:00Z",
+          0.2032
+        ],
+        [
+          "2026-09-22T10:41:00Z",
+          0.2008
+        ],
+        [
+          "2026-09-22T10:42:00Z",
+          0.2036
+        ],
+        [
+          "2026-09-22T10:43:00Z",
+          0.1969
+        ],
+        [
+          "2026-09-22T10:44:00Z",
+          0.1969
+        ],
+        [
+          "2026-09-22T10:45:00Z",
+          0.1994
+        ],
+        [
+          "2026-09-22T10:46:00Z",
+          0.1965
+        ],
+        [
+          "2026-09-22T10:47:00Z",
+          0.1971
+        ],
+        [
+          "2026-09-22T10:48:00Z",
+          0.197
+        ],
+        [
+          "2026-09-22T10:49:00Z",
+          0.1973
+        ],
+        [
+          "2026-09-22T10:50:00Z",
+          0.2026
+        ],
+        [
+          "2026-09-22T10:51:00Z",
+          0.1969
+        ],
+        [
+          "2026-09-22T10:52:00Z",
+          0.2027
+        ],
+        [
+          "2026-09-22T10:53:00Z",
+          0.1977
+        ],
+        [
+          "2026-09-22T10:54:00Z",
+          0.1997
+        ],
+        [
+          "2026-09-22T10:55:00Z",
+          0.203
+        ],
+        [
+          "2026-09-22T10:56:00Z",
+          0.2004
+        ],
+        [
+          "2026-09-22T10:57:00Z",
+          0.2023
+        ],
+        [
+          "2026-09-22T10:58:00Z",
+          0.1981
+        ],
+        [
+          "2026-09-22T10:59:00Z",
+          0.1984
+        ],
+        [
+          "2026-09-22T11:00:00Z",
+          0.2038
+        ],
+        [
+          "2026-09-22T11:01:00Z",
+          0.2012
+        ],
+        [
+          "2026-09-22T11:02:00Z",
+          0.1967
+        ],
+        [
+          "2026-09-22T11:03:00Z",
+          0.2
+        ],
+        [
+          "2026-09-22T11:04:00Z",
+          0.1976
+        ],
+        [
+          "2026-09-22T11:05:00Z",
+          0.1993
+        ],
+        [
+          "2026-09-22T11:06:00Z",
+          0.2009
+        ],
+        [
+          "2026-09-22T11:07:00Z",
+          0.1996
+        ],
+        [
+          "2026-09-22T11:08:00Z",
+          15.3613
+        ],
+        [
+          "2026-09-22T11:09:00Z",
+          30.5022
+        ],
+        [
+          "2026-09-22T11:10:00Z",
+          44.7676
+        ],
+        [
+          "2026-09-22T11:11:00Z",
+          44.3829
+        ],
+        [
+          "2026-09-22T11:12:00Z",
+          45.08
+        ],
+        [
+          "2026-09-22T11:13:00Z",
+          44.5062
+        ],
+        [
+          "2026-09-22T11:14:00Z",
+          44.382
+        ],
+        [
+          "2026-09-22T11:15:00Z",
+          45.8063
+        ],
+        [
+          "2026-09-22T11:16:00Z",
+          44.238
+        ],
+        [
+          "2026-09-22T11:17:00Z",
+          44.9881
+        ],
+        [
+          "2026-09-22T11:18:00Z",
+          45.8046
+        ],
+        [
+          "2026-09-22T11:19:00Z",
+          44.5101
+        ],
+        [
+          "2026-09-22T11:20:00Z",
+          45.4866
+        ],
+        [
+          "2026-09-22T11:21:00Z",
+          45.2416
+        ],
+        [
+          "2026-09-22T11:22:00Z",
+          45.5447
+        ],
+        [
+          "2026-09-22T11:23:00Z",
+          44.9591
+        ],
+        [
+          "2026-09-22T11:24:00Z",
+          45.5393
+        ],
+        [
+          "2026-09-22T11:25:00Z",
+          45.654
+        ],
+        [
+          "2026-09-22T11:26:00Z",
+          45.2111
+        ],
+        [
+          "2026-09-22T11:27:00Z",
+          44.4878
+        ],
+        [
+          "2026-09-22T11:28:00Z",
+          44.1676
+        ],
+        [
+          "2026-09-22T11:29:00Z",
+          45.493
+        ],
+        [
+          "2026-09-22T11:30:00Z",
+          44.5057
+        ],
+        [
+          "2026-09-22T11:31:00Z",
+          45.4847
+        ],
+        [
+          "2026-09-22T11:32:00Z",
+          45.6534
+        ],
+        [
+          "2026-09-22T11:33:00Z",
+          44.8392
+        ],
+        [
+          "2026-09-22T11:34:00Z",
+          45.1319
+        ],
+        [
+          "2026-09-22T11:35:00Z",
+          45.0704
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "A security-group change (CR-4821) intended to tighten egress rules removed the rule permitting payments-gateway to reach the external payment processor's IP range. DNS still resolved, but TCP connections to the processor could no longer be established, so every payment authorization timed out. Non-payment traffic was unaffected. Recovery required rolling back the change.",
+    "evidence_path": [
+      "cloud-infra INFO at 11:05: security group sg-pay-egress updated (CR-4821), one rule removed",
+      "payments-gateway outbound connections to the processor start timing out at 11:07",
+      "payments-gateway notes DNS resolves but TCP connect never completes - a network-path failure, not a DNS failure",
+      "payment_auth_success_rate falls to 0 and outbound connect errors spike",
+      "recovery after CR-4821 is rolled back at ~11:25"
+    ],
+    "fix": "Roll back CR-4821 (done). Review security-group changes that affect payment egress against a known-good allowlist, test them in staging, and add synthetic monitoring that authorizes a test transaction end to end.",
+    "should_escalate": false
+  }
+}

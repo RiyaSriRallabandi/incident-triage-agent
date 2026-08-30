@@ -1,0 +1,45 @@
+{
+  "id": "scn_011",
+  "category": "bad_deploy",
+  "difficulty": "hard",
+  "title": "Repurposed feature flag makes stale hosts route orders through dead code during a partial rollout",
+  "source_url": "https://www.sec.gov/files/litigation/admin/2013/34-70694.pdf",
+  "source_note": "Failure pattern follows the Knight Capital 2012 incident: a deploy repurposed a flag whose old meaning still lived on hosts not yet updated, so during the partial rollout those hosts executed a deprecated, buggy code path. All services, commit hashes, flag names, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~14:32 UTC a fraction of orders are being submitted twice or with wrong quantities. Total order volume looks normal. A rollout of order-router started a few minutes before. Trading ops are seeing bad orders reach the exchange.",
+  "incident_start": "2026-10-28T14:30:00Z",
+  "detected_offset_s": 240,
+  "window_before_s": 1800,
+  "window_after_s": 1200,
+  "primary_service": "order-router",
+  "distractor_services": [
+    { "name": "positions-api", "role": "api" },
+    { "name": "settlement-worker", "role": "worker" },
+    { "name": "market-data-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "deploy-system", "level": "INFO", "msg": "order-router 9a8b7c6 rolling out: 6/8 hosts updated, 2 pending" },
+    { "offset_s": 120, "service": "order-router", "level": "WARN", "msg": "hosts h7,h8 on previous build: ROUTE_MODE flag interpreted as the legacy routing path" },
+    { "offset_s": 240, "service": "order-router", "level": "ERROR", "msg": "duplicate order submissions detected from the legacy routing path (h7,h8): 220 affected orders" },
+    { "offset_s": 300, "service": "trading-ops", "level": "CRITICAL", "msg": "erroneous orders reaching the exchange; ~12% of order flow via the legacy path" },
+    { "offset_s": 600, "service": "deploy-system", "level": "INFO", "msg": "deploy halted and rolled back on all hosts; legacy path disabled" }
+  ],
+  "metrics": [
+    { "name": "erroneous_order_rate", "unit": "ratio", "service": "order-router", "baseline": 0.0, "spike": 0.12, "spike_at_offset_s": 120, "ramp_s": 120 },
+    { "name": "orders_per_s", "unit": "count_per_second", "service": "order-router", "baseline": 40.0, "spike": 46.0, "spike_at_offset_s": 0, "ramp_s": 60 }
+  ],
+  "deploys": [
+    { "service": "order-router", "offset_s": 0, "commit": "9a8b7c6", "summary": "repurpose flag ROUTE_MODE; fleet rollout in progress" }
+  ],
+  "ground_truth": {
+    "root_cause": "Deploy 9a8b7c6 repurposed the ROUTE_MODE feature flag. During the partial rollout (6 of 8 hosts), the two hosts still on the previous build (h7, h8) interpreted the same flag value as 'use the deprecated routing path', which contained a known bug that produced duplicate and malformed order submissions. About 12% of order flow - the share handled by the two stale hosts - went through the buggy legacy path. The trigger is deploying a semantic change to a shared flag without a coordinated cutover. Recovery required rolling back and disabling the legacy path.",
+    "evidence_path": [
+      "deploy 9a8b7c6 to order-router at 14:30, rolling out (6/8 hosts), repurposes the ROUTE_MODE flag",
+      "order-router WARN: hosts h7,h8 on the previous build interpret ROUTE_MODE as the legacy path",
+      "order-router ERROR at 14:34: duplicate order submissions from the legacy path on h7,h8",
+      "erroneous_order_rate rises to ~12%, matching the 2-of-8-host share",
+      "recovery after the deploy is halted, rolled back, and the legacy path disabled"
+    ],
+    "fix": "Roll back and disable the legacy routing path (done). Never change the meaning of an existing flag - add a new flag and remove the old code path first. Gate rollouts of behavior-changing flags behind a check that all hosts are on a compatible build before the flag takes effect.",
+    "should_escalate": false
+  }
+}

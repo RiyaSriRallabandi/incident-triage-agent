@@ -1,0 +1,43 @@
+{
+  "id": "scn_008",
+  "category": "cert_config_expiry",
+  "difficulty": "hard",
+  "title": "Internal mTLS CA rotation leaves a third of the mesh on the old trust bundle",
+  "source_url": "https://aws.amazon.com/builders-library/",
+  "source_note": "Failure pattern (a certificate-authority rotation where a subset of workloads fail to pick up the new trust bundle, producing a partial 'signed by unknown authority' failure between old-root and new-root peers) reflects credential-rotation guidance in the AWS Builders' Library. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~09:33 UTC about a third of internal service-to-service calls are failing with certificate errors. Customer-facing error rate is elevated but not total. No application deploys. The platform team ran a scheduled internal CA rotation this morning.",
+  "incident_start": "2026-10-08T09:30:00Z",
+  "detected_offset_s": 600,
+  "window_before_s": 1800,
+  "window_after_s": 2400,
+  "primary_service": "internal-api-mesh",
+  "distractor_services": [
+    { "name": "inventory-api", "role": "api" },
+    { "name": "shipping-api", "role": "api" },
+    { "name": "orders-worker", "role": "worker" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "mesh-control", "level": "INFO", "msg": "scheduled internal CA rotation complete; new root distributed to service mesh" },
+    { "offset_s": 180, "service": "orders-api", "level": "WARN", "msg": "mTLS to inventory-api failing: certificate signed by unknown authority" },
+    { "offset_s": 600, "service": "orders-api", "level": "ERROR", "msg": "35% of calls to inventory-api and shipping-api failing on certificate validation" },
+    { "offset_s": 720, "service": "mesh-control", "level": "INFO", "msg": "trust bundle version skew detected: 12 of 40 pods still on the previous root" },
+    { "offset_s": 1800, "service": "mesh-control", "level": "INFO", "msg": "forced trust-bundle refresh on lagging pods; error rate falling" }
+  ],
+  "metrics": [
+    { "name": "mtls_validation_error_rate", "unit": "ratio", "service": "internal-api-mesh", "baseline": 0.001, "spike": 0.35, "spike_at_offset_s": 180, "ramp_s": 300 },
+    { "name": "error_rate", "unit": "ratio", "service": "orders-api", "baseline": 0.002, "spike": 0.28, "spike_at_offset_s": 300, "ramp_s": 300 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "A scheduled rotation of the internal mTLS certificate authority distributed a new root, but roughly 30% of service-mesh pods failed to pick up the new trust bundle. Calls between pods on the new root and pods still on the old root failed certificate validation ('signed by unknown authority'), producing a partial (~35%) error rate on internal calls that matches the fraction of stale pods. Recovery required forcing a trust-bundle refresh on the lagging pods.",
+    "evidence_path": [
+      "mesh-control INFO at 09:30: scheduled internal CA rotation completed",
+      "orders-api mTLS calls to inventory-api start failing at 09:33 with 'certificate signed by unknown authority'",
+      "mesh-control detects trust-bundle version skew: 12 of 40 pods still on the previous root",
+      "mtls_validation_error_rate and orders-api error_rate rise to ~30%, matching the stale-pod fraction",
+      "recovery after a forced trust-bundle refresh on the lagging pods"
+    ],
+    "fix": "Force the trust-bundle refresh on lagging pods (done). Make CA rotation two-phase: distribute and confirm the new root on 100% of pods before switching signing to it, and add a pre-cutover check that blocks the rotation on any version skew.",
+    "should_escalate": false
+  }
+}

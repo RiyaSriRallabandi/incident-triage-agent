@@ -1,0 +1,817 @@
+{
+  "id": "scn_011",
+  "category": "bad_deploy",
+  "difficulty": "hard",
+  "title": "Repurposed feature flag makes stale hosts route orders through dead code during a partial rollout",
+  "source_url": "https://www.sec.gov/files/litigation/admin/2013/34-70694.pdf",
+  "source_note": "Failure pattern follows the Knight Capital 2012 incident: a deploy repurposed a flag whose old meaning still lived on hosts not yet updated, so during the partial rollout those hosts executed a deprecated, buggy code path. All services, commit hashes, flag names, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~14:32 UTC a fraction of orders are being submitted twice or with wrong quantities. Total order volume looks normal. A rollout of order-router started a few minutes before. Trading ops are seeing bad orders reach the exchange.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-10-28T14:01:07.329298Z",
+      "service": "market-data-cache",
+      "level": "INFO",
+      "msg": "GET key=user:444 hit"
+    },
+    {
+      "ts": "2026-10-28T14:05:06.278372Z",
+      "service": "order-router",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-28T14:06:29.689085Z",
+      "service": "order-router",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 44ms"
+    },
+    {
+      "ts": "2026-10-28T14:07:31.023984Z",
+      "service": "positions-api",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 83ms"
+    },
+    {
+      "ts": "2026-10-28T14:09:25.955122Z",
+      "service": "settlement-worker",
+      "level": "INFO",
+      "msg": "queue depth=570"
+    },
+    {
+      "ts": "2026-10-28T14:11:26.797604Z",
+      "service": "market-data-cache",
+      "level": "INFO",
+      "msg": "evicted 527 keys (lru)"
+    },
+    {
+      "ts": "2026-10-28T14:12:19.337307Z",
+      "service": "order-router",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=234"
+    },
+    {
+      "ts": "2026-10-28T14:12:34.458199Z",
+      "service": "settlement-worker",
+      "level": "INFO",
+      "msg": "processed batch size=231"
+    },
+    {
+      "ts": "2026-10-28T14:12:56.007637Z",
+      "service": "positions-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-10-28T14:13:49.267999Z",
+      "service": "positions-api",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 135ms"
+    },
+    {
+      "ts": "2026-10-28T14:14:16.956816Z",
+      "service": "settlement-worker",
+      "level": "INFO",
+      "msg": "job cache.warm completed in 124ms"
+    },
+    {
+      "ts": "2026-10-28T14:14:26.983625Z",
+      "service": "order-router",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-10-28T14:14:53.935652Z",
+      "service": "market-data-cache",
+      "level": "INFO",
+      "msg": "GET key=user:299 hit"
+    },
+    {
+      "ts": "2026-10-28T14:15:07.778088Z",
+      "service": "positions-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-10-28T14:15:11.172166Z",
+      "service": "positions-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-10-28T14:16:38.050888Z",
+      "service": "market-data-cache",
+      "level": "INFO",
+      "msg": "evicted 825 keys (lru)"
+    },
+    {
+      "ts": "2026-10-28T14:17:36.772688Z",
+      "service": "order-router",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-28T14:18:17.103236Z",
+      "service": "order-router",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-10-28T14:18:35.536606Z",
+      "service": "market-data-cache",
+      "level": "WARN",
+      "msg": "GET key=user:652 miss"
+    },
+    {
+      "ts": "2026-10-28T14:19:06.332984Z",
+      "service": "market-data-cache",
+      "level": "WARN",
+      "msg": "GET key=user:750 miss"
+    },
+    {
+      "ts": "2026-10-28T14:20:46.409891Z",
+      "service": "order-router",
+      "level": "INFO",
+      "msg": "GET /search 200 in 76ms"
+    },
+    {
+      "ts": "2026-10-28T14:21:06.564778Z",
+      "service": "positions-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-28T14:21:15.490726Z",
+      "service": "order-router",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 57ms"
+    },
+    {
+      "ts": "2026-10-28T14:23:01.516989Z",
+      "service": "order-router",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 162ms"
+    },
+    {
+      "ts": "2026-10-28T14:23:43.940012Z",
+      "service": "positions-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2026-10-28T14:24:07.844563Z",
+      "service": "settlement-worker",
+      "level": "INFO",
+      "msg": "job email.send completed in 199ms"
+    },
+    {
+      "ts": "2026-10-28T14:24:10.758802Z",
+      "service": "order-router",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-28T14:25:17.530694Z",
+      "service": "market-data-cache",
+      "level": "INFO",
+      "msg": "evicted 303 keys (lru)"
+    },
+    {
+      "ts": "2026-10-28T14:25:21.337918Z",
+      "service": "settlement-worker",
+      "level": "INFO",
+      "msg": "processed batch size=124"
+    },
+    {
+      "ts": "2026-10-28T14:25:58.170732Z",
+      "service": "market-data-cache",
+      "level": "WARN",
+      "msg": "GET key=user:860 miss"
+    },
+    {
+      "ts": "2026-10-28T14:27:18.819010Z",
+      "service": "market-data-cache",
+      "level": "WARN",
+      "msg": "GET key=user:833 miss"
+    },
+    {
+      "ts": "2026-10-28T14:29:10.729974Z",
+      "service": "order-router",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-28T14:29:35.374239Z",
+      "service": "market-data-cache",
+      "level": "INFO",
+      "msg": "GET key=user:590 hit"
+    },
+    {
+      "ts": "2026-10-28T14:29:59.488573Z",
+      "service": "order-router",
+      "level": "INFO",
+      "msg": "GET /search 200 in 151ms"
+    },
+    {
+      "ts": "2026-10-28T14:30:00Z",
+      "service": "deploy-system",
+      "level": "INFO",
+      "msg": "order-router 9a8b7c6 rolling out: 6/8 hosts updated, 2 pending"
+    },
+    {
+      "ts": "2026-10-28T14:30:22.686223Z",
+      "service": "settlement-worker",
+      "level": "INFO",
+      "msg": "job email.send completed in 129ms"
+    },
+    {
+      "ts": "2026-10-28T14:32:00Z",
+      "service": "order-router",
+      "level": "WARN",
+      "msg": "hosts h7,h8 on previous build: ROUTE_MODE flag interpreted as the legacy routing path"
+    },
+    {
+      "ts": "2026-10-28T14:34:00Z",
+      "service": "order-router",
+      "level": "ERROR",
+      "msg": "duplicate order submissions detected from the legacy routing path (h7,h8): 220 affected orders"
+    },
+    {
+      "ts": "2026-10-28T14:35:00Z",
+      "service": "trading-ops",
+      "level": "CRITICAL",
+      "msg": "erroneous orders reaching the exchange; ~12% of order flow via the legacy path"
+    },
+    {
+      "ts": "2026-10-28T14:36:30.440219Z",
+      "service": "positions-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-10-28T14:36:35.062922Z",
+      "service": "settlement-worker",
+      "level": "WARN",
+      "msg": "job email.send retried attempt=1"
+    },
+    {
+      "ts": "2026-10-28T14:39:02.809871Z",
+      "service": "order-router",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2026-10-28T14:40:00Z",
+      "service": "deploy-system",
+      "level": "INFO",
+      "msg": "deploy halted and rolled back on all hosts; legacy path disabled"
+    },
+    {
+      "ts": "2026-10-28T14:40:06.249030Z",
+      "service": "positions-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-10-28T14:40:09.230849Z",
+      "service": "positions-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-28T14:42:40.593186Z",
+      "service": "market-data-cache",
+      "level": "INFO",
+      "msg": "SET key=session:672 ttl=3600"
+    },
+    {
+      "ts": "2026-10-28T14:44:00.539406Z",
+      "service": "positions-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-10-28T14:44:39.479240Z",
+      "service": "market-data-cache",
+      "level": "INFO",
+      "msg": "SET key=session:687 ttl=3600"
+    },
+    {
+      "ts": "2026-10-28T14:45:24.815393Z",
+      "service": "positions-api",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=117"
+    },
+    {
+      "ts": "2026-10-28T14:48:39.710899Z",
+      "service": "market-data-cache",
+      "level": "INFO",
+      "msg": "GET key=user:775 hit"
+    },
+    {
+      "ts": "2026-10-28T14:49:13.434948Z",
+      "service": "order-router",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=223"
+    },
+    {
+      "ts": "2026-10-28T14:49:25.497379Z",
+      "service": "settlement-worker",
+      "level": "INFO",
+      "msg": "job webhook.deliver completed in 154ms"
+    },
+    {
+      "ts": "2026-10-28T14:49:25.557509Z",
+      "service": "positions-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2026-10-28T14:52:08.172567Z",
+      "service": "order-router",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=71"
+    },
+    {
+      "ts": "2026-10-28T14:52:26.936033Z",
+      "service": "positions-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=83"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "erroneous_order_rate",
+      "unit": "ratio",
+      "service": "order-router",
+      "points": [
+        [
+          "2026-10-28T14:00:00Z",
+          -0.0104
+        ],
+        [
+          "2026-10-28T14:01:00Z",
+          0.0143
+        ],
+        [
+          "2026-10-28T14:02:00Z",
+          0.0147
+        ],
+        [
+          "2026-10-28T14:03:00Z",
+          -0.0119
+        ],
+        [
+          "2026-10-28T14:04:00Z",
+          -0.0101
+        ],
+        [
+          "2026-10-28T14:05:00Z",
+          -0.0052
+        ],
+        [
+          "2026-10-28T14:06:00Z",
+          -0.0024
+        ],
+        [
+          "2026-10-28T14:07:00Z",
+          0.0023
+        ],
+        [
+          "2026-10-28T14:08:00Z",
+          0.0072
+        ],
+        [
+          "2026-10-28T14:09:00Z",
+          0.0026
+        ],
+        [
+          "2026-10-28T14:10:00Z",
+          0.0041
+        ],
+        [
+          "2026-10-28T14:11:00Z",
+          0.0019
+        ],
+        [
+          "2026-10-28T14:12:00Z",
+          -0.016
+        ],
+        [
+          "2026-10-28T14:13:00Z",
+          -0.0141
+        ],
+        [
+          "2026-10-28T14:14:00Z",
+          0.0194
+        ],
+        [
+          "2026-10-28T14:15:00Z",
+          -0.0114
+        ],
+        [
+          "2026-10-28T14:16:00Z",
+          0.0174
+        ],
+        [
+          "2026-10-28T14:17:00Z",
+          0.016
+        ],
+        [
+          "2026-10-28T14:18:00Z",
+          0.0125
+        ],
+        [
+          "2026-10-28T14:19:00Z",
+          -0.0103
+        ],
+        [
+          "2026-10-28T14:20:00Z",
+          -0.007
+        ],
+        [
+          "2026-10-28T14:21:00Z",
+          -0.0095
+        ],
+        [
+          "2026-10-28T14:22:00Z",
+          -0.0037
+        ],
+        [
+          "2026-10-28T14:23:00Z",
+          -0.002
+        ],
+        [
+          "2026-10-28T14:24:00Z",
+          0.0122
+        ],
+        [
+          "2026-10-28T14:25:00Z",
+          -0.017
+        ],
+        [
+          "2026-10-28T14:26:00Z",
+          -0.0145
+        ],
+        [
+          "2026-10-28T14:27:00Z",
+          -0.0022
+        ],
+        [
+          "2026-10-28T14:28:00Z",
+          0.0085
+        ],
+        [
+          "2026-10-28T14:29:00Z",
+          0.0142
+        ],
+        [
+          "2026-10-28T14:30:00Z",
+          -0.0036
+        ],
+        [
+          "2026-10-28T14:31:00Z",
+          0.007
+        ],
+        [
+          "2026-10-28T14:32:00Z",
+          0.0169
+        ],
+        [
+          "2026-10-28T14:33:00Z",
+          0.0591
+        ],
+        [
+          "2026-10-28T14:34:00Z",
+          0.1219
+        ],
+        [
+          "2026-10-28T14:35:00Z",
+          0.1221
+        ],
+        [
+          "2026-10-28T14:36:00Z",
+          0.121
+        ],
+        [
+          "2026-10-28T14:37:00Z",
+          0.1187
+        ],
+        [
+          "2026-10-28T14:38:00Z",
+          0.1191
+        ],
+        [
+          "2026-10-28T14:39:00Z",
+          0.1194
+        ],
+        [
+          "2026-10-28T14:40:00Z",
+          0.1207
+        ],
+        [
+          "2026-10-28T14:41:00Z",
+          0.1211
+        ],
+        [
+          "2026-10-28T14:42:00Z",
+          0.1198
+        ],
+        [
+          "2026-10-28T14:43:00Z",
+          0.1224
+        ],
+        [
+          "2026-10-28T14:44:00Z",
+          0.1218
+        ],
+        [
+          "2026-10-28T14:45:00Z",
+          0.1214
+        ],
+        [
+          "2026-10-28T14:46:00Z",
+          0.1216
+        ],
+        [
+          "2026-10-28T14:47:00Z",
+          0.1188
+        ],
+        [
+          "2026-10-28T14:48:00Z",
+          0.1193
+        ],
+        [
+          "2026-10-28T14:49:00Z",
+          0.1191
+        ],
+        [
+          "2026-10-28T14:50:00Z",
+          0.1186
+        ],
+        [
+          "2026-10-28T14:51:00Z",
+          0.12
+        ],
+        [
+          "2026-10-28T14:52:00Z",
+          0.1221
+        ],
+        [
+          "2026-10-28T14:53:00Z",
+          0.1188
+        ],
+        [
+          "2026-10-28T14:54:00Z",
+          0.1194
+        ]
+      ]
+    },
+    {
+      "name": "orders_per_s",
+      "unit": "count_per_second",
+      "service": "order-router",
+      "points": [
+        [
+          "2026-10-28T14:00:00Z",
+          39.7714
+        ],
+        [
+          "2026-10-28T14:01:00Z",
+          40.5877
+        ],
+        [
+          "2026-10-28T14:02:00Z",
+          39.6179
+        ],
+        [
+          "2026-10-28T14:03:00Z",
+          39.5785
+        ],
+        [
+          "2026-10-28T14:04:00Z",
+          40.6489
+        ],
+        [
+          "2026-10-28T14:05:00Z",
+          40.5641
+        ],
+        [
+          "2026-10-28T14:06:00Z",
+          39.2023
+        ],
+        [
+          "2026-10-28T14:07:00Z",
+          39.5349
+        ],
+        [
+          "2026-10-28T14:08:00Z",
+          40.1809
+        ],
+        [
+          "2026-10-28T14:09:00Z",
+          40.0152
+        ],
+        [
+          "2026-10-28T14:10:00Z",
+          40.3627
+        ],
+        [
+          "2026-10-28T14:11:00Z",
+          40.6057
+        ],
+        [
+          "2026-10-28T14:12:00Z",
+          39.5732
+        ],
+        [
+          "2026-10-28T14:13:00Z",
+          39.7325
+        ],
+        [
+          "2026-10-28T14:14:00Z",
+          39.9651
+        ],
+        [
+          "2026-10-28T14:15:00Z",
+          39.8349
+        ],
+        [
+          "2026-10-28T14:16:00Z",
+          39.996
+        ],
+        [
+          "2026-10-28T14:17:00Z",
+          39.8062
+        ],
+        [
+          "2026-10-28T14:18:00Z",
+          39.2347
+        ],
+        [
+          "2026-10-28T14:19:00Z",
+          39.4001
+        ],
+        [
+          "2026-10-28T14:20:00Z",
+          40.6751
+        ],
+        [
+          "2026-10-28T14:21:00Z",
+          40.1695
+        ],
+        [
+          "2026-10-28T14:22:00Z",
+          40.2852
+        ],
+        [
+          "2026-10-28T14:23:00Z",
+          39.6287
+        ],
+        [
+          "2026-10-28T14:24:00Z",
+          39.4827
+        ],
+        [
+          "2026-10-28T14:25:00Z",
+          39.2181
+        ],
+        [
+          "2026-10-28T14:26:00Z",
+          39.4974
+        ],
+        [
+          "2026-10-28T14:27:00Z",
+          40.7946
+        ],
+        [
+          "2026-10-28T14:28:00Z",
+          39.4421
+        ],
+        [
+          "2026-10-28T14:29:00Z",
+          39.3946
+        ],
+        [
+          "2026-10-28T14:30:00Z",
+          39.9718
+        ],
+        [
+          "2026-10-28T14:31:00Z",
+          45.5997
+        ],
+        [
+          "2026-10-28T14:32:00Z",
+          45.4267
+        ],
+        [
+          "2026-10-28T14:33:00Z",
+          45.448
+        ],
+        [
+          "2026-10-28T14:34:00Z",
+          46.1079
+        ],
+        [
+          "2026-10-28T14:35:00Z",
+          45.798
+        ],
+        [
+          "2026-10-28T14:36:00Z",
+          45.4346
+        ],
+        [
+          "2026-10-28T14:37:00Z",
+          45.7527
+        ],
+        [
+          "2026-10-28T14:38:00Z",
+          46.2252
+        ],
+        [
+          "2026-10-28T14:39:00Z",
+          45.1006
+        ],
+        [
+          "2026-10-28T14:40:00Z",
+          46.6638
+        ],
+        [
+          "2026-10-28T14:41:00Z",
+          46.5258
+        ],
+        [
+          "2026-10-28T14:42:00Z",
+          46.2696
+        ],
+        [
+          "2026-10-28T14:43:00Z",
+          46.8363
+        ],
+        [
+          "2026-10-28T14:44:00Z",
+          45.3312
+        ],
+        [
+          "2026-10-28T14:45:00Z",
+          46.1216
+        ],
+        [
+          "2026-10-28T14:46:00Z",
+          45.2593
+        ],
+        [
+          "2026-10-28T14:47:00Z",
+          45.7217
+        ],
+        [
+          "2026-10-28T14:48:00Z",
+          46.6294
+        ],
+        [
+          "2026-10-28T14:49:00Z",
+          46.432
+        ],
+        [
+          "2026-10-28T14:50:00Z",
+          46.9022
+        ],
+        [
+          "2026-10-28T14:51:00Z",
+          46.4548
+        ],
+        [
+          "2026-10-28T14:52:00Z",
+          46.1393
+        ],
+        [
+          "2026-10-28T14:53:00Z",
+          45.9943
+        ],
+        [
+          "2026-10-28T14:54:00Z",
+          46.798
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [
+    {
+      "service": "order-router",
+      "ts": "2026-10-28T14:30:00Z",
+      "commit": "9a8b7c6",
+      "summary": "repurpose flag ROUTE_MODE; fleet rollout in progress"
+    }
+  ],
+  "ground_truth": {
+    "root_cause": "Deploy 9a8b7c6 repurposed the ROUTE_MODE feature flag. During the partial rollout (6 of 8 hosts), the two hosts still on the previous build (h7, h8) interpreted the same flag value as 'use the deprecated routing path', which contained a known bug that produced duplicate and malformed order submissions. About 12% of order flow - the share handled by the two stale hosts - went through the buggy legacy path. The trigger is deploying a semantic change to a shared flag without a coordinated cutover. Recovery required rolling back and disabling the legacy path.",
+    "evidence_path": [
+      "deploy 9a8b7c6 to order-router at 14:30, rolling out (6/8 hosts), repurposes the ROUTE_MODE flag",
+      "order-router WARN: hosts h7,h8 on the previous build interpret ROUTE_MODE as the legacy path",
+      "order-router ERROR at 14:34: duplicate order submissions from the legacy path on h7,h8",
+      "erroneous_order_rate rises to ~12%, matching the 2-of-8-host share",
+      "recovery after the deploy is halted, rolled back, and the legacy path disabled"
+    ],
+    "fix": "Roll back and disable the legacy routing path (done). Never change the meaning of an existing flag - add a new flag and remove the old code path first. Gate rollouts of behavior-changing flags behind a check that all hosts are on a compatible build before the flag takes effect.",
+    "should_escalate": false
+  }
+}

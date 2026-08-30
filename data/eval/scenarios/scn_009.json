@@ -1,0 +1,677 @@
+{
+  "id": "scn_009",
+  "category": "database_issue",
+  "difficulty": "medium",
+  "title": "A blocking index migration locks the users table and stalls all writes",
+  "source_url": "https://about.gitlab.com/blog/2017/02/10/postmortem-of-database-outage-of-january-31/",
+  "source_note": "Failure pattern (a schema-change migration that takes a blocking lock on a large hot table, stalling every write for its duration) is in the spirit of the GitLab.com 2017 database incident and common online-migration guidance. All services, commit hashes, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~20:11 UTC signups and profile updates are failing with timeouts. Reads look fine. Login mostly works but is slow. A migration deploy went out to users-service just before it started.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-10-15T19:41:10.180232Z",
+      "service": "users-db",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-15T19:46:01.718763Z",
+      "service": "users-db",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-15T19:46:43.491433Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=61"
+    },
+    {
+      "ts": "2026-10-15T19:47:44.340354Z",
+      "service": "users-db",
+      "level": "WARN",
+      "msg": "slow request path=/products duration_ms=170"
+    },
+    {
+      "ts": "2026-10-15T19:49:24.779763Z",
+      "service": "users-db",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-10-15T19:55:22.722513Z",
+      "service": "feed-cache",
+      "level": "WARN",
+      "msg": "GET key=user:549 miss"
+    },
+    {
+      "ts": "2026-10-15T19:58:09.928882Z",
+      "service": "users-db",
+      "level": "INFO",
+      "msg": "POST /search 201 in 118ms"
+    },
+    {
+      "ts": "2026-10-15T20:01:16.731585Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/products duration_ms=186"
+    },
+    {
+      "ts": "2026-10-15T20:01:20.127779Z",
+      "service": "feed-cache",
+      "level": "INFO",
+      "msg": "SET key=session:384 ttl=3600"
+    },
+    {
+      "ts": "2026-10-15T20:02:08.321399Z",
+      "service": "users-db",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-15T20:05:17.417718Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-15T20:05:45.025098Z",
+      "service": "email-worker",
+      "level": "INFO",
+      "msg": "processed batch size=868"
+    },
+    {
+      "ts": "2026-10-15T20:06:23.690901Z",
+      "service": "feed-cache",
+      "level": "INFO",
+      "msg": "evicted 713 keys (lru)"
+    },
+    {
+      "ts": "2026-10-15T20:06:56.924473Z",
+      "service": "users-db",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=28"
+    },
+    {
+      "ts": "2026-10-15T20:09:26.349064Z",
+      "service": "email-worker",
+      "level": "INFO",
+      "msg": "job email.send completed in 234ms"
+    },
+    {
+      "ts": "2026-10-15T20:10:00Z",
+      "service": "users-db",
+      "level": "INFO",
+      "msg": "migration 20261015 started: CREATE INDEX on users.last_seen_at (table ~80M rows)"
+    },
+    {
+      "ts": "2026-10-15T20:11:00Z",
+      "service": "users-db",
+      "level": "WARN",
+      "msg": "lock wait: 40 sessions blocked on AccessExclusiveLock for relation users"
+    },
+    {
+      "ts": "2026-10-15T20:11:47.706110Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/products duration_ms=64"
+    },
+    {
+      "ts": "2026-10-15T20:13:00Z",
+      "service": "users-service",
+      "level": "ERROR",
+      "msg": "write queries to users timing out (statement_timeout 5s); signups and profile updates failing"
+    },
+    {
+      "ts": "2026-10-15T20:13:33.343275Z",
+      "service": "users-db",
+      "level": "INFO",
+      "msg": "POST /search 201 in 213ms"
+    },
+    {
+      "ts": "2026-10-15T20:13:43.891908Z",
+      "service": "users-db",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 177ms"
+    },
+    {
+      "ts": "2026-10-15T20:13:53.171310Z",
+      "service": "email-worker",
+      "level": "INFO",
+      "msg": "queue depth=362"
+    },
+    {
+      "ts": "2026-10-15T20:14:29.587377Z",
+      "service": "users-db",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-15T20:15:00Z",
+      "service": "login-service",
+      "level": "ERROR",
+      "msg": "login succeeded but last_seen_at update timed out; elevated latency"
+    },
+    {
+      "ts": "2026-10-15T20:15:04.951120Z",
+      "service": "email-worker",
+      "level": "INFO",
+      "msg": "job invoice.render completed in 6ms"
+    },
+    {
+      "ts": "2026-10-15T20:16:22.038875Z",
+      "service": "email-worker",
+      "level": "INFO",
+      "msg": "queue depth=140"
+    },
+    {
+      "ts": "2026-10-15T20:16:57.368557Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 179ms"
+    },
+    {
+      "ts": "2026-10-15T20:18:57.441653Z",
+      "service": "email-worker",
+      "level": "INFO",
+      "msg": "queue depth=292"
+    },
+    {
+      "ts": "2026-10-15T20:19:39.826359Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-10-15T20:23:02.340112Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=193"
+    },
+    {
+      "ts": "2026-10-15T20:24:24.174403Z",
+      "service": "feed-cache",
+      "level": "INFO",
+      "msg": "GET key=user:56 hit"
+    },
+    {
+      "ts": "2026-10-15T20:25:00Z",
+      "service": "users-db",
+      "level": "INFO",
+      "msg": "migration cancelled by operator; locks released; writes recovering"
+    },
+    {
+      "ts": "2026-10-15T20:31:15.825299Z",
+      "service": "email-worker",
+      "level": "INFO",
+      "msg": "queue depth=399"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "db_lock_wait_sessions",
+      "unit": "count",
+      "service": "users-db",
+      "points": [
+        [
+          "2026-10-15T19:40:00Z",
+          1.0094
+        ],
+        [
+          "2026-10-15T19:41:00Z",
+          0.9884
+        ],
+        [
+          "2026-10-15T19:42:00Z",
+          0.9943
+        ],
+        [
+          "2026-10-15T19:43:00Z",
+          0.9888
+        ],
+        [
+          "2026-10-15T19:44:00Z",
+          1.0111
+        ],
+        [
+          "2026-10-15T19:45:00Z",
+          1.0157
+        ],
+        [
+          "2026-10-15T19:46:00Z",
+          0.9911
+        ],
+        [
+          "2026-10-15T19:47:00Z",
+          1.0192
+        ],
+        [
+          "2026-10-15T19:48:00Z",
+          1.0116
+        ],
+        [
+          "2026-10-15T19:49:00Z",
+          0.9918
+        ],
+        [
+          "2026-10-15T19:50:00Z",
+          0.9902
+        ],
+        [
+          "2026-10-15T19:51:00Z",
+          0.9816
+        ],
+        [
+          "2026-10-15T19:52:00Z",
+          1.0189
+        ],
+        [
+          "2026-10-15T19:53:00Z",
+          1.0022
+        ],
+        [
+          "2026-10-15T19:54:00Z",
+          0.9955
+        ],
+        [
+          "2026-10-15T19:55:00Z",
+          0.993
+        ],
+        [
+          "2026-10-15T19:56:00Z",
+          0.9805
+        ],
+        [
+          "2026-10-15T19:57:00Z",
+          0.9897
+        ],
+        [
+          "2026-10-15T19:58:00Z",
+          0.9891
+        ],
+        [
+          "2026-10-15T19:59:00Z",
+          0.9832
+        ],
+        [
+          "2026-10-15T20:00:00Z",
+          1.011
+        ],
+        [
+          "2026-10-15T20:01:00Z",
+          0.9922
+        ],
+        [
+          "2026-10-15T20:02:00Z",
+          0.9908
+        ],
+        [
+          "2026-10-15T20:03:00Z",
+          0.9917
+        ],
+        [
+          "2026-10-15T20:04:00Z",
+          1.0138
+        ],
+        [
+          "2026-10-15T20:05:00Z",
+          0.9873
+        ],
+        [
+          "2026-10-15T20:06:00Z",
+          1.015
+        ],
+        [
+          "2026-10-15T20:07:00Z",
+          0.9964
+        ],
+        [
+          "2026-10-15T20:08:00Z",
+          1.0083
+        ],
+        [
+          "2026-10-15T20:09:00Z",
+          0.9976
+        ],
+        [
+          "2026-10-15T20:10:00Z",
+          0.9983
+        ],
+        [
+          "2026-10-15T20:11:00Z",
+          1.0155
+        ],
+        [
+          "2026-10-15T20:12:00Z",
+          27.8744
+        ],
+        [
+          "2026-10-15T20:13:00Z",
+          54.224
+        ],
+        [
+          "2026-10-15T20:14:00Z",
+          54.3224
+        ],
+        [
+          "2026-10-15T20:15:00Z",
+          55.1759
+        ],
+        [
+          "2026-10-15T20:16:00Z",
+          55.1482
+        ],
+        [
+          "2026-10-15T20:17:00Z",
+          55.8801
+        ],
+        [
+          "2026-10-15T20:18:00Z",
+          55.0646
+        ],
+        [
+          "2026-10-15T20:19:00Z",
+          53.989
+        ],
+        [
+          "2026-10-15T20:20:00Z",
+          55.7598
+        ],
+        [
+          "2026-10-15T20:21:00Z",
+          55.3609
+        ],
+        [
+          "2026-10-15T20:22:00Z",
+          55.358
+        ],
+        [
+          "2026-10-15T20:23:00Z",
+          55.5062
+        ],
+        [
+          "2026-10-15T20:24:00Z",
+          55.2768
+        ],
+        [
+          "2026-10-15T20:25:00Z",
+          55.4884
+        ],
+        [
+          "2026-10-15T20:26:00Z",
+          53.9856
+        ],
+        [
+          "2026-10-15T20:27:00Z",
+          55.2367
+        ],
+        [
+          "2026-10-15T20:28:00Z",
+          55.7022
+        ],
+        [
+          "2026-10-15T20:29:00Z",
+          55.1512
+        ],
+        [
+          "2026-10-15T20:30:00Z",
+          55.3684
+        ],
+        [
+          "2026-10-15T20:31:00Z",
+          54.4729
+        ],
+        [
+          "2026-10-15T20:32:00Z",
+          55.6062
+        ],
+        [
+          "2026-10-15T20:33:00Z",
+          55.492
+        ]
+      ]
+    },
+    {
+      "name": "write_error_rate",
+      "unit": "ratio",
+      "service": "users-service",
+      "points": [
+        [
+          "2026-10-15T19:40:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:41:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:42:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:43:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:44:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:45:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:46:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:47:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:48:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:49:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:50:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:51:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:52:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:53:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:54:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:55:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:56:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:57:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:58:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T19:59:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:00:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:01:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:02:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:03:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:04:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:05:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:06:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:07:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:08:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:09:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:10:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:11:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:12:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:13:00Z",
+          0.001
+        ],
+        [
+          "2026-10-15T20:14:00Z",
+          0.3053
+        ],
+        [
+          "2026-10-15T20:15:00Z",
+          0.6073
+        ],
+        [
+          "2026-10-15T20:16:00Z",
+          0.5967
+        ],
+        [
+          "2026-10-15T20:17:00Z",
+          0.5988
+        ],
+        [
+          "2026-10-15T20:18:00Z",
+          0.595
+        ],
+        [
+          "2026-10-15T20:19:00Z",
+          0.6089
+        ],
+        [
+          "2026-10-15T20:20:00Z",
+          0.589
+        ],
+        [
+          "2026-10-15T20:21:00Z",
+          0.591
+        ],
+        [
+          "2026-10-15T20:22:00Z",
+          0.6028
+        ],
+        [
+          "2026-10-15T20:23:00Z",
+          0.5991
+        ],
+        [
+          "2026-10-15T20:24:00Z",
+          0.602
+        ],
+        [
+          "2026-10-15T20:25:00Z",
+          0.6009
+        ],
+        [
+          "2026-10-15T20:26:00Z",
+          0.5998
+        ],
+        [
+          "2026-10-15T20:27:00Z",
+          0.5994
+        ],
+        [
+          "2026-10-15T20:28:00Z",
+          0.5889
+        ],
+        [
+          "2026-10-15T20:29:00Z",
+          0.5934
+        ],
+        [
+          "2026-10-15T20:30:00Z",
+          0.6023
+        ],
+        [
+          "2026-10-15T20:31:00Z",
+          0.6111
+        ],
+        [
+          "2026-10-15T20:32:00Z",
+          0.6098
+        ],
+        [
+          "2026-10-15T20:33:00Z",
+          0.6046
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [
+    {
+      "service": "users-service",
+      "ts": "2026-10-15T20:09:00Z",
+      "commit": "d4e5f6a",
+      "summary": "add index on users.last_seen_at (migration 20261015)"
+    }
+  ],
+  "ground_truth": {
+    "root_cause": "A schema migration deployed with commit d4e5f6a created an index on users.last_seen_at as a blocking operation on an ~80M-row table. The CREATE INDEX held an AccessExclusiveLock on the users table for its duration, blocking all writes. Every operation that writes to users - signups, profile updates, the last_seen_at touch on login - stalled and hit the 5s statement timeout. Reads were unaffected. Recovery required cancelling the migration to release the lock.",
+    "evidence_path": [
+      "deploy d4e5f6a to users-service at 20:09 ships migration 20261015 (add index on users.last_seen_at)",
+      "users-db INFO at 20:10: migration started, CREATE INDEX on an ~80M-row table",
+      "users-db WARN: 40+ sessions blocked on AccessExclusiveLock for relation users",
+      "users-service write queries time out (statement_timeout 5s); signups and profile updates fail",
+      "recovery immediately after the migration is cancelled and locks release"
+    ],
+    "fix": "Cancel the blocking migration (done). Re-run it as an online, non-blocking index build (CREATE INDEX CONCURRENTLY). Add a pre-deploy check that flags blocking DDL against large tables and requires an online alternative or a maintenance window.",
+    "should_escalate": false
+  }
+}

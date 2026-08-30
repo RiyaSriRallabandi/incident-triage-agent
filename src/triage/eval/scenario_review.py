@@ -34,7 +34,8 @@ REVIEW_CHECKS: list[tuple[str, str]] = [
     (
         "deploy_presence_correct",
         "A deploy appears in the evidence if and only if a deploy is actually part "
-        "of the root cause.",
+        "of the root cause - EXCEPT for an ambiguous scenario, where a deploy may "
+        "appear as a plausible-but-unconfirmed candidate cause the agent must weigh.",
     ),
     (
         "metrics_match_story",

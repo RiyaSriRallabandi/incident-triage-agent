@@ -1,0 +1,668 @@
+{
+  "id": "scn_005",
+  "category": "network_dns",
+  "difficulty": "medium",
+  "title": "Backbone config push withdraws routes to the authoritative DNS servers",
+  "source_url": "https://engineering.fb.com/2021/10/05/networking-traffic/outage-details/",
+  "source_note": "Failure pattern follows the Facebook 2021-10-04 outage: a backbone configuration change withdrew route advertisements for the network hosting the DNS servers, making them globally unreachable and taking everything that resolves a hostname down with them. All services, prefixes, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~15:42 UTC the site is returning 503s for essentially all traffic. Edge load balancers report they cannot reach any backends. No application deploys today. The network team ran a scheduled backbone capacity audit earlier.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-09-14T15:10:51.018735Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-09-14T15:15:17.421464Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2026-09-14T15:18:09.601946Z",
+      "service": "dns-auth",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-09-14T15:19:50.533443Z",
+      "service": "dns-auth",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-09-14T15:22:28.832347Z",
+      "service": "dns-auth",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-09-14T15:22:56.295538Z",
+      "service": "dns-auth",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-09-14T15:28:57.641548Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 105ms"
+    },
+    {
+      "ts": "2026-09-14T15:30:00Z",
+      "service": "network-automation",
+      "level": "INFO",
+      "msg": "scheduled backbone capacity audit starting on core routers"
+    },
+    {
+      "ts": "2026-09-14T15:31:06.585384Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "evicted 673 keys (lru)"
+    },
+    {
+      "ts": "2026-09-14T15:33:26.334295Z",
+      "service": "dns-auth",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 98ms"
+    },
+    {
+      "ts": "2026-09-14T15:34:32.750931Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /products 201 in 40ms"
+    },
+    {
+      "ts": "2026-09-14T15:36:38.968436Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-09-14T15:36:50.916507Z",
+      "service": "dns-auth",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-09-14T15:37:04.708889Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2026-09-14T15:37:32.416573Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "evicted 723 keys (lru)"
+    },
+    {
+      "ts": "2026-09-14T15:37:53.413302Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "evicted 790 keys (lru)"
+    },
+    {
+      "ts": "2026-09-14T15:39:25.409030Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-09-14T15:39:57.875403Z",
+      "service": "dns-auth",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=197"
+    },
+    {
+      "ts": "2026-09-14T15:40:00Z",
+      "service": "network-automation",
+      "level": "WARN",
+      "msg": "config push withdrew prefixes advertising dns-auth (10.2.0.0/16)"
+    },
+    {
+      "ts": "2026-09-14T15:40:01.480400Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "GET /products 200 in 82ms"
+    },
+    {
+      "ts": "2026-09-14T15:40:57.353321Z",
+      "service": "dns-auth",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 213ms"
+    },
+    {
+      "ts": "2026-09-14T15:40:57.398843Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 175ms"
+    },
+    {
+      "ts": "2026-09-14T15:41:00Z",
+      "service": "dns-auth",
+      "level": "ERROR",
+      "msg": "authoritative nameservers unreachable from edge; health checks failing"
+    },
+    {
+      "ts": "2026-09-14T15:42:00Z",
+      "service": "api-gateway",
+      "level": "ERROR",
+      "msg": "DNS resolution failed for api.internal (SERVFAIL); 100% of upstream lookups failing"
+    },
+    {
+      "ts": "2026-09-14T15:43:00Z",
+      "service": "edge-lb",
+      "level": "CRITICAL",
+      "msg": "cannot resolve any backend hostnames; serving 503 for all traffic"
+    },
+    {
+      "ts": "2026-09-14T15:45:02.032599Z",
+      "service": "dns-auth",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 9ms"
+    },
+    {
+      "ts": "2026-09-14T15:45:40.259237Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2026-09-14T15:49:36.304366Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "GET key=user:30 hit"
+    },
+    {
+      "ts": "2026-09-14T15:49:57.126258Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "SET key=session:433 ttl=3600"
+    },
+    {
+      "ts": "2026-09-14T15:53:44.648698Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=147"
+    },
+    {
+      "ts": "2026-09-14T15:55:00Z",
+      "service": "network-automation",
+      "level": "INFO",
+      "msg": "operator manually re-advertised dns-auth prefixes; resolution recovering"
+    },
+    {
+      "ts": "2026-09-14T15:55:37.116719Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-09-14T15:56:39.684274Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "GET key=user:563 hit"
+    },
+    {
+      "ts": "2026-09-14T15:59:46.345468Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "dns_resolution_success_rate",
+      "unit": "ratio",
+      "service": "dns-auth",
+      "points": [
+        [
+          "2026-09-14T15:10:00Z",
+          1.0008
+        ],
+        [
+          "2026-09-14T15:11:00Z",
+          1.0118
+        ],
+        [
+          "2026-09-14T15:12:00Z",
+          0.9855
+        ],
+        [
+          "2026-09-14T15:13:00Z",
+          1.0189
+        ],
+        [
+          "2026-09-14T15:14:00Z",
+          1.0138
+        ],
+        [
+          "2026-09-14T15:15:00Z",
+          1.0058
+        ],
+        [
+          "2026-09-14T15:16:00Z",
+          0.98
+        ],
+        [
+          "2026-09-14T15:17:00Z",
+          0.9933
+        ],
+        [
+          "2026-09-14T15:18:00Z",
+          0.9868
+        ],
+        [
+          "2026-09-14T15:19:00Z",
+          1.0095
+        ],
+        [
+          "2026-09-14T15:20:00Z",
+          0.9957
+        ],
+        [
+          "2026-09-14T15:21:00Z",
+          1.0188
+        ],
+        [
+          "2026-09-14T15:22:00Z",
+          1.0189
+        ],
+        [
+          "2026-09-14T15:23:00Z",
+          0.9879
+        ],
+        [
+          "2026-09-14T15:24:00Z",
+          1.0142
+        ],
+        [
+          "2026-09-14T15:25:00Z",
+          1.0023
+        ],
+        [
+          "2026-09-14T15:26:00Z",
+          0.991
+        ],
+        [
+          "2026-09-14T15:27:00Z",
+          1.0125
+        ],
+        [
+          "2026-09-14T15:28:00Z",
+          0.9948
+        ],
+        [
+          "2026-09-14T15:29:00Z",
+          1.0003
+        ],
+        [
+          "2026-09-14T15:30:00Z",
+          0.9815
+        ],
+        [
+          "2026-09-14T15:31:00Z",
+          0.9887
+        ],
+        [
+          "2026-09-14T15:32:00Z",
+          1.0066
+        ],
+        [
+          "2026-09-14T15:33:00Z",
+          0.9873
+        ],
+        [
+          "2026-09-14T15:34:00Z",
+          1.0026
+        ],
+        [
+          "2026-09-14T15:35:00Z",
+          0.9994
+        ],
+        [
+          "2026-09-14T15:36:00Z",
+          1.0188
+        ],
+        [
+          "2026-09-14T15:37:00Z",
+          0.997
+        ],
+        [
+          "2026-09-14T15:38:00Z",
+          1.0093
+        ],
+        [
+          "2026-09-14T15:39:00Z",
+          0.9976
+        ],
+        [
+          "2026-09-14T15:40:00Z",
+          0.9882
+        ],
+        [
+          "2026-09-14T15:41:00Z",
+          0.9897
+        ],
+        [
+          "2026-09-14T15:42:00Z",
+          0.0204
+        ],
+        [
+          "2026-09-14T15:43:00Z",
+          0.0201
+        ],
+        [
+          "2026-09-14T15:44:00Z",
+          0.0199
+        ],
+        [
+          "2026-09-14T15:45:00Z",
+          0.0199
+        ],
+        [
+          "2026-09-14T15:46:00Z",
+          0.02
+        ],
+        [
+          "2026-09-14T15:47:00Z",
+          0.0204
+        ],
+        [
+          "2026-09-14T15:48:00Z",
+          0.02
+        ],
+        [
+          "2026-09-14T15:49:00Z",
+          0.0199
+        ],
+        [
+          "2026-09-14T15:50:00Z",
+          0.0196
+        ],
+        [
+          "2026-09-14T15:51:00Z",
+          0.0202
+        ],
+        [
+          "2026-09-14T15:52:00Z",
+          0.0201
+        ],
+        [
+          "2026-09-14T15:53:00Z",
+          0.02
+        ],
+        [
+          "2026-09-14T15:54:00Z",
+          0.0201
+        ],
+        [
+          "2026-09-14T15:55:00Z",
+          0.0199
+        ],
+        [
+          "2026-09-14T15:56:00Z",
+          0.02
+        ],
+        [
+          "2026-09-14T15:57:00Z",
+          0.0197
+        ],
+        [
+          "2026-09-14T15:58:00Z",
+          0.0199
+        ],
+        [
+          "2026-09-14T15:59:00Z",
+          0.0197
+        ],
+        [
+          "2026-09-14T16:00:00Z",
+          0.0197
+        ],
+        [
+          "2026-09-14T16:01:00Z",
+          0.0203
+        ],
+        [
+          "2026-09-14T16:02:00Z",
+          0.0201
+        ]
+      ]
+    },
+    {
+      "name": "http_5xx_rate",
+      "unit": "ratio",
+      "service": "edge-lb",
+      "points": [
+        [
+          "2026-09-14T15:10:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:11:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:12:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:13:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:14:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:15:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:16:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:17:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:18:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:19:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:20:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:21:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:22:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:23:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:24:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:25:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:26:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:27:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:28:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:29:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:30:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:31:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:32:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:33:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:34:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:35:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:36:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:37:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:38:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:39:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:40:00Z",
+          0.0031
+        ],
+        [
+          "2026-09-14T15:41:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:42:00Z",
+          0.003
+        ],
+        [
+          "2026-09-14T15:43:00Z",
+          0.9591
+        ],
+        [
+          "2026-09-14T15:44:00Z",
+          0.9823
+        ],
+        [
+          "2026-09-14T15:45:00Z",
+          0.9742
+        ],
+        [
+          "2026-09-14T15:46:00Z",
+          0.9798
+        ],
+        [
+          "2026-09-14T15:47:00Z",
+          0.9812
+        ],
+        [
+          "2026-09-14T15:48:00Z",
+          0.9543
+        ],
+        [
+          "2026-09-14T15:49:00Z",
+          0.9541
+        ],
+        [
+          "2026-09-14T15:50:00Z",
+          0.9885
+        ],
+        [
+          "2026-09-14T15:51:00Z",
+          0.9521
+        ],
+        [
+          "2026-09-14T15:52:00Z",
+          0.967
+        ],
+        [
+          "2026-09-14T15:53:00Z",
+          0.9763
+        ],
+        [
+          "2026-09-14T15:54:00Z",
+          0.9754
+        ],
+        [
+          "2026-09-14T15:55:00Z",
+          0.9556
+        ],
+        [
+          "2026-09-14T15:56:00Z",
+          0.9845
+        ],
+        [
+          "2026-09-14T15:57:00Z",
+          0.9672
+        ],
+        [
+          "2026-09-14T15:58:00Z",
+          0.9662
+        ],
+        [
+          "2026-09-14T15:59:00Z",
+          0.9628
+        ],
+        [
+          "2026-09-14T16:00:00Z",
+          0.9564
+        ],
+        [
+          "2026-09-14T16:01:00Z",
+          0.9558
+        ],
+        [
+          "2026-09-14T16:02:00Z",
+          0.9562
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "A backbone network config push withdrew the route advertisements for the subnet hosting the authoritative DNS servers (dns-auth, 10.2.0.0/16). With the nameservers unreachable, DNS resolution failed globally, so every service that has to resolve a hostname (api-gateway, edge-lb) failed and the edge served 503s for all traffic. Recovery required manually re-advertising the withdrawn prefixes.",
+    "evidence_path": [
+      "network-automation WARN at 15:40: config push withdrew prefixes for dns-auth (10.2.0.0/16)",
+      "dns-auth authoritative nameservers become unreachable from the edge at 15:41",
+      "dns_resolution_success_rate collapses from ~99.9% to ~2%",
+      "api-gateway and edge-lb fail all hostname lookups (SERVFAIL) and serve 503s",
+      "recovery after the withdrawn prefixes are re-advertised at ~15:55"
+    ],
+    "fix": "Re-advertise the withdrawn prefixes (done). Add a guard to the network automation that refuses a push removing the last route to a critical subnet (DNS, auth), keep an out-of-band management path that does not depend on production DNS, and stagger backbone changes.",
+    "should_escalate": false
+  }
+}

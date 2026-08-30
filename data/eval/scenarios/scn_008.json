@@ -1,0 +1,1018 @@
+{
+  "id": "scn_008",
+  "category": "cert_config_expiry",
+  "difficulty": "hard",
+  "title": "Internal mTLS CA rotation leaves a third of the mesh on the old trust bundle",
+  "source_url": "https://aws.amazon.com/builders-library/",
+  "source_note": "Failure pattern (a certificate-authority rotation where a subset of workloads fail to pick up the new trust bundle, producing a partial 'signed by unknown authority' failure between old-root and new-root peers) reflects credential-rotation guidance in the AWS Builders' Library. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~09:33 UTC about a third of internal service-to-service calls are failing with certificate errors. Customer-facing error rate is elevated but not total. No application deploys. The platform team ran a scheduled internal CA rotation this morning.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-10-08T09:01:19.389009Z",
+      "service": "inventory-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-08T09:02:50.228608Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "GET /search 200 in 193ms"
+    },
+    {
+      "ts": "2026-10-08T09:03:43.556937Z",
+      "service": "orders-worker",
+      "level": "WARN",
+      "msg": "job cache.warm retried attempt=1"
+    },
+    {
+      "ts": "2026-10-08T09:13:47.185526Z",
+      "service": "internal-api-mesh",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-08T09:15:34.252869Z",
+      "service": "inventory-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-10-08T09:17:18.481260Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-08T09:17:33.928736Z",
+      "service": "inventory-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-08T09:19:11.067973Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-08T09:20:29.339155Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-08T09:21:35.514482Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "GET /search 200 in 217ms"
+    },
+    {
+      "ts": "2026-10-08T09:22:08.406728Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-08T09:23:52.922270Z",
+      "service": "internal-api-mesh",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=226"
+    },
+    {
+      "ts": "2026-10-08T09:24:38.680583Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-08T09:28:02.837660Z",
+      "service": "internal-api-mesh",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-10-08T09:28:07.250750Z",
+      "service": "inventory-api",
+      "level": "INFO",
+      "msg": "GET /search 200 in 12ms"
+    },
+    {
+      "ts": "2026-10-08T09:29:08.215097Z",
+      "service": "orders-worker",
+      "level": "WARN",
+      "msg": "job cache.warm retried attempt=1"
+    },
+    {
+      "ts": "2026-10-08T09:30:00Z",
+      "service": "mesh-control",
+      "level": "INFO",
+      "msg": "scheduled internal CA rotation complete; new root distributed to service mesh"
+    },
+    {
+      "ts": "2026-10-08T09:30:14.791435Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "job email.send completed in 63ms"
+    },
+    {
+      "ts": "2026-10-08T09:30:27.478366Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "processed batch size=564"
+    },
+    {
+      "ts": "2026-10-08T09:31:13.076486Z",
+      "service": "internal-api-mesh",
+      "level": "INFO",
+      "msg": "GET /products 200 in 162ms"
+    },
+    {
+      "ts": "2026-10-08T09:31:26.510127Z",
+      "service": "inventory-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2026-10-08T09:33:00Z",
+      "service": "orders-api",
+      "level": "WARN",
+      "msg": "mTLS to inventory-api failing: certificate signed by unknown authority"
+    },
+    {
+      "ts": "2026-10-08T09:35:47.491782Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "job webhook.deliver completed in 145ms"
+    },
+    {
+      "ts": "2026-10-08T09:35:58.914098Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-08T09:36:27.488316Z",
+      "service": "inventory-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=150"
+    },
+    {
+      "ts": "2026-10-08T09:36:52.097648Z",
+      "service": "shipping-api",
+      "level": "WARN",
+      "msg": "slow request path=/products duration_ms=158"
+    },
+    {
+      "ts": "2026-10-08T09:40:00Z",
+      "service": "orders-api",
+      "level": "ERROR",
+      "msg": "35% of calls to inventory-api and shipping-api failing on certificate validation"
+    },
+    {
+      "ts": "2026-10-08T09:42:00Z",
+      "service": "mesh-control",
+      "level": "INFO",
+      "msg": "trust bundle version skew detected: 12 of 40 pods still on the previous root"
+    },
+    {
+      "ts": "2026-10-08T09:43:29.914060Z",
+      "service": "inventory-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=206"
+    },
+    {
+      "ts": "2026-10-08T09:43:35.903851Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "POST /search 201 in 89ms"
+    },
+    {
+      "ts": "2026-10-08T09:45:09.203060Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 196ms"
+    },
+    {
+      "ts": "2026-10-08T09:45:38.515874Z",
+      "service": "internal-api-mesh",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2026-10-08T09:47:31.771660Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 144ms"
+    },
+    {
+      "ts": "2026-10-08T09:48:55.278552Z",
+      "service": "orders-worker",
+      "level": "WARN",
+      "msg": "job webhook.deliver retried attempt=1"
+    },
+    {
+      "ts": "2026-10-08T09:49:18.424697Z",
+      "service": "internal-api-mesh",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-10-08T09:52:11.981369Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-08T09:52:21.477404Z",
+      "service": "internal-api-mesh",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 36ms"
+    },
+    {
+      "ts": "2026-10-08T09:52:53.897570Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 98ms"
+    },
+    {
+      "ts": "2026-10-08T09:53:16.248929Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "queue depth=756"
+    },
+    {
+      "ts": "2026-10-08T09:55:31.168574Z",
+      "service": "internal-api-mesh",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2026-10-08T09:58:23.261229Z",
+      "service": "inventory-api",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 14ms"
+    },
+    {
+      "ts": "2026-10-08T09:59:39.554566Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "job report.build completed in 113ms"
+    },
+    {
+      "ts": "2026-10-08T10:00:00Z",
+      "service": "mesh-control",
+      "level": "INFO",
+      "msg": "forced trust-bundle refresh on lagging pods; error rate falling"
+    },
+    {
+      "ts": "2026-10-08T10:00:14.656252Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "job webhook.deliver completed in 167ms"
+    },
+    {
+      "ts": "2026-10-08T10:03:53.539652Z",
+      "service": "internal-api-mesh",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-10-08T10:04:36.989766Z",
+      "service": "inventory-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=210"
+    },
+    {
+      "ts": "2026-10-08T10:09:39.041135Z",
+      "service": "inventory-api",
+      "level": "INFO",
+      "msg": "GET /products 200 in 225ms"
+    },
+    {
+      "ts": "2026-10-08T10:10:45.962529Z",
+      "service": "internal-api-mesh",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2026-10-08T10:10:49.184730Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2026-10-08T10:11:34.026877Z",
+      "service": "inventory-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2026-10-08T10:13:12.388298Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "processed batch size=243"
+    },
+    {
+      "ts": "2026-10-08T10:14:54.760278Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-08T10:15:07.310512Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "job webhook.deliver completed in 36ms"
+    },
+    {
+      "ts": "2026-10-08T10:19:18.582788Z",
+      "service": "inventory-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=81"
+    },
+    {
+      "ts": "2026-10-08T10:19:45.857183Z",
+      "service": "shipping-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "mtls_validation_error_rate",
+      "unit": "ratio",
+      "service": "internal-api-mesh",
+      "points": [
+        [
+          "2026-10-08T09:00:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:01:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:02:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:03:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:04:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:05:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:06:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:07:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:08:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:09:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:10:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:11:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:12:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:13:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:14:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:15:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:16:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:17:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:18:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:19:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:20:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:21:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:22:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:23:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:24:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:25:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:26:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:27:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:28:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:29:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:30:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:31:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:32:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:33:00Z",
+          0.001
+        ],
+        [
+          "2026-10-08T09:34:00Z",
+          0.0715
+        ],
+        [
+          "2026-10-08T09:35:00Z",
+          0.1382
+        ],
+        [
+          "2026-10-08T09:36:00Z",
+          0.2144
+        ],
+        [
+          "2026-10-08T09:37:00Z",
+          0.2804
+        ],
+        [
+          "2026-10-08T09:38:00Z",
+          0.3502
+        ],
+        [
+          "2026-10-08T09:39:00Z",
+          0.3544
+        ],
+        [
+          "2026-10-08T09:40:00Z",
+          0.3433
+        ],
+        [
+          "2026-10-08T09:41:00Z",
+          0.3497
+        ],
+        [
+          "2026-10-08T09:42:00Z",
+          0.3438
+        ],
+        [
+          "2026-10-08T09:43:00Z",
+          0.3448
+        ],
+        [
+          "2026-10-08T09:44:00Z",
+          0.3466
+        ],
+        [
+          "2026-10-08T09:45:00Z",
+          0.3478
+        ],
+        [
+          "2026-10-08T09:46:00Z",
+          0.3525
+        ],
+        [
+          "2026-10-08T09:47:00Z",
+          0.3478
+        ],
+        [
+          "2026-10-08T09:48:00Z",
+          0.3459
+        ],
+        [
+          "2026-10-08T09:49:00Z",
+          0.3515
+        ],
+        [
+          "2026-10-08T09:50:00Z",
+          0.3522
+        ],
+        [
+          "2026-10-08T09:51:00Z",
+          0.3507
+        ],
+        [
+          "2026-10-08T09:52:00Z",
+          0.3527
+        ],
+        [
+          "2026-10-08T09:53:00Z",
+          0.3553
+        ],
+        [
+          "2026-10-08T09:54:00Z",
+          0.3526
+        ],
+        [
+          "2026-10-08T09:55:00Z",
+          0.3464
+        ],
+        [
+          "2026-10-08T09:56:00Z",
+          0.3532
+        ],
+        [
+          "2026-10-08T09:57:00Z",
+          0.3489
+        ],
+        [
+          "2026-10-08T09:58:00Z",
+          0.3508
+        ],
+        [
+          "2026-10-08T09:59:00Z",
+          0.3435
+        ],
+        [
+          "2026-10-08T10:00:00Z",
+          0.3491
+        ],
+        [
+          "2026-10-08T10:01:00Z",
+          0.351
+        ],
+        [
+          "2026-10-08T10:02:00Z",
+          0.3549
+        ],
+        [
+          "2026-10-08T10:03:00Z",
+          0.3488
+        ],
+        [
+          "2026-10-08T10:04:00Z",
+          0.3471
+        ],
+        [
+          "2026-10-08T10:05:00Z",
+          0.3521
+        ],
+        [
+          "2026-10-08T10:06:00Z",
+          0.35
+        ],
+        [
+          "2026-10-08T10:07:00Z",
+          0.3532
+        ],
+        [
+          "2026-10-08T10:08:00Z",
+          0.3448
+        ],
+        [
+          "2026-10-08T10:09:00Z",
+          0.3519
+        ],
+        [
+          "2026-10-08T10:10:00Z",
+          0.3549
+        ],
+        [
+          "2026-10-08T10:11:00Z",
+          0.3483
+        ],
+        [
+          "2026-10-08T10:12:00Z",
+          0.3513
+        ],
+        [
+          "2026-10-08T10:13:00Z",
+          0.3566
+        ],
+        [
+          "2026-10-08T10:14:00Z",
+          0.3468
+        ],
+        [
+          "2026-10-08T10:15:00Z",
+          0.3478
+        ],
+        [
+          "2026-10-08T10:16:00Z",
+          0.3549
+        ],
+        [
+          "2026-10-08T10:17:00Z",
+          0.3483
+        ],
+        [
+          "2026-10-08T10:18:00Z",
+          0.3485
+        ],
+        [
+          "2026-10-08T10:19:00Z",
+          0.3562
+        ],
+        [
+          "2026-10-08T10:20:00Z",
+          0.351
+        ]
+      ]
+    },
+    {
+      "name": "error_rate",
+      "unit": "ratio",
+      "service": "orders-api",
+      "points": [
+        [
+          "2026-10-08T09:00:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:01:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:02:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:03:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:04:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:05:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:06:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:07:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:08:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:09:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:10:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:11:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:12:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:13:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:14:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:15:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:16:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:17:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:18:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:19:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:20:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:21:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:22:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:23:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:24:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:25:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:26:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:27:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:28:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:29:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:30:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:31:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:32:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:33:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:34:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:35:00Z",
+          0.002
+        ],
+        [
+          "2026-10-08T09:36:00Z",
+          0.0574
+        ],
+        [
+          "2026-10-08T09:37:00Z",
+          0.1113
+        ],
+        [
+          "2026-10-08T09:38:00Z",
+          0.1664
+        ],
+        [
+          "2026-10-08T09:39:00Z",
+          0.2208
+        ],
+        [
+          "2026-10-08T09:40:00Z",
+          0.2776
+        ],
+        [
+          "2026-10-08T09:41:00Z",
+          0.2802
+        ],
+        [
+          "2026-10-08T09:42:00Z",
+          0.284
+        ],
+        [
+          "2026-10-08T09:43:00Z",
+          0.2801
+        ],
+        [
+          "2026-10-08T09:44:00Z",
+          0.2849
+        ],
+        [
+          "2026-10-08T09:45:00Z",
+          0.2829
+        ],
+        [
+          "2026-10-08T09:46:00Z",
+          0.2784
+        ],
+        [
+          "2026-10-08T09:47:00Z",
+          0.2784
+        ],
+        [
+          "2026-10-08T09:48:00Z",
+          0.2855
+        ],
+        [
+          "2026-10-08T09:49:00Z",
+          0.2841
+        ],
+        [
+          "2026-10-08T09:50:00Z",
+          0.2807
+        ],
+        [
+          "2026-10-08T09:51:00Z",
+          0.2754
+        ],
+        [
+          "2026-10-08T09:52:00Z",
+          0.2789
+        ],
+        [
+          "2026-10-08T09:53:00Z",
+          0.2812
+        ],
+        [
+          "2026-10-08T09:54:00Z",
+          0.285
+        ],
+        [
+          "2026-10-08T09:55:00Z",
+          0.2821
+        ],
+        [
+          "2026-10-08T09:56:00Z",
+          0.2774
+        ],
+        [
+          "2026-10-08T09:57:00Z",
+          0.2792
+        ],
+        [
+          "2026-10-08T09:58:00Z",
+          0.275
+        ],
+        [
+          "2026-10-08T09:59:00Z",
+          0.2747
+        ],
+        [
+          "2026-10-08T10:00:00Z",
+          0.275
+        ],
+        [
+          "2026-10-08T10:01:00Z",
+          0.2751
+        ],
+        [
+          "2026-10-08T10:02:00Z",
+          0.2799
+        ],
+        [
+          "2026-10-08T10:03:00Z",
+          0.2809
+        ],
+        [
+          "2026-10-08T10:04:00Z",
+          0.2821
+        ],
+        [
+          "2026-10-08T10:05:00Z",
+          0.2792
+        ],
+        [
+          "2026-10-08T10:06:00Z",
+          0.2844
+        ],
+        [
+          "2026-10-08T10:07:00Z",
+          0.2831
+        ],
+        [
+          "2026-10-08T10:08:00Z",
+          0.2842
+        ],
+        [
+          "2026-10-08T10:09:00Z",
+          0.2816
+        ],
+        [
+          "2026-10-08T10:10:00Z",
+          0.2766
+        ],
+        [
+          "2026-10-08T10:11:00Z",
+          0.2808
+        ],
+        [
+          "2026-10-08T10:12:00Z",
+          0.2847
+        ],
+        [
+          "2026-10-08T10:13:00Z",
+          0.2792
+        ],
+        [
+          "2026-10-08T10:14:00Z",
+          0.2812
+        ],
+        [
+          "2026-10-08T10:15:00Z",
+          0.2792
+        ],
+        [
+          "2026-10-08T10:16:00Z",
+          0.2833
+        ],
+        [
+          "2026-10-08T10:17:00Z",
+          0.2821
+        ],
+        [
+          "2026-10-08T10:18:00Z",
+          0.2846
+        ],
+        [
+          "2026-10-08T10:19:00Z",
+          0.2828
+        ],
+        [
+          "2026-10-08T10:20:00Z",
+          0.2783
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "A scheduled rotation of the internal mTLS certificate authority distributed a new root, but roughly 30% of service-mesh pods failed to pick up the new trust bundle. Calls between pods on the new root and pods still on the old root failed certificate validation ('signed by unknown authority'), producing a partial (~35%) error rate on internal calls that matches the fraction of stale pods. Recovery required forcing a trust-bundle refresh on the lagging pods.",
+    "evidence_path": [
+      "mesh-control INFO at 09:30: scheduled internal CA rotation completed",
+      "orders-api mTLS calls to inventory-api start failing at 09:33 with 'certificate signed by unknown authority'",
+      "mesh-control detects trust-bundle version skew: 12 of 40 pods still on the previous root",
+      "mtls_validation_error_rate and orders-api error_rate rise to ~30%, matching the stale-pod fraction",
+      "recovery after a forced trust-bundle refresh on the lagging pods"
+    ],
+    "fix": "Force the trust-bundle refresh on lagging pods (done). Make CA rotation two-phase: distribute and confirm the new root on 100% of pods before switching signing to it, and add a pre-cutover check that blocks the rotation on any version skew.",
+    "should_escalate": false
+  }
+}

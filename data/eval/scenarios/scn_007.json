@@ -1,0 +1,662 @@
+{
+  "id": "scn_007",
+  "category": "cert_config_expiry",
+  "difficulty": "easy",
+  "title": "TLS certificate on the auth service expires; all logins fail at a round wall-clock time",
+  "source_url": "https://azure.status.microsoft/en-us/status/history/",
+  "source_note": "Failure pattern follows the Microsoft Teams 2020-02-03 outage: an expired TLS certificate on an authentication endpoint caused a total, sudden login failure beginning at the certificate's expiry timestamp, with no deploy or config change. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "At exactly 00:00 UTC login success rate dropped to zero across the product. Clients are getting TLS errors when their browser or app connects to the login service. No deploys in the last week. Nothing changed at midnight that anyone knows of.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-09-30T23:30:36.435302Z",
+      "service": "auth-service",
+      "level": "INFO",
+      "msg": "POST /search 201 in 6ms"
+    },
+    {
+      "ts": "2026-09-30T23:37:43.820579Z",
+      "service": "auth-service",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=149"
+    },
+    {
+      "ts": "2026-09-30T23:40:50.916618Z",
+      "service": "profile-api",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 130ms"
+    },
+    {
+      "ts": "2026-09-30T23:40:56.452814Z",
+      "service": "session-cache",
+      "level": "INFO",
+      "msg": "GET key=user:110 hit"
+    },
+    {
+      "ts": "2026-10-01T00:00:00Z",
+      "service": "auth-service",
+      "level": "ERROR",
+      "msg": "TLS handshake failures from clients: certificate expired (notAfter=2026-10-01T00:00:00Z)"
+    },
+    {
+      "ts": "2026-10-01T00:02:00Z",
+      "service": "web-frontend",
+      "level": "ERROR",
+      "msg": "auth-service call failed: SSL certificate problem: certificate has expired"
+    },
+    {
+      "ts": "2026-10-01T00:04:00Z",
+      "service": "auth-service",
+      "level": "CRITICAL",
+      "msg": "login success rate 0%; all token issuance failing on certificate validation"
+    },
+    {
+      "ts": "2026-10-01T00:04:35.631864Z",
+      "service": "profile-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-01T00:05:00Z",
+      "service": "auth-service",
+      "level": "INFO",
+      "msg": "no deploys in 6 days; no config changes; failure began exactly at 00:00 UTC"
+    },
+    {
+      "ts": "2026-10-01T00:05:30.996950Z",
+      "service": "auth-service",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 223ms"
+    },
+    {
+      "ts": "2026-10-01T00:09:56.446785Z",
+      "service": "web-frontend",
+      "level": "INFO",
+      "msg": "POST /products 201 in 181ms"
+    },
+    {
+      "ts": "2026-10-01T00:09:56.985106Z",
+      "service": "auth-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-10-01T00:15:12.207399Z",
+      "service": "profile-api",
+      "level": "INFO",
+      "msg": "GET /products 200 in 165ms"
+    },
+    {
+      "ts": "2026-10-01T00:16:33.310836Z",
+      "service": "session-cache",
+      "level": "INFO",
+      "msg": "GET key=user:823 hit"
+    },
+    {
+      "ts": "2026-10-01T00:25:00Z",
+      "service": "auth-service",
+      "level": "INFO",
+      "msg": "renewed certificate installed and reloaded; logins recovering"
+    },
+    {
+      "ts": "2026-10-01T00:30:26.252061Z",
+      "service": "profile-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-10-01T00:32:02.812346Z",
+      "service": "web-frontend",
+      "level": "WARN",
+      "msg": "slow request path=/products duration_ms=173"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "login_success_rate",
+      "unit": "ratio",
+      "service": "auth-service",
+      "points": [
+        [
+          "2026-09-30T23:30:00Z",
+          1.0026
+        ],
+        [
+          "2026-09-30T23:31:00Z",
+          0.9805
+        ],
+        [
+          "2026-09-30T23:32:00Z",
+          0.9828
+        ],
+        [
+          "2026-09-30T23:33:00Z",
+          0.9953
+        ],
+        [
+          "2026-09-30T23:34:00Z",
+          1.0032
+        ],
+        [
+          "2026-09-30T23:35:00Z",
+          0.9871
+        ],
+        [
+          "2026-09-30T23:36:00Z",
+          0.989
+        ],
+        [
+          "2026-09-30T23:37:00Z",
+          0.9988
+        ],
+        [
+          "2026-09-30T23:38:00Z",
+          0.9827
+        ],
+        [
+          "2026-09-30T23:39:00Z",
+          0.9799
+        ],
+        [
+          "2026-09-30T23:40:00Z",
+          1.0065
+        ],
+        [
+          "2026-09-30T23:41:00Z",
+          0.994
+        ],
+        [
+          "2026-09-30T23:42:00Z",
+          1.0099
+        ],
+        [
+          "2026-09-30T23:43:00Z",
+          1.0009
+        ],
+        [
+          "2026-09-30T23:44:00Z",
+          0.9884
+        ],
+        [
+          "2026-09-30T23:45:00Z",
+          0.9936
+        ],
+        [
+          "2026-09-30T23:46:00Z",
+          0.9798
+        ],
+        [
+          "2026-09-30T23:47:00Z",
+          0.9905
+        ],
+        [
+          "2026-09-30T23:48:00Z",
+          0.9755
+        ],
+        [
+          "2026-09-30T23:49:00Z",
+          1.0004
+        ],
+        [
+          "2026-09-30T23:50:00Z",
+          0.9757
+        ],
+        [
+          "2026-09-30T23:51:00Z",
+          0.9891
+        ],
+        [
+          "2026-09-30T23:52:00Z",
+          1.0105
+        ],
+        [
+          "2026-09-30T23:53:00Z",
+          0.9837
+        ],
+        [
+          "2026-09-30T23:54:00Z",
+          0.9843
+        ],
+        [
+          "2026-09-30T23:55:00Z",
+          1.0065
+        ],
+        [
+          "2026-09-30T23:56:00Z",
+          1.0014
+        ],
+        [
+          "2026-09-30T23:57:00Z",
+          0.9783
+        ],
+        [
+          "2026-09-30T23:58:00Z",
+          0.9906
+        ],
+        [
+          "2026-09-30T23:59:00Z",
+          0.9942
+        ],
+        [
+          "2026-10-01T00:00:00Z",
+          0.9987
+        ],
+        [
+          "2026-10-01T00:01:00Z",
+          -0.0086
+        ],
+        [
+          "2026-10-01T00:02:00Z",
+          0.0127
+        ],
+        [
+          "2026-10-01T00:03:00Z",
+          0.019
+        ],
+        [
+          "2026-10-01T00:04:00Z",
+          0.0039
+        ],
+        [
+          "2026-10-01T00:05:00Z",
+          -0.0036
+        ],
+        [
+          "2026-10-01T00:06:00Z",
+          -0.0089
+        ],
+        [
+          "2026-10-01T00:07:00Z",
+          -0.0096
+        ],
+        [
+          "2026-10-01T00:08:00Z",
+          0.0071
+        ],
+        [
+          "2026-10-01T00:09:00Z",
+          -0.0014
+        ],
+        [
+          "2026-10-01T00:10:00Z",
+          0.0146
+        ],
+        [
+          "2026-10-01T00:11:00Z",
+          -0.006
+        ],
+        [
+          "2026-10-01T00:12:00Z",
+          -0.0156
+        ],
+        [
+          "2026-10-01T00:13:00Z",
+          0.0181
+        ],
+        [
+          "2026-10-01T00:14:00Z",
+          0.014
+        ],
+        [
+          "2026-10-01T00:15:00Z",
+          0.0164
+        ],
+        [
+          "2026-10-01T00:16:00Z",
+          0.0033
+        ],
+        [
+          "2026-10-01T00:17:00Z",
+          0.0098
+        ],
+        [
+          "2026-10-01T00:18:00Z",
+          -0.012
+        ],
+        [
+          "2026-10-01T00:19:00Z",
+          0.0007
+        ],
+        [
+          "2026-10-01T00:20:00Z",
+          -0.0104
+        ],
+        [
+          "2026-10-01T00:21:00Z",
+          0.0079
+        ],
+        [
+          "2026-10-01T00:22:00Z",
+          0.0098
+        ],
+        [
+          "2026-10-01T00:23:00Z",
+          -0.0118
+        ],
+        [
+          "2026-10-01T00:24:00Z",
+          0.0032
+        ],
+        [
+          "2026-10-01T00:25:00Z",
+          0.0035
+        ],
+        [
+          "2026-10-01T00:26:00Z",
+          0.0045
+        ],
+        [
+          "2026-10-01T00:27:00Z",
+          0.0051
+        ],
+        [
+          "2026-10-01T00:28:00Z",
+          -0.0185
+        ],
+        [
+          "2026-10-01T00:29:00Z",
+          -0.0119
+        ],
+        [
+          "2026-10-01T00:30:00Z",
+          -0.0057
+        ],
+        [
+          "2026-10-01T00:31:00Z",
+          0.0059
+        ],
+        [
+          "2026-10-01T00:32:00Z",
+          -0.004
+        ],
+        [
+          "2026-10-01T00:33:00Z",
+          0.0141
+        ],
+        [
+          "2026-10-01T00:34:00Z",
+          0.0018
+        ]
+      ]
+    },
+    {
+      "name": "tls_handshake_errors_per_s",
+      "unit": "count_per_second",
+      "service": "auth-service",
+      "points": [
+        [
+          "2026-09-30T23:30:00Z",
+          0.1001
+        ],
+        [
+          "2026-09-30T23:31:00Z",
+          0.099
+        ],
+        [
+          "2026-09-30T23:32:00Z",
+          0.0997
+        ],
+        [
+          "2026-09-30T23:33:00Z",
+          0.0995
+        ],
+        [
+          "2026-09-30T23:34:00Z",
+          0.1003
+        ],
+        [
+          "2026-09-30T23:35:00Z",
+          0.0982
+        ],
+        [
+          "2026-09-30T23:36:00Z",
+          0.0989
+        ],
+        [
+          "2026-09-30T23:37:00Z",
+          0.1003
+        ],
+        [
+          "2026-09-30T23:38:00Z",
+          0.1001
+        ],
+        [
+          "2026-09-30T23:39:00Z",
+          0.0994
+        ],
+        [
+          "2026-09-30T23:40:00Z",
+          0.1011
+        ],
+        [
+          "2026-09-30T23:41:00Z",
+          0.0992
+        ],
+        [
+          "2026-09-30T23:42:00Z",
+          0.0996
+        ],
+        [
+          "2026-09-30T23:43:00Z",
+          0.0994
+        ],
+        [
+          "2026-09-30T23:44:00Z",
+          0.1002
+        ],
+        [
+          "2026-09-30T23:45:00Z",
+          0.0989
+        ],
+        [
+          "2026-09-30T23:46:00Z",
+          0.0984
+        ],
+        [
+          "2026-09-30T23:47:00Z",
+          0.1006
+        ],
+        [
+          "2026-09-30T23:48:00Z",
+          0.1009
+        ],
+        [
+          "2026-09-30T23:49:00Z",
+          0.0999
+        ],
+        [
+          "2026-09-30T23:50:00Z",
+          0.0994
+        ],
+        [
+          "2026-09-30T23:51:00Z",
+          0.1015
+        ],
+        [
+          "2026-09-30T23:52:00Z",
+          0.0986
+        ],
+        [
+          "2026-09-30T23:53:00Z",
+          0.0996
+        ],
+        [
+          "2026-09-30T23:54:00Z",
+          0.1014
+        ],
+        [
+          "2026-09-30T23:55:00Z",
+          0.1002
+        ],
+        [
+          "2026-09-30T23:56:00Z",
+          0.098
+        ],
+        [
+          "2026-09-30T23:57:00Z",
+          0.0985
+        ],
+        [
+          "2026-09-30T23:58:00Z",
+          0.0997
+        ],
+        [
+          "2026-09-30T23:59:00Z",
+          0.0995
+        ],
+        [
+          "2026-10-01T00:00:00Z",
+          0.0985
+        ],
+        [
+          "2026-10-01T00:01:00Z",
+          384.195
+        ],
+        [
+          "2026-10-01T00:02:00Z",
+          386.1559
+        ],
+        [
+          "2026-10-01T00:03:00Z",
+          376.1063
+        ],
+        [
+          "2026-10-01T00:04:00Z",
+          376.5582
+        ],
+        [
+          "2026-10-01T00:05:00Z",
+          386.0897
+        ],
+        [
+          "2026-10-01T00:06:00Z",
+          378.6985
+        ],
+        [
+          "2026-10-01T00:07:00Z",
+          379.358
+        ],
+        [
+          "2026-10-01T00:08:00Z",
+          376.8611
+        ],
+        [
+          "2026-10-01T00:09:00Z",
+          386.7992
+        ],
+        [
+          "2026-10-01T00:10:00Z",
+          373.3615
+        ],
+        [
+          "2026-10-01T00:11:00Z",
+          380.2346
+        ],
+        [
+          "2026-10-01T00:12:00Z",
+          382.4594
+        ],
+        [
+          "2026-10-01T00:13:00Z",
+          380.072
+        ],
+        [
+          "2026-10-01T00:14:00Z",
+          385.2638
+        ],
+        [
+          "2026-10-01T00:15:00Z",
+          377.7566
+        ],
+        [
+          "2026-10-01T00:16:00Z",
+          378.3079
+        ],
+        [
+          "2026-10-01T00:17:00Z",
+          381.0515
+        ],
+        [
+          "2026-10-01T00:18:00Z",
+          384.6841
+        ],
+        [
+          "2026-10-01T00:19:00Z",
+          383.207
+        ],
+        [
+          "2026-10-01T00:20:00Z",
+          374.9575
+        ],
+        [
+          "2026-10-01T00:21:00Z",
+          382.5676
+        ],
+        [
+          "2026-10-01T00:22:00Z",
+          377.0102
+        ],
+        [
+          "2026-10-01T00:23:00Z",
+          378.9255
+        ],
+        [
+          "2026-10-01T00:24:00Z",
+          372.6319
+        ],
+        [
+          "2026-10-01T00:25:00Z",
+          381.9794
+        ],
+        [
+          "2026-10-01T00:26:00Z",
+          373.8769
+        ],
+        [
+          "2026-10-01T00:27:00Z",
+          374.4247
+        ],
+        [
+          "2026-10-01T00:28:00Z",
+          381.2263
+        ],
+        [
+          "2026-10-01T00:29:00Z",
+          377.4272
+        ],
+        [
+          "2026-10-01T00:30:00Z",
+          381.0005
+        ],
+        [
+          "2026-10-01T00:31:00Z",
+          386.3958
+        ],
+        [
+          "2026-10-01T00:32:00Z",
+          377.454
+        ],
+        [
+          "2026-10-01T00:33:00Z",
+          379.3967
+        ],
+        [
+          "2026-10-01T00:34:00Z",
+          384.0633
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "The TLS certificate for auth-service's token endpoint reached its expiry (notAfter = 2026-10-01T00:00:00Z) and was not renewed. Starting exactly at that wall-clock time, clients rejected the expired certificate during the TLS handshake, so every login and token-issuance request failed. There was no deploy or config change - the trigger was the calendar. Recovery required installing and reloading the renewed certificate.",
+    "evidence_path": [
+      "auth-service ERROR at 00:00: TLS handshake failures, certificate expired (notAfter=2026-10-01T00:00:00Z)",
+      "the failure begins exactly at the round wall-clock time 00:00 UTC",
+      "no deploys in 6 days and no config changes",
+      "login_success_rate drops to 0 and TLS handshake errors spike",
+      "recovery immediately after the renewed certificate is installed and reloaded"
+    ],
+    "fix": "Install and reload the renewed certificate (done). Add expiry monitoring that alerts 30/14/7 days ahead, automate renewal and reload, and stagger certificate expiry dates across services.",
+    "should_escalate": false
+  }
+}

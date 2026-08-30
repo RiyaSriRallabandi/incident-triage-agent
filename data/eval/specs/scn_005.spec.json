@@ -1,0 +1,44 @@
+{
+  "id": "scn_005",
+  "category": "network_dns",
+  "difficulty": "medium",
+  "title": "Backbone config push withdraws routes to the authoritative DNS servers",
+  "source_url": "https://engineering.fb.com/2021/10/05/networking-traffic/outage-details/",
+  "source_note": "Failure pattern follows the Facebook 2021-10-04 outage: a backbone configuration change withdrew route advertisements for the network hosting the DNS servers, making them globally unreachable and taking everything that resolves a hostname down with them. All services, prefixes, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~15:42 UTC the site is returning 503s for essentially all traffic. Edge load balancers report they cannot reach any backends. No application deploys today. The network team ran a scheduled backbone capacity audit earlier.",
+  "incident_start": "2026-09-14T15:40:00Z",
+  "detected_offset_s": 120,
+  "window_before_s": 1800,
+  "window_after_s": 1200,
+  "primary_service": "dns-auth",
+  "distractor_services": [
+    { "name": "orders-api", "role": "api" },
+    { "name": "catalog-api", "role": "api" },
+    { "name": "sessions-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": -600, "service": "network-automation", "level": "INFO", "msg": "scheduled backbone capacity audit starting on core routers" },
+    { "offset_s": 0, "service": "network-automation", "level": "WARN", "msg": "config push withdrew prefixes advertising dns-auth (10.2.0.0/16)" },
+    { "offset_s": 60, "service": "dns-auth", "level": "ERROR", "msg": "authoritative nameservers unreachable from edge; health checks failing" },
+    { "offset_s": 120, "service": "api-gateway", "level": "ERROR", "msg": "DNS resolution failed for api.internal (SERVFAIL); 100% of upstream lookups failing" },
+    { "offset_s": 180, "service": "edge-lb", "level": "CRITICAL", "msg": "cannot resolve any backend hostnames; serving 503 for all traffic" },
+    { "offset_s": 900, "service": "network-automation", "level": "INFO", "msg": "operator manually re-advertised dns-auth prefixes; resolution recovering" }
+  ],
+  "metrics": [
+    { "name": "dns_resolution_success_rate", "unit": "ratio", "service": "dns-auth", "baseline": 0.999, "spike": 0.02, "spike_at_offset_s": 60, "ramp_s": 60 },
+    { "name": "http_5xx_rate", "unit": "ratio", "service": "edge-lb", "baseline": 0.003, "spike": 0.97, "spike_at_offset_s": 120, "ramp_s": 60 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "A backbone network config push withdrew the route advertisements for the subnet hosting the authoritative DNS servers (dns-auth, 10.2.0.0/16). With the nameservers unreachable, DNS resolution failed globally, so every service that has to resolve a hostname (api-gateway, edge-lb) failed and the edge served 503s for all traffic. Recovery required manually re-advertising the withdrawn prefixes.",
+    "evidence_path": [
+      "network-automation WARN at 15:40: config push withdrew prefixes for dns-auth (10.2.0.0/16)",
+      "dns-auth authoritative nameservers become unreachable from the edge at 15:41",
+      "dns_resolution_success_rate collapses from ~99.9% to ~2%",
+      "api-gateway and edge-lb fail all hostname lookups (SERVFAIL) and serve 503s",
+      "recovery after the withdrawn prefixes are re-advertised at ~15:55"
+    ],
+    "fix": "Re-advertise the withdrawn prefixes (done). Add a guard to the network automation that refuses a push removing the last route to a critical subnet (DNS, auth), keep an out-of-band management path that does not depend on production DNS, and stagger backbone changes.",
+    "should_escalate": false
+  }
+}

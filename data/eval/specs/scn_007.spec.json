@@ -1,0 +1,43 @@
+{
+  "id": "scn_007",
+  "category": "cert_config_expiry",
+  "difficulty": "easy",
+  "title": "TLS certificate on the auth service expires; all logins fail at a round wall-clock time",
+  "source_url": "https://azure.status.microsoft/en-us/status/history/",
+  "source_note": "Failure pattern follows the Microsoft Teams 2020-02-03 outage: an expired TLS certificate on an authentication endpoint caused a total, sudden login failure beginning at the certificate's expiry timestamp, with no deploy or config change. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "At exactly 00:00 UTC login success rate dropped to zero across the product. Clients are getting TLS errors when their browser or app connects to the login service. No deploys in the last week. Nothing changed at midnight that anyone knows of.",
+  "incident_start": "2026-10-01T00:00:00Z",
+  "detected_offset_s": 240,
+  "window_before_s": 1800,
+  "window_after_s": 1800,
+  "primary_service": "auth-service",
+  "distractor_services": [
+    { "name": "web-frontend", "role": "api" },
+    { "name": "profile-api", "role": "api" },
+    { "name": "session-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "auth-service", "level": "ERROR", "msg": "TLS handshake failures from clients: certificate expired (notAfter=2026-10-01T00:00:00Z)" },
+    { "offset_s": 120, "service": "web-frontend", "level": "ERROR", "msg": "auth-service call failed: SSL certificate problem: certificate has expired" },
+    { "offset_s": 240, "service": "auth-service", "level": "CRITICAL", "msg": "login success rate 0%; all token issuance failing on certificate validation" },
+    { "offset_s": 300, "service": "auth-service", "level": "INFO", "msg": "no deploys in 6 days; no config changes; failure began exactly at 00:00 UTC" },
+    { "offset_s": 1500, "service": "auth-service", "level": "INFO", "msg": "renewed certificate installed and reloaded; logins recovering" }
+  ],
+  "metrics": [
+    { "name": "login_success_rate", "unit": "ratio", "service": "auth-service", "baseline": 0.992, "spike": 0.0, "spike_at_offset_s": 0, "ramp_s": 60 },
+    { "name": "tls_handshake_errors_per_s", "unit": "count_per_second", "service": "auth-service", "baseline": 0.1, "spike": 380.0, "spike_at_offset_s": 0, "ramp_s": 60 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "The TLS certificate for auth-service's token endpoint reached its expiry (notAfter = 2026-10-01T00:00:00Z) and was not renewed. Starting exactly at that wall-clock time, clients rejected the expired certificate during the TLS handshake, so every login and token-issuance request failed. There was no deploy or config change - the trigger was the calendar. Recovery required installing and reloading the renewed certificate.",
+    "evidence_path": [
+      "auth-service ERROR at 00:00: TLS handshake failures, certificate expired (notAfter=2026-10-01T00:00:00Z)",
+      "the failure begins exactly at the round wall-clock time 00:00 UTC",
+      "no deploys in 6 days and no config changes",
+      "login_success_rate drops to 0 and TLS handshake errors spike",
+      "recovery immediately after the renewed certificate is installed and reloaded"
+    ],
+    "fix": "Install and reload the renewed certificate (done). Add expiry monitoring that alerts 30/14/7 days ahead, automate renewal and reload, and stagger certificate expiry dates across services.",
+    "should_escalate": false
+  }
+}

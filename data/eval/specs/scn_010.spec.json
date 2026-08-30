@@ -1,0 +1,44 @@
+{
+  "id": "scn_010",
+  "category": "database_issue",
+  "difficulty": "hard",
+  "title": "An un-throttled backfill pushes read replicas past their lag cutoff",
+  "source_url": "https://stripe.com/blog/service-disruption-june-2019",
+  "source_note": "Failure pattern (a large batch job saturates the primary's write path, replication lag climbs past a safety threshold, and a fail-safe that stops serving stale reads then shifts load onto the primary) is in the spirit of Stripe's 2019 database disruptions. All services, job names, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~13:13 UTC analytics and reporting endpoints are failing or returning errors. The main checkout path is fine. Data platform started a large backfill job earlier in the afternoon. No deploys.",
+  "incident_start": "2026-10-21T13:00:00Z",
+  "detected_offset_s": 600,
+  "window_before_s": 1800,
+  "window_after_s": 2400,
+  "primary_service": "orders-db-replica",
+  "distractor_services": [
+    { "name": "catalog-api", "role": "api" },
+    { "name": "billing-worker", "role": "worker" },
+    { "name": "report-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "data-platform", "level": "INFO", "msg": "backfill job 'recompute_ltv' started: ~120M row updates on orders" },
+    { "offset_s": 240, "service": "orders-db-replica", "level": "WARN", "msg": "replication lag 45s and climbing (normal <1s)" },
+    { "offset_s": 600, "service": "analytics-api", "level": "WARN", "msg": "serving potentially stale data: replica lag 210s" },
+    { "offset_s": 780, "service": "analytics-api", "level": "ERROR", "msg": "lag exceeded 300s cutoff; failing reads rather than serve stale (fail-safe)" },
+    { "offset_s": 840, "service": "orders-db-primary", "level": "WARN", "msg": "read load +300% as replicas removed from rotation; query latency rising" },
+    { "offset_s": 1800, "service": "data-platform", "level": "INFO", "msg": "backfill throttled to 10% rate; replica lag recovering" }
+  ],
+  "metrics": [
+    { "name": "replication_lag_s", "unit": "seconds", "service": "orders-db-replica", "baseline": 0.8, "spike": 340.0, "spike_at_offset_s": 240, "ramp_s": 360 },
+    { "name": "read_error_rate", "unit": "ratio", "service": "analytics-api", "baseline": 0.002, "spike": 0.5, "spike_at_offset_s": 780, "ramp_s": 120 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "A one-off backfill job ('recompute_ltv', ~120M row updates on the orders table) generated write volume far above normal, so the read replicas fell behind - replication lag climbed from under 1s to over 300s. When lag crossed the 300s safety cutoff, analytics-api's fail-safe stopped serving from replicas and failed reads by design; routing that read load onto the primary then raised the primary's latency. The trigger is the un-throttled backfill. Recovery required throttling it so replicas could catch up.",
+    "evidence_path": [
+      "data-platform INFO at 13:00: backfill 'recompute_ltv' started (~120M row updates on orders)",
+      "orders-db-replica replication lag climbs from <1s past 45s, then 210s, then 340s",
+      "analytics-api serves stale data, then hits its 300s lag cutoff and fails reads by design",
+      "orders-db-primary read load +300% as replicas leave rotation and its latency rises",
+      "recovery after the backfill is throttled to 10% rate"
+    ],
+    "fix": "Throttle the backfill (done). Run large backfills in rate-limited batches with replica-lag backpressure (pause when lag exceeds a threshold), schedule them off-peak, and consider a dedicated replica for batch and analytics load.",
+    "should_escalate": false
+  }
+}

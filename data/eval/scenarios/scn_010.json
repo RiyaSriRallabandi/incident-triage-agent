@@ -1,0 +1,1024 @@
+{
+  "id": "scn_010",
+  "category": "database_issue",
+  "difficulty": "hard",
+  "title": "An un-throttled backfill pushes read replicas past their lag cutoff",
+  "source_url": "https://stripe.com/blog/service-disruption-june-2019",
+  "source_note": "Failure pattern (a large batch job saturates the primary's write path, replication lag climbs past a safety threshold, and a fail-safe that stops serving stale reads then shifts load onto the primary) is in the spirit of Stripe's 2019 database disruptions. All services, job names, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~13:13 UTC analytics and reporting endpoints are failing or returning errors. The main checkout path is fine. Data platform started a large backfill job earlier in the afternoon. No deploys.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-10-21T12:33:13.613798Z",
+      "service": "report-cache",
+      "level": "INFO",
+      "msg": "GET key=user:568 hit"
+    },
+    {
+      "ts": "2026-10-21T12:33:45.385938Z",
+      "service": "report-cache",
+      "level": "INFO",
+      "msg": "evicted 153 keys (lru)"
+    },
+    {
+      "ts": "2026-10-21T12:33:46.675466Z",
+      "service": "report-cache",
+      "level": "WARN",
+      "msg": "GET key=user:325 miss"
+    },
+    {
+      "ts": "2026-10-21T12:35:20.359422Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=34"
+    },
+    {
+      "ts": "2026-10-21T12:37:18.863388Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=75"
+    },
+    {
+      "ts": "2026-10-21T12:37:38.106937Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 78ms"
+    },
+    {
+      "ts": "2026-10-21T12:38:06.210842Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-10-21T12:39:04.671575Z",
+      "service": "orders-db-replica",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-21T12:40:18.272337Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=58"
+    },
+    {
+      "ts": "2026-10-21T12:40:49.917816Z",
+      "service": "report-cache",
+      "level": "INFO",
+      "msg": "SET key=session:523 ttl=3600"
+    },
+    {
+      "ts": "2026-10-21T12:41:24.420983Z",
+      "service": "billing-worker",
+      "level": "INFO",
+      "msg": "queue depth=478"
+    },
+    {
+      "ts": "2026-10-21T12:41:32.261536Z",
+      "service": "report-cache",
+      "level": "INFO",
+      "msg": "evicted 151 keys (lru)"
+    },
+    {
+      "ts": "2026-10-21T12:42:38.041071Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 98ms"
+    },
+    {
+      "ts": "2026-10-21T12:47:27.060481Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-10-21T12:47:31.446775Z",
+      "service": "orders-db-replica",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 58ms"
+    },
+    {
+      "ts": "2026-10-21T12:50:21.166712Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-21T12:54:07.070126Z",
+      "service": "orders-db-replica",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 20ms"
+    },
+    {
+      "ts": "2026-10-21T12:54:40.530714Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 126ms"
+    },
+    {
+      "ts": "2026-10-21T12:57:32.644910Z",
+      "service": "report-cache",
+      "level": "WARN",
+      "msg": "GET key=user:474 miss"
+    },
+    {
+      "ts": "2026-10-21T12:59:31.288093Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 82ms"
+    },
+    {
+      "ts": "2026-10-21T13:00:00Z",
+      "service": "data-platform",
+      "level": "INFO",
+      "msg": "backfill job 'recompute_ltv' started: ~120M row updates on orders"
+    },
+    {
+      "ts": "2026-10-21T13:02:40.171108Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=75"
+    },
+    {
+      "ts": "2026-10-21T13:02:53.452433Z",
+      "service": "orders-db-replica",
+      "level": "INFO",
+      "msg": "GET /search 200 in 68ms"
+    },
+    {
+      "ts": "2026-10-21T13:04:00Z",
+      "service": "orders-db-replica",
+      "level": "WARN",
+      "msg": "replication lag 45s and climbing (normal <1s)"
+    },
+    {
+      "ts": "2026-10-21T13:09:10.337218Z",
+      "service": "orders-db-replica",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=115"
+    },
+    {
+      "ts": "2026-10-21T13:10:00Z",
+      "service": "analytics-api",
+      "level": "WARN",
+      "msg": "serving potentially stale data: replica lag 210s"
+    },
+    {
+      "ts": "2026-10-21T13:10:57.157073Z",
+      "service": "report-cache",
+      "level": "WARN",
+      "msg": "GET key=user:469 miss"
+    },
+    {
+      "ts": "2026-10-21T13:11:18.682556Z",
+      "service": "orders-db-replica",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2026-10-21T13:11:30.237088Z",
+      "service": "report-cache",
+      "level": "INFO",
+      "msg": "evicted 294 keys (lru)"
+    },
+    {
+      "ts": "2026-10-21T13:13:00Z",
+      "service": "analytics-api",
+      "level": "ERROR",
+      "msg": "lag exceeded 300s cutoff; failing reads rather than serve stale (fail-safe)"
+    },
+    {
+      "ts": "2026-10-21T13:14:00Z",
+      "service": "orders-db-primary",
+      "level": "WARN",
+      "msg": "read load +300% as replicas removed from rotation; query latency rising"
+    },
+    {
+      "ts": "2026-10-21T13:15:38.533457Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2026-10-21T13:17:01.231236Z",
+      "service": "orders-db-replica",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-21T13:18:16.136154Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-10-21T13:19:08.904153Z",
+      "service": "orders-db-replica",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 137ms"
+    },
+    {
+      "ts": "2026-10-21T13:19:33.349474Z",
+      "service": "orders-db-replica",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=118"
+    },
+    {
+      "ts": "2026-10-21T13:23:27.497668Z",
+      "service": "orders-db-replica",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 31ms"
+    },
+    {
+      "ts": "2026-10-21T13:24:35.298984Z",
+      "service": "report-cache",
+      "level": "INFO",
+      "msg": "evicted 752 keys (lru)"
+    },
+    {
+      "ts": "2026-10-21T13:25:18.532800Z",
+      "service": "orders-db-replica",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=157"
+    },
+    {
+      "ts": "2026-10-21T13:26:27.149465Z",
+      "service": "report-cache",
+      "level": "INFO",
+      "msg": "GET key=user:686 hit"
+    },
+    {
+      "ts": "2026-10-21T13:26:47.022554Z",
+      "service": "orders-db-replica",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 68ms"
+    },
+    {
+      "ts": "2026-10-21T13:27:12.224956Z",
+      "service": "report-cache",
+      "level": "INFO",
+      "msg": "GET key=user:438 hit"
+    },
+    {
+      "ts": "2026-10-21T13:30:00Z",
+      "service": "data-platform",
+      "level": "INFO",
+      "msg": "backfill throttled to 10% rate; replica lag recovering"
+    },
+    {
+      "ts": "2026-10-21T13:31:21.153634Z",
+      "service": "report-cache",
+      "level": "INFO",
+      "msg": "evicted 858 keys (lru)"
+    },
+    {
+      "ts": "2026-10-21T13:31:30.088266Z",
+      "service": "billing-worker",
+      "level": "WARN",
+      "msg": "job cache.warm retried attempt=1"
+    },
+    {
+      "ts": "2026-10-21T13:37:52.264983Z",
+      "service": "orders-db-replica",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 150ms"
+    },
+    {
+      "ts": "2026-10-21T13:38:13.537217Z",
+      "service": "report-cache",
+      "level": "INFO",
+      "msg": "GET key=user:41 hit"
+    },
+    {
+      "ts": "2026-10-21T13:38:40.496216Z",
+      "service": "orders-db-replica",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-21T13:41:33.044497Z",
+      "service": "billing-worker",
+      "level": "INFO",
+      "msg": "job cache.warm completed in 167ms"
+    },
+    {
+      "ts": "2026-10-21T13:43:34.109212Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 4ms"
+    },
+    {
+      "ts": "2026-10-21T13:44:22.432998Z",
+      "service": "billing-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2026-10-21T13:44:39.311699Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-10-21T13:44:49.288041Z",
+      "service": "report-cache",
+      "level": "WARN",
+      "msg": "GET key=user:863 miss"
+    },
+    {
+      "ts": "2026-10-21T13:45:15.803346Z",
+      "service": "billing-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2026-10-21T13:45:46.913760Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-10-21T13:47:46.398110Z",
+      "service": "report-cache",
+      "level": "INFO",
+      "msg": "GET key=user:344 hit"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "replication_lag_s",
+      "unit": "seconds",
+      "service": "orders-db-replica",
+      "points": [
+        [
+          "2026-10-21T12:30:00Z",
+          0.8081
+        ],
+        [
+          "2026-10-21T12:31:00Z",
+          0.8096
+        ],
+        [
+          "2026-10-21T12:32:00Z",
+          0.8068
+        ],
+        [
+          "2026-10-21T12:33:00Z",
+          0.7983
+        ],
+        [
+          "2026-10-21T12:34:00Z",
+          0.8103
+        ],
+        [
+          "2026-10-21T12:35:00Z",
+          0.8106
+        ],
+        [
+          "2026-10-21T12:36:00Z",
+          0.8144
+        ],
+        [
+          "2026-10-21T12:37:00Z",
+          0.7902
+        ],
+        [
+          "2026-10-21T12:38:00Z",
+          0.8062
+        ],
+        [
+          "2026-10-21T12:39:00Z",
+          0.8023
+        ],
+        [
+          "2026-10-21T12:40:00Z",
+          0.7966
+        ],
+        [
+          "2026-10-21T12:41:00Z",
+          0.8087
+        ],
+        [
+          "2026-10-21T12:42:00Z",
+          0.7871
+        ],
+        [
+          "2026-10-21T12:43:00Z",
+          0.8095
+        ],
+        [
+          "2026-10-21T12:44:00Z",
+          0.79
+        ],
+        [
+          "2026-10-21T12:45:00Z",
+          0.8072
+        ],
+        [
+          "2026-10-21T12:46:00Z",
+          0.8026
+        ],
+        [
+          "2026-10-21T12:47:00Z",
+          0.8079
+        ],
+        [
+          "2026-10-21T12:48:00Z",
+          0.7961
+        ],
+        [
+          "2026-10-21T12:49:00Z",
+          0.7994
+        ],
+        [
+          "2026-10-21T12:50:00Z",
+          0.806
+        ],
+        [
+          "2026-10-21T12:51:00Z",
+          0.7995
+        ],
+        [
+          "2026-10-21T12:52:00Z",
+          0.8131
+        ],
+        [
+          "2026-10-21T12:53:00Z",
+          0.8081
+        ],
+        [
+          "2026-10-21T12:54:00Z",
+          0.8066
+        ],
+        [
+          "2026-10-21T12:55:00Z",
+          0.79
+        ],
+        [
+          "2026-10-21T12:56:00Z",
+          0.7875
+        ],
+        [
+          "2026-10-21T12:57:00Z",
+          0.8065
+        ],
+        [
+          "2026-10-21T12:58:00Z",
+          0.7931
+        ],
+        [
+          "2026-10-21T12:59:00Z",
+          0.8072
+        ],
+        [
+          "2026-10-21T13:00:00Z",
+          0.813
+        ],
+        [
+          "2026-10-21T13:01:00Z",
+          0.8102
+        ],
+        [
+          "2026-10-21T13:02:00Z",
+          0.8111
+        ],
+        [
+          "2026-10-21T13:03:00Z",
+          0.7997
+        ],
+        [
+          "2026-10-21T13:04:00Z",
+          0.8007
+        ],
+        [
+          "2026-10-21T13:05:00Z",
+          56.985
+        ],
+        [
+          "2026-10-21T13:06:00Z",
+          115.0189
+        ],
+        [
+          "2026-10-21T13:07:00Z",
+          173.4622
+        ],
+        [
+          "2026-10-21T13:08:00Z",
+          224.2472
+        ],
+        [
+          "2026-10-21T13:09:00Z",
+          286.2956
+        ],
+        [
+          "2026-10-21T13:10:00Z",
+          333.2716
+        ],
+        [
+          "2026-10-21T13:11:00Z",
+          339.4095
+        ],
+        [
+          "2026-10-21T13:12:00Z",
+          336.6226
+        ],
+        [
+          "2026-10-21T13:13:00Z",
+          334.3274
+        ],
+        [
+          "2026-10-21T13:14:00Z",
+          339.2165
+        ],
+        [
+          "2026-10-21T13:15:00Z",
+          335.3815
+        ],
+        [
+          "2026-10-21T13:16:00Z",
+          334.4266
+        ],
+        [
+          "2026-10-21T13:17:00Z",
+          345.5683
+        ],
+        [
+          "2026-10-21T13:18:00Z",
+          346.1874
+        ],
+        [
+          "2026-10-21T13:19:00Z",
+          334.7288
+        ],
+        [
+          "2026-10-21T13:20:00Z",
+          345.7325
+        ],
+        [
+          "2026-10-21T13:21:00Z",
+          333.6114
+        ],
+        [
+          "2026-10-21T13:22:00Z",
+          334.8607
+        ],
+        [
+          "2026-10-21T13:23:00Z",
+          340.2072
+        ],
+        [
+          "2026-10-21T13:24:00Z",
+          337.7611
+        ],
+        [
+          "2026-10-21T13:25:00Z",
+          342.3717
+        ],
+        [
+          "2026-10-21T13:26:00Z",
+          340.285
+        ],
+        [
+          "2026-10-21T13:27:00Z",
+          344.8999
+        ],
+        [
+          "2026-10-21T13:28:00Z",
+          346.4337
+        ],
+        [
+          "2026-10-21T13:29:00Z",
+          337.8607
+        ],
+        [
+          "2026-10-21T13:30:00Z",
+          339.6132
+        ],
+        [
+          "2026-10-21T13:31:00Z",
+          337.4272
+        ],
+        [
+          "2026-10-21T13:32:00Z",
+          337.7321
+        ],
+        [
+          "2026-10-21T13:33:00Z",
+          345.9706
+        ],
+        [
+          "2026-10-21T13:34:00Z",
+          340.3965
+        ],
+        [
+          "2026-10-21T13:35:00Z",
+          337.4447
+        ],
+        [
+          "2026-10-21T13:36:00Z",
+          343.3534
+        ],
+        [
+          "2026-10-21T13:37:00Z",
+          345.7638
+        ],
+        [
+          "2026-10-21T13:38:00Z",
+          338.8338
+        ],
+        [
+          "2026-10-21T13:39:00Z",
+          338.7333
+        ],
+        [
+          "2026-10-21T13:40:00Z",
+          338.0598
+        ],
+        [
+          "2026-10-21T13:41:00Z",
+          345.3876
+        ],
+        [
+          "2026-10-21T13:42:00Z",
+          345.3545
+        ],
+        [
+          "2026-10-21T13:43:00Z",
+          345.3982
+        ],
+        [
+          "2026-10-21T13:44:00Z",
+          338.9656
+        ],
+        [
+          "2026-10-21T13:45:00Z",
+          344.1526
+        ],
+        [
+          "2026-10-21T13:46:00Z",
+          340.0697
+        ],
+        [
+          "2026-10-21T13:47:00Z",
+          335.8823
+        ],
+        [
+          "2026-10-21T13:48:00Z",
+          345.2118
+        ],
+        [
+          "2026-10-21T13:49:00Z",
+          336.5579
+        ],
+        [
+          "2026-10-21T13:50:00Z",
+          338.6087
+        ]
+      ]
+    },
+    {
+      "name": "read_error_rate",
+      "unit": "ratio",
+      "service": "analytics-api",
+      "points": [
+        [
+          "2026-10-21T12:30:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:31:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:32:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:33:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:34:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:35:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:36:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:37:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:38:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:39:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:40:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:41:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:42:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:43:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:44:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:45:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:46:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:47:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:48:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:49:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:50:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:51:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:52:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:53:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:54:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:55:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:56:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:57:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:58:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T12:59:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:00:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:01:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:02:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:03:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:04:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:05:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:06:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:07:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:08:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:09:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:10:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:11:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:12:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:13:00Z",
+          0.002
+        ],
+        [
+          "2026-10-21T13:14:00Z",
+          0.252
+        ],
+        [
+          "2026-10-21T13:15:00Z",
+          0.4926
+        ],
+        [
+          "2026-10-21T13:16:00Z",
+          0.4958
+        ],
+        [
+          "2026-10-21T13:17:00Z",
+          0.4956
+        ],
+        [
+          "2026-10-21T13:18:00Z",
+          0.5006
+        ],
+        [
+          "2026-10-21T13:19:00Z",
+          0.4937
+        ],
+        [
+          "2026-10-21T13:20:00Z",
+          0.4945
+        ],
+        [
+          "2026-10-21T13:21:00Z",
+          0.4946
+        ],
+        [
+          "2026-10-21T13:22:00Z",
+          0.4995
+        ],
+        [
+          "2026-10-21T13:23:00Z",
+          0.5018
+        ],
+        [
+          "2026-10-21T13:24:00Z",
+          0.508
+        ],
+        [
+          "2026-10-21T13:25:00Z",
+          0.4901
+        ],
+        [
+          "2026-10-21T13:26:00Z",
+          0.5094
+        ],
+        [
+          "2026-10-21T13:27:00Z",
+          0.5028
+        ],
+        [
+          "2026-10-21T13:28:00Z",
+          0.4965
+        ],
+        [
+          "2026-10-21T13:29:00Z",
+          0.4953
+        ],
+        [
+          "2026-10-21T13:30:00Z",
+          0.4987
+        ],
+        [
+          "2026-10-21T13:31:00Z",
+          0.5092
+        ],
+        [
+          "2026-10-21T13:32:00Z",
+          0.4903
+        ],
+        [
+          "2026-10-21T13:33:00Z",
+          0.5017
+        ],
+        [
+          "2026-10-21T13:34:00Z",
+          0.5075
+        ],
+        [
+          "2026-10-21T13:35:00Z",
+          0.495
+        ],
+        [
+          "2026-10-21T13:36:00Z",
+          0.5045
+        ],
+        [
+          "2026-10-21T13:37:00Z",
+          0.5067
+        ],
+        [
+          "2026-10-21T13:38:00Z",
+          0.4939
+        ],
+        [
+          "2026-10-21T13:39:00Z",
+          0.4949
+        ],
+        [
+          "2026-10-21T13:40:00Z",
+          0.4962
+        ],
+        [
+          "2026-10-21T13:41:00Z",
+          0.5042
+        ],
+        [
+          "2026-10-21T13:42:00Z",
+          0.4947
+        ],
+        [
+          "2026-10-21T13:43:00Z",
+          0.5085
+        ],
+        [
+          "2026-10-21T13:44:00Z",
+          0.4971
+        ],
+        [
+          "2026-10-21T13:45:00Z",
+          0.4935
+        ],
+        [
+          "2026-10-21T13:46:00Z",
+          0.506
+        ],
+        [
+          "2026-10-21T13:47:00Z",
+          0.495
+        ],
+        [
+          "2026-10-21T13:48:00Z",
+          0.5074
+        ],
+        [
+          "2026-10-21T13:49:00Z",
+          0.4978
+        ],
+        [
+          "2026-10-21T13:50:00Z",
+          0.4965
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "A one-off backfill job ('recompute_ltv', ~120M row updates on the orders table) generated write volume far above normal, so the read replicas fell behind - replication lag climbed from under 1s to over 300s. When lag crossed the 300s safety cutoff, analytics-api's fail-safe stopped serving from replicas and failed reads by design; routing that read load onto the primary then raised the primary's latency. The trigger is the un-throttled backfill. Recovery required throttling it so replicas could catch up.",
+    "evidence_path": [
+      "data-platform INFO at 13:00: backfill 'recompute_ltv' started (~120M row updates on orders)",
+      "orders-db-replica replication lag climbs from <1s past 45s, then 210s, then 340s",
+      "analytics-api serves stale data, then hits its 300s lag cutoff and fails reads by design",
+      "orders-db-primary read load +300% as replicas leave rotation and its latency rises",
+      "recovery after the backfill is throttled to 10% rate"
+    ],
+    "fix": "Throttle the backfill (done). Run large backfills in rate-limited batches with replica-lag backpressure (pause when lag exceeds a threshold), schedule them off-peak, and consider a dedicated replica for batch and analytics load.",
+    "should_escalate": false
+  }
+}

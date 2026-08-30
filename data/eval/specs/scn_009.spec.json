@@ -1,0 +1,45 @@
+{
+  "id": "scn_009",
+  "category": "database_issue",
+  "difficulty": "medium",
+  "title": "A blocking index migration locks the users table and stalls all writes",
+  "source_url": "https://about.gitlab.com/blog/2017/02/10/postmortem-of-database-outage-of-january-31/",
+  "source_note": "Failure pattern (a schema-change migration that takes a blocking lock on a large hot table, stalling every write for its duration) is in the spirit of the GitLab.com 2017 database incident and common online-migration guidance. All services, commit hashes, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~20:11 UTC signups and profile updates are failing with timeouts. Reads look fine. Login mostly works but is slow. A migration deploy went out to users-service just before it started.",
+  "incident_start": "2026-10-15T20:10:00Z",
+  "detected_offset_s": 180,
+  "window_before_s": 1800,
+  "window_after_s": 1200,
+  "primary_service": "users-db",
+  "distractor_services": [
+    { "name": "catalog-api", "role": "api" },
+    { "name": "email-worker", "role": "worker" },
+    { "name": "feed-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "users-db", "level": "INFO", "msg": "migration 20261015 started: CREATE INDEX on users.last_seen_at (table ~80M rows)" },
+    { "offset_s": 60, "service": "users-db", "level": "WARN", "msg": "lock wait: 40 sessions blocked on AccessExclusiveLock for relation users" },
+    { "offset_s": 180, "service": "users-service", "level": "ERROR", "msg": "write queries to users timing out (statement_timeout 5s); signups and profile updates failing" },
+    { "offset_s": 300, "service": "login-service", "level": "ERROR", "msg": "login succeeded but last_seen_at update timed out; elevated latency" },
+    { "offset_s": 900, "service": "users-db", "level": "INFO", "msg": "migration cancelled by operator; locks released; writes recovering" }
+  ],
+  "metrics": [
+    { "name": "db_lock_wait_sessions", "unit": "count", "service": "users-db", "baseline": 1.0, "spike": 55.0, "spike_at_offset_s": 60, "ramp_s": 120 },
+    { "name": "write_error_rate", "unit": "ratio", "service": "users-service", "baseline": 0.001, "spike": 0.6, "spike_at_offset_s": 180, "ramp_s": 120 }
+  ],
+  "deploys": [
+    { "service": "users-service", "offset_s": -60, "commit": "d4e5f6a", "summary": "add index on users.last_seen_at (migration 20261015)" }
+  ],
+  "ground_truth": {
+    "root_cause": "A schema migration deployed with commit d4e5f6a created an index on users.last_seen_at as a blocking operation on an ~80M-row table. The CREATE INDEX held an AccessExclusiveLock on the users table for its duration, blocking all writes. Every operation that writes to users - signups, profile updates, the last_seen_at touch on login - stalled and hit the 5s statement timeout. Reads were unaffected. Recovery required cancelling the migration to release the lock.",
+    "evidence_path": [
+      "deploy d4e5f6a to users-service at 20:09 ships migration 20261015 (add index on users.last_seen_at)",
+      "users-db INFO at 20:10: migration started, CREATE INDEX on an ~80M-row table",
+      "users-db WARN: 40+ sessions blocked on AccessExclusiveLock for relation users",
+      "users-service write queries time out (statement_timeout 5s); signups and profile updates fail",
+      "recovery immediately after the migration is cancelled and locks release"
+    ],
+    "fix": "Cancel the blocking migration (done). Re-run it as an online, non-blocking index build (CREATE INDEX CONCURRENTLY). Add a pre-deploy check that flags blocking DDL against large tables and requires an online alternative or a maintenance window.",
+    "should_escalate": false
+  }
+}

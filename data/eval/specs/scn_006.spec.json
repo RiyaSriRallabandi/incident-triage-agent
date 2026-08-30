@@ -1,0 +1,44 @@
+{
+  "id": "scn_006",
+  "category": "network_dns",
+  "difficulty": "medium",
+  "title": "Security-group change removes egress rule to the external payment processor",
+  "source_url": "https://sre.google/sre-book/managing-incidents/",
+  "source_note": "Failure pattern (an infrastructure access-control change silently removes a required network path to a critical dependency, so connections time out while DNS still resolves) is a common operational class discussed in the Google SRE Book. All services, change IDs, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~11:07 UTC all card payments are failing at checkout with 'try again later'. Non-payment traffic is fine. No application deploys. Cloud infra team pushed a security-group change this morning.",
+  "incident_start": "2026-09-22T11:05:00Z",
+  "detected_offset_s": 300,
+  "window_before_s": 1800,
+  "window_after_s": 1500,
+  "primary_service": "payments-gateway",
+  "distractor_services": [
+    { "name": "checkout-api", "role": "api" },
+    { "name": "orders-worker", "role": "worker" },
+    { "name": "ledger-db", "role": "db" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "cloud-infra", "level": "INFO", "msg": "security group sg-pay-egress updated: 1 rule removed, 2 added (change CR-4821)" },
+    { "offset_s": 120, "service": "payments-gateway", "level": "WARN", "msg": "outbound connection to processor.acme-pay.com timing out (connect timeout 10s)" },
+    { "offset_s": 300, "service": "payments-gateway", "level": "ERROR", "msg": "100% of payment authorizations failing: upstream connect timeout" },
+    { "offset_s": 360, "service": "payments-gateway", "level": "INFO", "msg": "DNS resolves processor.acme-pay.com fine; TCP connect never completes" },
+    { "offset_s": 420, "service": "checkout-api", "level": "WARN", "msg": "payment step failing; showing 'try again later' to users" },
+    { "offset_s": 1200, "service": "cloud-infra", "level": "INFO", "msg": "CR-4821 rolled back; egress rule for the processor CIDR restored" }
+  ],
+  "metrics": [
+    { "name": "payment_auth_success_rate", "unit": "ratio", "service": "payments-gateway", "baseline": 0.985, "spike": 0.0, "spike_at_offset_s": 120, "ramp_s": 240 },
+    { "name": "outbound_connect_errors_per_s", "unit": "count_per_second", "service": "payments-gateway", "baseline": 0.2, "spike": 45.0, "spike_at_offset_s": 120, "ramp_s": 180 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "A security-group change (CR-4821) intended to tighten egress rules removed the rule permitting payments-gateway to reach the external payment processor's IP range. DNS still resolved, but TCP connections to the processor could no longer be established, so every payment authorization timed out. Non-payment traffic was unaffected. Recovery required rolling back the change.",
+    "evidence_path": [
+      "cloud-infra INFO at 11:05: security group sg-pay-egress updated (CR-4821), one rule removed",
+      "payments-gateway outbound connections to the processor start timing out at 11:07",
+      "payments-gateway notes DNS resolves but TCP connect never completes - a network-path failure, not a DNS failure",
+      "payment_auth_success_rate falls to 0 and outbound connect errors spike",
+      "recovery after CR-4821 is rolled back at ~11:25"
+    ],
+    "fix": "Roll back CR-4821 (done). Review security-group changes that affect payment egress against a known-good allowlist, test them in staging, and add synthetic monitoring that authorizes a test transaction end to end.",
+    "should_escalate": false
+  }
+}

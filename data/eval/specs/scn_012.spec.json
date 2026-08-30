@@ -1,0 +1,40 @@
+{
+  "id": "scn_012",
+  "category": "ambiguous",
+  "difficulty": "hard",
+  "title": "search-api p99 latency doubles with two candidate causes and no clean signal",
+  "source_url": "https://www.microsoft.com/en-us/research/publication/gray-failure-the-achilles-heel-of-cloud-scale-systems/",
+  "source_note": "Constructed as a deliberately under-determined case: a real latency regression with two plausible-but-unconfirmed causes (an old deploy, gradual load growth) and no evidence that distinguishes them. In the spirit of the Microsoft Research 'Gray Failure' paper. All services, log lines, metrics, and timestamps are fabricated for evaluation; this scenario should be escalated.",
+  "incident_report": "search-api p99 latency roughly doubled (about 300ms to 620ms) starting around 04:00 UTC. p50 is unchanged. No error spike, no resource alarm. The team wants a root cause before closing the incident.",
+  "incident_start": "2026-11-04T04:00:00Z",
+  "detected_offset_s": 1200,
+  "window_before_s": 3600,
+  "window_after_s": 1800,
+  "primary_service": "search-api",
+  "distractor_services": [
+    { "name": "web-frontend", "role": "api" },
+    { "name": "suggest-service", "role": "api" },
+    { "name": "index-builder", "role": "worker" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "search-api", "level": "WARN", "msg": "p99 latency 610ms (baseline ~300ms); p50 unchanged at ~40ms" },
+    { "offset_s": 300, "service": "search-api", "level": "INFO", "msg": "no error rate change; no CPU, memory, or GC anomaly; thread pool healthy" },
+    { "offset_s": 600, "service": "search-api", "level": "INFO", "msg": "query volume +24% week-over-week; shard 3 index size +8% in 24h" },
+    { "offset_s": 900, "service": "search-api", "level": "INFO", "msg": "last deploy c1c2c3c was 22:30 the prior day (~5.5h before onset); no restart or config change at 04:00" },
+    { "offset_s": 1500, "service": "search-api", "level": "WARN", "msg": "p99 480ms; partial improvement, no action taken" }
+  ],
+  "metrics": [
+    { "name": "p99_latency_ms", "unit": "milliseconds", "service": "search-api", "baseline": 300.0, "spike": 620.0, "spike_at_offset_s": 0, "ramp_s": 600 },
+    { "name": "error_rate", "unit": "ratio", "service": "search-api", "baseline": 0.003, "spike": 0.004, "spike_at_offset_s": 0, "ramp_s": 300 },
+    { "name": "cpu_utilization_pct", "unit": "percent", "service": "search-api", "baseline": 45.0, "spike": 48.0, "spike_at_offset_s": 0, "ramp_s": 600 }
+  ],
+  "deploys": [
+    { "service": "search-api", "offset_s": -19800, "commit": "c1c2c3c", "summary": "bump ranking model to v7; minor query-parser refactor" }
+  ],
+  "ground_truth": {
+    "root_cause": "Undetermined. search-api p99 latency roughly doubled at ~04:00 while p50, error rate, and resource use stayed essentially flat. Two candidate causes are present but neither fits: the last deploy (ranking model v7) was ~5.5 hours before onset with no corresponding event at 04:00, and organic query growth (+24% week-over-week) plus index growth are gradual, not a step change. The available evidence does not localize a cause.",
+    "evidence_path": [],
+    "fix": "Escalate to the search-api team. Next steps beyond the current evidence: a latency breakdown by query type and shard over a longer window, a diff of slow-query samples before vs after 04:00, whether a scheduled index merge or cache flush runs near 04:00, and a canary rollback of c1c2c3c to test the deploy hypothesis directly.",
+    "should_escalate": true
+  }
+}

@@ -42,14 +42,22 @@ support, fix, escalation flag) using the Groq judge model. It flags; a human
 confirms. The same rubric seeds the Task 8 LLM-judge.
 
 
-## Current set (starter — expands in a later task)
+## Current set (12 scenarios)
 
 | id | category | difficulty | escalate? | modeled on |
 |----|----------|-----------|-----------|------------|
 | scn_001 | bad_deploy | medium | no | Cloudflare 2019-07-02 (WAF regex → CPU exhaustion) |
 | scn_002 | resource_exhaustion | hard | no | AWS Builders' Library retry-storm pattern |
 | scn_003 | dependency_failure | medium | no | AWS S3 2017-02-28 (operator command removed too much capacity) |
-| scn_004 | ambiguous | hard | **yes** | "Gray Failure" (Microsoft Research) — deliberately under-determined |
+| scn_004 | ambiguous | hard | **yes** | "Gray Failure" (Microsoft Research) — under-determined |
+| scn_005 | network_dns | medium | no | Facebook 2021-10-04 (backbone push withdraws DNS routes) |
+| scn_006 | network_dns | medium | no | security-group change removes egress to a dependency |
+| scn_007 | cert_config_expiry | easy | no | Microsoft Teams 2020-02-03 (expired TLS cert) |
+| scn_008 | cert_config_expiry | hard | no | internal mTLS CA rotation with trust-bundle skew |
+| scn_009 | database_issue | medium | no | GitLab 2017 (blocking index migration locks a hot table) |
+| scn_010 | database_issue | hard | no | Stripe 2019 (backfill → replica lag → fail-safe → primary overload) |
+| scn_011 | bad_deploy | hard | no | Knight Capital 2012 (repurposed flag + partial rollout) |
+| scn_012 | ambiguous | hard | **yes** | two candidate causes, neither confirmable |
 
-`scn_004` has no single correct root cause by design: it tests whether the agent
-escalates rather than fabricating one.
+`scn_004` and `scn_012` have no single correct root cause by design: they test
+whether the agent escalates rather than fabricating one.
