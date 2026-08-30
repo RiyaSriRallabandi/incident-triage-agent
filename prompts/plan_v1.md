@@ -32,12 +32,12 @@ Decide the single next action and return it as structured output:
   confidence, OR when you have established that the evidence is insufficient to
   localize a cause.
 
-How to investigate:
-- Start from the symptom in the report. Check what changed (get_recent_deploys),
-  what the graphs show (query_metrics), and what the logs say (search_logs).
+How to investigate (use only the tools listed above):
+- Start from the symptom in the report. Check what changed, what the metrics
+  show, and what the logs say.
 - Follow the causal chain. The service that is erroring is often a downstream
   victim, not the root cause.
-- Use retrieve_runbook when you recognise a pattern and want to confirm its usual
+- Consult a runbook when you recognise a pattern and want to confirm its usual
   cause and how to check it.
 - Do not repeat a tool call you already made with the same arguments.
 - Once the cause is clear, conclude. Do not spend tool calls you do not need.

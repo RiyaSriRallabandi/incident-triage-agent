@@ -8,6 +8,7 @@ from langchain_core.language_models import BaseChatModel
 
 from triage.agent.graph import build_graph
 from triage.agent.nodes import Concluder, Planner
+from triage.agent.prompts import CONCLUDE_PROMPT, PLAN_PROMPT
 from triage.agent.state import (
     AgentResult,
     ConcludeResult,
@@ -47,10 +48,12 @@ def _metric_catalog(scenario: Scenario) -> dict[str, list[str]]:
 _OTHER: dict[Provider, Provider] = {"groq": "gemini", "gemini": "groq"}
 
 
-def _structured_runnable(schema, provider: Provider):
+def _structured_runnable(schema, provider: Provider, model: str | None):
     """Primary provider with the other as a fallback when its key is present."""
     settings = get_settings()
-    runnable = with_structured_output(get_chat_model(provider), schema, provider=provider)
+    runnable = with_structured_output(
+        get_chat_model(provider, model=model), schema, provider=provider
+    )
 
     other = _OTHER[provider]
     other_key = settings.groq_api_key if other == "groq" else settings.gemini_api_key
@@ -60,20 +63,24 @@ def _structured_runnable(schema, provider: Provider):
     return runnable
 
 
-def _llm_planner(provider: Provider, model: BaseChatModel | None = None) -> Planner:
+def _llm_planner(
+    provider: Provider, model: str | None = None, override: BaseChatModel | None = None
+) -> Planner:
     structured = (
-        with_structured_output(model, PlanDecision)
-        if model is not None
-        else _structured_runnable(PlanDecision, provider)
+        with_structured_output(override, PlanDecision)
+        if override is not None
+        else _structured_runnable(PlanDecision, provider, model)
     )
     return lambda prompt: invoke_with_backoff(structured, prompt)
 
 
-def _llm_concluder(provider: Provider, model: BaseChatModel | None = None) -> Concluder:
+def _llm_concluder(
+    provider: Provider, model: str | None = None, override: BaseChatModel | None = None
+) -> Concluder:
     structured = (
-        with_structured_output(model, ConcludeResult)
-        if model is not None
-        else _structured_runnable(ConcludeResult, provider)
+        with_structured_output(override, ConcludeResult)
+        if override is not None
+        else _structured_runnable(ConcludeResult, provider, model)
     )
     return lambda prompt: invoke_with_backoff(structured, prompt)
 
@@ -114,21 +121,31 @@ def investigate(
     *,
     budget: int = DEFAULT_BUDGET,
     provider: Provider = DEFAULT_PROVIDER,
+    model: str | None = None,
+    plan_prompt: str = PLAN_PROMPT,
+    conclude_prompt: str = CONCLUDE_PROMPT,
+    tools: tuple[str, ...] | None = None,
     planner: Planner | None = None,
     concluder: Concluder | None = None,
     runbook_index_dir: Path = INDEX_DIR,
 ) -> AgentResult:
     """Run the triage agent on one scenario and return its assessment.
 
-    ``provider`` selects the model backing the default planner/concluder (the
-    other provider is used as a fallback). Tests pass scripted callables instead.
+    ``provider`` / ``model`` select the model backing the default planner and
+    concluder (the other provider is a fallback). ``plan_prompt`` /
+    ``conclude_prompt`` select prompt versions; ``tools`` restricts the toolset
+    (None = all four). Tests pass scripted callables instead.
     """
     configure_tracing()
-    tools = {t.name: t for t in build_toolset(scenario, runbook_index_dir=runbook_index_dir)}
-    planner = planner or _llm_planner(provider)
-    concluder = concluder or _llm_concluder(provider)
+    toolset = {t.name: t for t in build_toolset(scenario, runbook_index_dir=runbook_index_dir)}
+    if tools is not None:
+        toolset = {name: t for name, t in toolset.items() if name in tools}
+    planner = planner or _llm_planner(provider, model)
+    concluder = concluder or _llm_concluder(provider, model)
 
-    graph = build_graph(tools, planner, concluder)
+    graph = build_graph(
+        toolset, planner, concluder, plan_prompt=plan_prompt, conclude_prompt=conclude_prompt
+    )
     initial: TriageState = {
         "incident_report": scenario.incident_report,
         "evidence_window": _evidence_window(scenario),

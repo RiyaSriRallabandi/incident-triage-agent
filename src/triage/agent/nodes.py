@@ -61,9 +61,9 @@ def _render_catalog(catalog: dict[str, list[str]]) -> str:
     )
 
 
-def build_plan_prompt(state: TriageState, tools: Toolset) -> str:
+def build_plan_prompt(state: TriageState, tools: Toolset, prompt: str = PLAN_PROMPT) -> str:
     return render(
-        PLAN_PROMPT,
+        prompt,
         incident_report=state["incident_report"],
         evidence_window=state["evidence_window"],
         service_inventory=", ".join(state["service_inventory"]),
@@ -75,14 +75,14 @@ def build_plan_prompt(state: TriageState, tools: Toolset) -> str:
     )
 
 
-def build_conclude_prompt(state: TriageState) -> str:
+def build_conclude_prompt(state: TriageState, prompt: str = CONCLUDE_PROMPT) -> str:
     budget_note = ""
     if state["hit_budget_cap"]:
         budget_note = (
             "\nNote: the tool-call budget was exhausted before the investigation finished.\n"
         )
     return render(
-        CONCLUDE_PROMPT,
+        prompt,
         incident_report=state["incident_report"],
         evidence=_render_evidence(state["evidence"]),
         budget_note=budget_note,
@@ -94,8 +94,10 @@ def build_conclude_prompt(state: TriageState) -> str:
 # --------------------------------------------------------------------------- #
 
 
-def plan_node(state: TriageState, *, planner: Planner, tools: Toolset) -> dict:
-    decision = planner(build_plan_prompt(state, tools))
+def plan_node(
+    state: TriageState, *, planner: Planner, tools: Toolset, prompt: str = PLAN_PROMPT
+) -> dict:
+    decision = planner(build_plan_prompt(state, tools, prompt))
     return {"pending_plan": decision}
 
 
@@ -146,8 +148,10 @@ def act_node(state: TriageState, *, tools: Toolset) -> dict:
     return done(result, args=args, error=error)
 
 
-def conclude_node(state: TriageState, *, concluder: Concluder) -> dict:
-    return {"result": concluder(build_conclude_prompt(state))}
+def conclude_node(
+    state: TriageState, *, concluder: Concluder, prompt: str = CONCLUDE_PROMPT
+) -> dict:
+    return {"result": concluder(build_conclude_prompt(state, prompt))}
 
 
 # --------------------------------------------------------------------------- #

@@ -4,6 +4,7 @@ from triage.eval.judge import Judgement
 from triage.eval.metrics import RunMetrics
 from triage.eval.runner import CachedRun, load_runs, produce_runs, run_path
 from triage.eval.summary import summarize
+from triage.eval.variants import BASELINE, Variant
 
 SC = {s.id: s for s in load_scenarios()}
 
@@ -15,17 +16,27 @@ def test_run_path_naming(tmp_path):
 
 def test_produce_runs_uses_cache_without_calling_investigate(tmp_path, monkeypatch):
     scenario = SC["scn_001"]
-    cached = CachedRun(tag="baseline", scenario_id="scn_001", run_index=1, budget=6, error="stub")
-    run_path("baseline", "scn_001", 1, tmp_path).write_text(cached.model_dump_json())
+    variant = Variant(tag="v-test")
+    cached = CachedRun(tag="v-test", scenario_id="scn_001", run_index=1, budget=6, error="stub")
+    run_path("v-test", "scn_001", 1, tmp_path).write_text(cached.model_dump_json())
 
     def _boom(*a, **k):
         raise AssertionError("investigate() called despite a cache hit")
 
     monkeypatch.setattr(runner_mod, "investigate", _boom)
 
-    runs = produce_runs([scenario], repeats=1, tag="baseline", runs_dir=tmp_path)
+    runs = produce_runs([scenario], variant=variant, repeats=1, runs_dir=tmp_path)
     assert len(runs) == 1 and runs[0].error == "stub"
-    assert len(load_runs("baseline", tmp_path)) == 1
+    assert len(load_runs("v-test", tmp_path)) == 1
+
+
+def test_variants_registry_covers_the_ablation_dimensions():
+    from triage.eval.variants import VARIANTS
+
+    assert BASELINE.tag in VARIANTS
+    assert VARIANTS["conclude-v2"].conclude_prompt == "conclude_v2"
+    assert VARIANTS["no-runbook"].tools == ("search_logs", "query_metrics", "get_recent_deploys")
+    assert VARIANTS["budget-10"].budget == 10
 
 
 def _metric(sid, run, **kw) -> RunMetrics:
