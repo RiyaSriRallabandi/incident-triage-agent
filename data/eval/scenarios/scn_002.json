@@ -1,0 +1,1341 @@
+{
+  "id": "scn_002",
+  "category": "resource_exhaustion",
+  "difficulty": "hard",
+  "title": "Retry amplification against a mildly slow downstream exhausts checkout connection and thread pools",
+  "source_url": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+  "source_note": "Failure pattern (a small downstream latency increase amplified by un-budgeted client retries into an upstream resource exhaustion / cascading outage) follows the retry-storm scenario described in the AWS Builders' Library article on timeouts, retries, and backoff. All services, logs, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Checkout started returning 503s to a growing share of users around 09:23 UTC. Error rate on checkout-api is elevated and latency is high. No deploys went out today. Payments processing also looks a bit slow. On-call is unsure whether checkout or payments is the real problem.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-06-03T08:46:32.003098Z",
+      "service": "events-db",
+      "level": "WARN",
+      "msg": "long-running query 143ms: SELECT ..."
+    },
+    {
+      "ts": "2026-06-03T08:47:12.254973Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=150"
+    },
+    {
+      "ts": "2026-06-03T08:48:50.812248Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2026-06-03T08:49:32.278749Z",
+      "service": "orders-worker",
+      "level": "WARN",
+      "msg": "job email.send retried attempt=1"
+    },
+    {
+      "ts": "2026-06-03T08:51:19.222467Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2026-06-03T08:52:58.665324Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "slow request path=/products duration_ms=41"
+    },
+    {
+      "ts": "2026-06-03T08:54:37.398747Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "connection received: host=10.0.135.155"
+    },
+    {
+      "ts": "2026-06-03T08:54:42.658058Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "autovacuum: table \"events\" done"
+    },
+    {
+      "ts": "2026-06-03T08:55:34.025715Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "checkpoint complete: wrote 387 buffers"
+    },
+    {
+      "ts": "2026-06-03T08:56:48.336192Z",
+      "service": "events-db",
+      "level": "WARN",
+      "msg": "long-running query 158ms: SELECT ..."
+    },
+    {
+      "ts": "2026-06-03T08:58:10.662715Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "autovacuum: table \"events\" done"
+    },
+    {
+      "ts": "2026-06-03T08:59:57.598576Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 229ms"
+    },
+    {
+      "ts": "2026-06-03T09:00:58.029216Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "queue depth=49"
+    },
+    {
+      "ts": "2026-06-03T09:01:31.447657Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "connection received: host=10.0.700.120"
+    },
+    {
+      "ts": "2026-06-03T09:01:36.452406Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "autovacuum: table \"events\" done"
+    },
+    {
+      "ts": "2026-06-03T09:02:11.370251Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /products 201 in 177ms"
+    },
+    {
+      "ts": "2026-06-03T09:03:21.620655Z",
+      "service": "orders-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2026-06-03T09:04:17.950146Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "processed batch size=597"
+    },
+    {
+      "ts": "2026-06-03T09:04:38.245485Z",
+      "service": "orders-worker",
+      "level": "WARN",
+      "msg": "job email.send retried attempt=1"
+    },
+    {
+      "ts": "2026-06-03T09:07:17.478810Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-06-03T09:07:25.788619Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "checkpoint complete: wrote 157 buffers"
+    },
+    {
+      "ts": "2026-06-03T09:07:57.620800Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "queue depth=753"
+    },
+    {
+      "ts": "2026-06-03T09:08:59.460143Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "checkpoint complete: wrote 544 buffers"
+    },
+    {
+      "ts": "2026-06-03T09:10:08.766098Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "autovacuum: table \"events\" done"
+    },
+    {
+      "ts": "2026-06-03T09:11:22.901228Z",
+      "service": "orders-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2026-06-03T09:12:46.042366Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "connection received: host=10.0.371.230"
+    },
+    {
+      "ts": "2026-06-03T09:12:52.782898Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "connection received: host=10.0.147.238"
+    },
+    {
+      "ts": "2026-06-03T09:14:13.688201Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "queue depth=771"
+    },
+    {
+      "ts": "2026-06-03T09:14:28.483341Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 72ms"
+    },
+    {
+      "ts": "2026-06-03T09:14:45.185247Z",
+      "service": "catalog-api",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=116"
+    },
+    {
+      "ts": "2026-06-03T09:15:00Z",
+      "service": "payments-api",
+      "level": "WARN",
+      "msg": "p95 latency 380ms (baseline ~90ms); read replica lag 4s"
+    },
+    {
+      "ts": "2026-06-03T09:15:14.997147Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 162ms"
+    },
+    {
+      "ts": "2026-06-03T09:16:07.252757Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /search 201 in 97ms"
+    },
+    {
+      "ts": "2026-06-03T09:16:12.412309Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 74ms"
+    },
+    {
+      "ts": "2026-06-03T09:16:31.565961Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "autovacuum: table \"events\" done"
+    },
+    {
+      "ts": "2026-06-03T09:17:00Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "downstream payments-api call slow: 1180ms (timeout 2000ms)"
+    },
+    {
+      "ts": "2026-06-03T09:18:39.239584Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "queue depth=434"
+    },
+    {
+      "ts": "2026-06-03T09:19:00Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "retrying payments-api call (attempt 3/5); no backoff or retry budget configured for this client"
+    },
+    {
+      "ts": "2026-06-03T09:20:37.292778Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2026-06-03T09:21:00Z",
+      "service": "checkout-api",
+      "level": "ERROR",
+      "msg": "DB connection pool exhausted (size=20, active=20, waiters=140)"
+    },
+    {
+      "ts": "2026-06-03T09:21:14.621015Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "connection received: host=10.0.27.1"
+    },
+    {
+      "ts": "2026-06-03T09:22:00Z",
+      "service": "checkout-api",
+      "level": "ERROR",
+      "msg": "worker thread pool exhausted; rejecting inbound requests"
+    },
+    {
+      "ts": "2026-06-03T09:22:37.524101Z",
+      "service": "events-db",
+      "level": "WARN",
+      "msg": "long-running query 181ms: SELECT ..."
+    },
+    {
+      "ts": "2026-06-03T09:23:00Z",
+      "service": "checkout-api",
+      "level": "ERROR",
+      "msg": "HTTP 503: server at capacity"
+    },
+    {
+      "ts": "2026-06-03T09:25:01.992739Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2026-06-03T09:26:51.891227Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=179"
+    },
+    {
+      "ts": "2026-06-03T09:28:15.479291Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "GET /products 200 in 240ms"
+    },
+    {
+      "ts": "2026-06-03T09:30:30.525351Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 126ms"
+    },
+    {
+      "ts": "2026-06-03T09:31:55.094132Z",
+      "service": "events-db",
+      "level": "WARN",
+      "msg": "long-running query 218ms: SELECT ..."
+    },
+    {
+      "ts": "2026-06-03T09:32:30Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "operator lowered payments-api client retry budget to 1; connection pool draining"
+    },
+    {
+      "ts": "2026-06-03T09:33:03.040654Z",
+      "service": "orders-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2026-06-03T09:35:20.232260Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "job report.build completed in 186ms"
+    },
+    {
+      "ts": "2026-06-03T09:38:11.212357Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-06-03T09:38:58.612095Z",
+      "service": "catalog-api",
+      "level": "INFO",
+      "msg": "GET /search 200 in 172ms"
+    },
+    {
+      "ts": "2026-06-03T09:39:00.366134Z",
+      "service": "orders-worker",
+      "level": "INFO",
+      "msg": "processed batch size=362"
+    },
+    {
+      "ts": "2026-06-03T09:39:55.150984Z",
+      "service": "events-db",
+      "level": "INFO",
+      "msg": "connection received: host=10.0.503.54"
+    },
+    {
+      "ts": "2026-06-03T09:41:28.852223Z",
+      "service": "orders-worker",
+      "level": "WARN",
+      "msg": "job webhook.deliver retried attempt=1"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "p95_latency_ms",
+      "unit": "milliseconds",
+      "service": "payments-api",
+      "points": [
+        [
+          "2026-06-03T08:45:00Z",
+          88.5112
+        ],
+        [
+          "2026-06-03T08:46:00Z",
+          91.8051
+        ],
+        [
+          "2026-06-03T08:47:00Z",
+          90.6409
+        ],
+        [
+          "2026-06-03T08:48:00Z",
+          86.9207
+        ],
+        [
+          "2026-06-03T08:49:00Z",
+          89.8479
+        ],
+        [
+          "2026-06-03T08:50:00Z",
+          88.4495
+        ],
+        [
+          "2026-06-03T08:51:00Z",
+          88.0393
+        ],
+        [
+          "2026-06-03T08:52:00Z",
+          90.8422
+        ],
+        [
+          "2026-06-03T08:53:00Z",
+          91.565
+        ],
+        [
+          "2026-06-03T08:54:00Z",
+          90.9894
+        ],
+        [
+          "2026-06-03T08:55:00Z",
+          87.4668
+        ],
+        [
+          "2026-06-03T08:56:00Z",
+          89.9483
+        ],
+        [
+          "2026-06-03T08:57:00Z",
+          87.4451
+        ],
+        [
+          "2026-06-03T08:58:00Z",
+          93.2033
+        ],
+        [
+          "2026-06-03T08:59:00Z",
+          88.4473
+        ],
+        [
+          "2026-06-03T09:00:00Z",
+          93.4492
+        ],
+        [
+          "2026-06-03T09:01:00Z",
+          86.6494
+        ],
+        [
+          "2026-06-03T09:02:00Z",
+          87.8073
+        ],
+        [
+          "2026-06-03T09:03:00Z",
+          87.2114
+        ],
+        [
+          "2026-06-03T09:04:00Z",
+          87.3795
+        ],
+        [
+          "2026-06-03T09:05:00Z",
+          86.8525
+        ],
+        [
+          "2026-06-03T09:06:00Z",
+          88.5392
+        ],
+        [
+          "2026-06-03T09:07:00Z",
+          92.2239
+        ],
+        [
+          "2026-06-03T09:08:00Z",
+          88.498
+        ],
+        [
+          "2026-06-03T09:09:00Z",
+          90.9583
+        ],
+        [
+          "2026-06-03T09:10:00Z",
+          93.3035
+        ],
+        [
+          "2026-06-03T09:11:00Z",
+          86.5461
+        ],
+        [
+          "2026-06-03T09:12:00Z",
+          91.0995
+        ],
+        [
+          "2026-06-03T09:13:00Z",
+          86.4902
+        ],
+        [
+          "2026-06-03T09:14:00Z",
+          88.2556
+        ],
+        [
+          "2026-06-03T09:15:00Z",
+          91.5421
+        ],
+        [
+          "2026-06-03T09:16:00Z",
+          246.3138
+        ],
+        [
+          "2026-06-03T09:17:00Z",
+          407.5269
+        ],
+        [
+          "2026-06-03T09:18:00Z",
+          424.369
+        ],
+        [
+          "2026-06-03T09:19:00Z",
+          422.3111
+        ],
+        [
+          "2026-06-03T09:20:00Z",
+          404.21
+        ],
+        [
+          "2026-06-03T09:21:00Z",
+          413.3187
+        ],
+        [
+          "2026-06-03T09:22:00Z",
+          420.3204
+        ],
+        [
+          "2026-06-03T09:23:00Z",
+          422.7198
+        ],
+        [
+          "2026-06-03T09:24:00Z",
+          399.4413
+        ],
+        [
+          "2026-06-03T09:25:00Z",
+          393.8161
+        ],
+        [
+          "2026-06-03T09:26:00Z",
+          410.5184
+        ],
+        [
+          "2026-06-03T09:27:00Z",
+          416.5741
+        ],
+        [
+          "2026-06-03T09:28:00Z",
+          414.0255
+        ],
+        [
+          "2026-06-03T09:29:00Z",
+          418.4508
+        ],
+        [
+          "2026-06-03T09:30:00Z",
+          426.1267
+        ],
+        [
+          "2026-06-03T09:31:00Z",
+          407.0148
+        ],
+        [
+          "2026-06-03T09:32:00Z",
+          426.2425
+        ],
+        [
+          "2026-06-03T09:33:00Z",
+          418.8093
+        ],
+        [
+          "2026-06-03T09:34:00Z",
+          402.8685
+        ],
+        [
+          "2026-06-03T09:35:00Z",
+          398.1127
+        ],
+        [
+          "2026-06-03T09:36:00Z",
+          405.4509
+        ],
+        [
+          "2026-06-03T09:37:00Z",
+          412.5039
+        ],
+        [
+          "2026-06-03T09:38:00Z",
+          419.0499
+        ],
+        [
+          "2026-06-03T09:39:00Z",
+          405.3982
+        ],
+        [
+          "2026-06-03T09:40:00Z",
+          401.3512
+        ],
+        [
+          "2026-06-03T09:41:00Z",
+          401.3287
+        ],
+        [
+          "2026-06-03T09:42:00Z",
+          408.3675
+        ],
+        [
+          "2026-06-03T09:43:00Z",
+          401.846
+        ]
+      ]
+    },
+    {
+      "name": "outbound_requests_per_s",
+      "unit": "count_per_second",
+      "service": "checkout-api",
+      "points": [
+        [
+          "2026-06-03T08:45:00Z",
+          119.643
+        ],
+        [
+          "2026-06-03T08:46:00Z",
+          121.8714
+        ],
+        [
+          "2026-06-03T08:47:00Z",
+          117.7656
+        ],
+        [
+          "2026-06-03T08:48:00Z",
+          121.3025
+        ],
+        [
+          "2026-06-03T08:49:00Z",
+          120.1609
+        ],
+        [
+          "2026-06-03T08:50:00Z",
+          123.6257
+        ],
+        [
+          "2026-06-03T08:51:00Z",
+          115.7127
+        ],
+        [
+          "2026-06-03T08:52:00Z",
+          118.9388
+        ],
+        [
+          "2026-06-03T08:53:00Z",
+          118.0134
+        ],
+        [
+          "2026-06-03T08:54:00Z",
+          123.2231
+        ],
+        [
+          "2026-06-03T08:55:00Z",
+          124.3658
+        ],
+        [
+          "2026-06-03T08:56:00Z",
+          123.9886
+        ],
+        [
+          "2026-06-03T08:57:00Z",
+          119.2181
+        ],
+        [
+          "2026-06-03T08:58:00Z",
+          120.5098
+        ],
+        [
+          "2026-06-03T08:59:00Z",
+          120.2048
+        ],
+        [
+          "2026-06-03T09:00:00Z",
+          120.7866
+        ],
+        [
+          "2026-06-03T09:01:00Z",
+          119.1343
+        ],
+        [
+          "2026-06-03T09:02:00Z",
+          116.2345
+        ],
+        [
+          "2026-06-03T09:03:00Z",
+          116.328
+        ],
+        [
+          "2026-06-03T09:04:00Z",
+          118.2105
+        ],
+        [
+          "2026-06-03T09:05:00Z",
+          116.8787
+        ],
+        [
+          "2026-06-03T09:06:00Z",
+          115.599
+        ],
+        [
+          "2026-06-03T09:07:00Z",
+          116.4714
+        ],
+        [
+          "2026-06-03T09:08:00Z",
+          122.9703
+        ],
+        [
+          "2026-06-03T09:09:00Z",
+          117.2789
+        ],
+        [
+          "2026-06-03T09:10:00Z",
+          119.0364
+        ],
+        [
+          "2026-06-03T09:11:00Z",
+          122.7764
+        ],
+        [
+          "2026-06-03T09:12:00Z",
+          123.7277
+        ],
+        [
+          "2026-06-03T09:13:00Z",
+          119.4377
+        ],
+        [
+          "2026-06-03T09:14:00Z",
+          122.7142
+        ],
+        [
+          "2026-06-03T09:15:00Z",
+          121.9848
+        ],
+        [
+          "2026-06-03T09:16:00Z",
+          115.5025
+        ],
+        [
+          "2026-06-03T09:17:00Z",
+          121.0778
+        ],
+        [
+          "2026-06-03T09:18:00Z",
+          257.3604
+        ],
+        [
+          "2026-06-03T09:19:00Z",
+          376.7656
+        ],
+        [
+          "2026-06-03T09:20:00Z",
+          497.6254
+        ],
+        [
+          "2026-06-03T09:21:00Z",
+          629.3327
+        ],
+        [
+          "2026-06-03T09:22:00Z",
+          618.8919
+        ],
+        [
+          "2026-06-03T09:23:00Z",
+          624.6233
+        ],
+        [
+          "2026-06-03T09:24:00Z",
+          648.8865
+        ],
+        [
+          "2026-06-03T09:25:00Z",
+          642.2331
+        ],
+        [
+          "2026-06-03T09:26:00Z",
+          617.5489
+        ],
+        [
+          "2026-06-03T09:27:00Z",
+          617.848
+        ],
+        [
+          "2026-06-03T09:28:00Z",
+          663.2612
+        ],
+        [
+          "2026-06-03T09:29:00Z",
+          659.7602
+        ],
+        [
+          "2026-06-03T09:30:00Z",
+          662.5202
+        ],
+        [
+          "2026-06-03T09:31:00Z",
+          626.5696
+        ],
+        [
+          "2026-06-03T09:32:00Z",
+          623.048
+        ],
+        [
+          "2026-06-03T09:33:00Z",
+          629.7408
+        ],
+        [
+          "2026-06-03T09:34:00Z",
+          646.266
+        ],
+        [
+          "2026-06-03T09:35:00Z",
+          615.0368
+        ],
+        [
+          "2026-06-03T09:36:00Z",
+          631.1858
+        ],
+        [
+          "2026-06-03T09:37:00Z",
+          652.3178
+        ],
+        [
+          "2026-06-03T09:38:00Z",
+          636.5819
+        ],
+        [
+          "2026-06-03T09:39:00Z",
+          630.9504
+        ],
+        [
+          "2026-06-03T09:40:00Z",
+          639.9956
+        ],
+        [
+          "2026-06-03T09:41:00Z",
+          647.6785
+        ],
+        [
+          "2026-06-03T09:42:00Z",
+          665.071
+        ],
+        [
+          "2026-06-03T09:43:00Z",
+          647.8575
+        ]
+      ]
+    },
+    {
+      "name": "db_pool_wait_ms",
+      "unit": "milliseconds",
+      "service": "checkout-api",
+      "points": [
+        [
+          "2026-06-03T08:45:00Z",
+          1.9723
+        ],
+        [
+          "2026-06-03T08:46:00Z",
+          1.978
+        ],
+        [
+          "2026-06-03T08:47:00Z",
+          1.9265
+        ],
+        [
+          "2026-06-03T08:48:00Z",
+          2.0707
+        ],
+        [
+          "2026-06-03T08:49:00Z",
+          2.0554
+        ],
+        [
+          "2026-06-03T08:50:00Z",
+          1.9309
+        ],
+        [
+          "2026-06-03T08:51:00Z",
+          1.94
+        ],
+        [
+          "2026-06-03T08:52:00Z",
+          2.0452
+        ],
+        [
+          "2026-06-03T08:53:00Z",
+          2.0498
+        ],
+        [
+          "2026-06-03T08:54:00Z",
+          2.0695
+        ],
+        [
+          "2026-06-03T08:55:00Z",
+          1.9891
+        ],
+        [
+          "2026-06-03T08:56:00Z",
+          2.0115
+        ],
+        [
+          "2026-06-03T08:57:00Z",
+          2.0464
+        ],
+        [
+          "2026-06-03T08:58:00Z",
+          1.9365
+        ],
+        [
+          "2026-06-03T08:59:00Z",
+          2.0116
+        ],
+        [
+          "2026-06-03T09:00:00Z",
+          1.9952
+        ],
+        [
+          "2026-06-03T09:01:00Z",
+          1.9637
+        ],
+        [
+          "2026-06-03T09:02:00Z",
+          1.9867
+        ],
+        [
+          "2026-06-03T09:03:00Z",
+          2.0344
+        ],
+        [
+          "2026-06-03T09:04:00Z",
+          1.9716
+        ],
+        [
+          "2026-06-03T09:05:00Z",
+          1.9588
+        ],
+        [
+          "2026-06-03T09:06:00Z",
+          1.9473
+        ],
+        [
+          "2026-06-03T09:07:00Z",
+          2.0064
+        ],
+        [
+          "2026-06-03T09:08:00Z",
+          1.9855
+        ],
+        [
+          "2026-06-03T09:09:00Z",
+          2.0499
+        ],
+        [
+          "2026-06-03T09:10:00Z",
+          2.0323
+        ],
+        [
+          "2026-06-03T09:11:00Z",
+          2.029
+        ],
+        [
+          "2026-06-03T09:12:00Z",
+          1.9294
+        ],
+        [
+          "2026-06-03T09:13:00Z",
+          1.9447
+        ],
+        [
+          "2026-06-03T09:14:00Z",
+          2.0263
+        ],
+        [
+          "2026-06-03T09:15:00Z",
+          2.0258
+        ],
+        [
+          "2026-06-03T09:16:00Z",
+          2.054
+        ],
+        [
+          "2026-06-03T09:17:00Z",
+          1.9385
+        ],
+        [
+          "2026-06-03T09:18:00Z",
+          2.0741
+        ],
+        [
+          "2026-06-03T09:19:00Z",
+          2.0386
+        ],
+        [
+          "2026-06-03T09:20:00Z",
+          1753.6332
+        ],
+        [
+          "2026-06-03T09:21:00Z",
+          3554.5753
+        ],
+        [
+          "2026-06-03T09:22:00Z",
+          5131.0649
+        ],
+        [
+          "2026-06-03T09:23:00Z",
+          5390.7799
+        ],
+        [
+          "2026-06-03T09:24:00Z",
+          5080.6373
+        ],
+        [
+          "2026-06-03T09:25:00Z",
+          5004.2671
+        ],
+        [
+          "2026-06-03T09:26:00Z",
+          5191.4082
+        ],
+        [
+          "2026-06-03T09:27:00Z",
+          5202.1707
+        ],
+        [
+          "2026-06-03T09:28:00Z",
+          5037.0169
+        ],
+        [
+          "2026-06-03T09:29:00Z",
+          5083.0547
+        ],
+        [
+          "2026-06-03T09:30:00Z",
+          5337.6666
+        ],
+        [
+          "2026-06-03T09:31:00Z",
+          5234.8234
+        ],
+        [
+          "2026-06-03T09:32:00Z",
+          5233.6734
+        ],
+        [
+          "2026-06-03T09:33:00Z",
+          5120.2847
+        ],
+        [
+          "2026-06-03T09:34:00Z",
+          5213.9453
+        ],
+        [
+          "2026-06-03T09:35:00Z",
+          5019.0361
+        ],
+        [
+          "2026-06-03T09:36:00Z",
+          5208.6901
+        ],
+        [
+          "2026-06-03T09:37:00Z",
+          5018.8839
+        ],
+        [
+          "2026-06-03T09:38:00Z",
+          5398.3879
+        ],
+        [
+          "2026-06-03T09:39:00Z",
+          5215.5235
+        ],
+        [
+          "2026-06-03T09:40:00Z",
+          5047.9423
+        ],
+        [
+          "2026-06-03T09:41:00Z",
+          5014.2868
+        ],
+        [
+          "2026-06-03T09:42:00Z",
+          5200.9334
+        ],
+        [
+          "2026-06-03T09:43:00Z",
+          5021.1007
+        ]
+      ]
+    },
+    {
+      "name": "error_rate",
+      "unit": "ratio",
+      "service": "checkout-api",
+      "points": [
+        [
+          "2026-06-03T08:45:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:46:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:47:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:48:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:49:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:50:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:51:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:52:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:53:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:54:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:55:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:56:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:57:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:58:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T08:59:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:00:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:01:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:02:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:03:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:04:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:05:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:06:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:07:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:08:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:09:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:10:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:11:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:12:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:13:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:14:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:15:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:16:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:17:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:18:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:19:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:20:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:21:00Z",
+          0.001
+        ],
+        [
+          "2026-06-03T09:22:00Z",
+          0.1743
+        ],
+        [
+          "2026-06-03T09:23:00Z",
+          0.3409
+        ],
+        [
+          "2026-06-03T09:24:00Z",
+          0.3306
+        ],
+        [
+          "2026-06-03T09:25:00Z",
+          0.3518
+        ],
+        [
+          "2026-06-03T09:26:00Z",
+          0.3494
+        ],
+        [
+          "2026-06-03T09:27:00Z",
+          0.3466
+        ],
+        [
+          "2026-06-03T09:28:00Z",
+          0.3355
+        ],
+        [
+          "2026-06-03T09:29:00Z",
+          0.3482
+        ],
+        [
+          "2026-06-03T09:30:00Z",
+          0.3376
+        ],
+        [
+          "2026-06-03T09:31:00Z",
+          0.3335
+        ],
+        [
+          "2026-06-03T09:32:00Z",
+          0.3401
+        ],
+        [
+          "2026-06-03T09:33:00Z",
+          0.3505
+        ],
+        [
+          "2026-06-03T09:34:00Z",
+          0.3277
+        ],
+        [
+          "2026-06-03T09:35:00Z",
+          0.3473
+        ],
+        [
+          "2026-06-03T09:36:00Z",
+          0.3336
+        ],
+        [
+          "2026-06-03T09:37:00Z",
+          0.3302
+        ],
+        [
+          "2026-06-03T09:38:00Z",
+          0.3302
+        ],
+        [
+          "2026-06-03T09:39:00Z",
+          0.3383
+        ],
+        [
+          "2026-06-03T09:40:00Z",
+          0.3312
+        ],
+        [
+          "2026-06-03T09:41:00Z",
+          0.3516
+        ],
+        [
+          "2026-06-03T09:42:00Z",
+          0.3353
+        ],
+        [
+          "2026-06-03T09:43:00Z",
+          0.3303
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "A modest latency increase in payments-api (read-replica lag pushed p95 from ~90ms to ~400ms) triggered aggressive retries from checkout-api's payments client, which had no backoff and no retry budget. Retry amplification roughly 5x'd checkout-api's outbound request volume, which exhausted its database connection pool and then its worker thread pool, turning a minor downstream slowdown into a checkout outage.",
+    "evidence_path": [
+      "payments-api p95 latency rises from ~90ms to ~400ms at 09:15 due to read-replica lag",
+      "checkout-api logs slow payments-api calls, then 'retrying ... no backoff or retry budget' at 09:19",
+      "checkout-api outbound request rate climbs from ~120/s to ~640/s (retry amplification)",
+      "checkout-api DB connection pool exhausted at 09:21 (waiters=140) and pool wait time spikes",
+      "checkout-api worker thread pool exhausted -> HTTP 503 at 09:23",
+      "no deploys occurred in the window; recovery follows the operator cutting the retry budget"
+    ],
+    "fix": "Add exponential backoff with jitter and a retry budget / circuit breaker to checkout-api's payments-api client, isolate the connection pool used for downstream calls, and add load shedding. Separately, address the payments-api read-replica lag.",
+    "should_escalate": false
+  }
+}

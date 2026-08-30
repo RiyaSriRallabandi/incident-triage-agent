@@ -1,0 +1,48 @@
+{
+  "id": "scn_002",
+  "category": "resource_exhaustion",
+  "difficulty": "hard",
+  "title": "Retry amplification against a mildly slow downstream exhausts checkout connection and thread pools",
+  "source_url": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+  "source_note": "Failure pattern (a small downstream latency increase amplified by un-budgeted client retries into an upstream resource exhaustion / cascading outage) follows the retry-storm scenario described in the AWS Builders' Library article on timeouts, retries, and backoff. All services, logs, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Checkout started returning 503s to a growing share of users around 09:23 UTC. Error rate on checkout-api is elevated and latency is high. No deploys went out today. Payments processing also looks a bit slow. On-call is unsure whether checkout or payments is the real problem.",
+  "incident_start": "2026-06-03T09:15:00Z",
+  "detected_offset_s": 480,
+  "window_before_s": 1800,
+  "window_after_s": 1200,
+  "primary_service": "checkout-api",
+  "distractor_services": [
+    { "name": "catalog-api", "role": "api" },
+    { "name": "orders-worker", "role": "worker" },
+    { "name": "events-db", "role": "db" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "payments-api", "level": "WARN", "msg": "p95 latency 380ms (baseline ~90ms); read replica lag 4s" },
+    { "offset_s": 120, "service": "checkout-api", "level": "WARN", "msg": "downstream payments-api call slow: 1180ms (timeout 2000ms)" },
+    { "offset_s": 240, "service": "checkout-api", "level": "WARN", "msg": "retrying payments-api call (attempt 3/5); no backoff or retry budget configured for this client" },
+    { "offset_s": 360, "service": "checkout-api", "level": "ERROR", "msg": "DB connection pool exhausted (size=20, active=20, waiters=140)" },
+    { "offset_s": 420, "service": "checkout-api", "level": "ERROR", "msg": "worker thread pool exhausted; rejecting inbound requests" },
+    { "offset_s": 480, "service": "checkout-api", "level": "ERROR", "msg": "HTTP 503: server at capacity" },
+    { "offset_s": 1050, "service": "checkout-api", "level": "INFO", "msg": "operator lowered payments-api client retry budget to 1; connection pool draining" }
+  ],
+  "metrics": [
+    { "name": "p95_latency_ms", "unit": "milliseconds", "service": "payments-api", "baseline": 90.0, "spike": 410.0, "spike_at_offset_s": 0, "ramp_s": 120 },
+    { "name": "outbound_requests_per_s", "unit": "count_per_second", "service": "checkout-api", "baseline": 120.0, "spike": 640.0, "spike_at_offset_s": 120, "ramp_s": 240 },
+    { "name": "db_pool_wait_ms", "unit": "milliseconds", "service": "checkout-api", "baseline": 2.0, "spike": 5200.0, "spike_at_offset_s": 240, "ramp_s": 180 },
+    { "name": "error_rate", "unit": "ratio", "service": "checkout-api", "baseline": 0.001, "spike": 0.34, "spike_at_offset_s": 360, "ramp_s": 120 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "A modest latency increase in payments-api (read-replica lag pushed p95 from ~90ms to ~400ms) triggered aggressive retries from checkout-api's payments client, which had no backoff and no retry budget. Retry amplification roughly 5x'd checkout-api's outbound request volume, which exhausted its database connection pool and then its worker thread pool, turning a minor downstream slowdown into a checkout outage.",
+    "evidence_path": [
+      "payments-api p95 latency rises from ~90ms to ~400ms at 09:15 due to read-replica lag",
+      "checkout-api logs slow payments-api calls, then 'retrying ... no backoff or retry budget' at 09:19",
+      "checkout-api outbound request rate climbs from ~120/s to ~640/s (retry amplification)",
+      "checkout-api DB connection pool exhausted at 09:21 (waiters=140) and pool wait time spikes",
+      "checkout-api worker thread pool exhausted -> HTTP 503 at 09:23",
+      "no deploys occurred in the window; recovery follows the operator cutting the retry budget"
+    ],
+    "fix": "Add exponential backoff with jitter and a retry budget / circuit breaker to checkout-api's payments-api client, isolate the connection pool used for downstream calls, and add load shedding. Separately, address the payments-api read-replica lag.",
+    "should_escalate": false
+  }
+}

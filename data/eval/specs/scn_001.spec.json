@@ -1,0 +1,47 @@
+{
+  "id": "scn_001",
+  "category": "bad_deploy",
+  "difficulty": "medium",
+  "title": "WAF ruleset deploy with a catastrophically backtracking regex saturates edge CPU",
+  "source_url": "https://blog.cloudflare.com/details-of-the-cloudflare-outage-on-july-2-2019/",
+  "source_note": "Failure pattern and root-cause shape are drawn from the Cloudflare 2019-07-02 outage (a WAF rule containing a pathological regex drove global CPU exhaustion). Service names, log lines, metrics, timestamps, and commit hash are fabricated for evaluation.",
+  "incident_report": "Since ~13:42 UTC the edge tier is serving a high rate of 502s for a large fraction of all traffic. Customer reports came in within a few minutes. No known infrastructure maintenance was scheduled. Edge hosts look CPU-bound.",
+  "incident_start": "2026-05-12T13:42:00Z",
+  "detected_offset_s": 180,
+  "window_before_s": 1800,
+  "window_after_s": 1200,
+  "primary_service": "edge-proxy",
+  "distractor_services": [
+    { "name": "api-gateway", "role": "gateway" },
+    { "name": "orders-api", "role": "api" },
+    { "name": "sessions-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 20, "service": "edge-proxy", "level": "WARN", "msg": "cpu usage 78% and rising on all workers" },
+    { "offset_s": 60, "service": "edge-proxy", "level": "ERROR", "msg": "worker CPU saturated; request queue growing (depth=4100)" },
+    { "offset_s": 95, "service": "edge-proxy", "level": "ERROR", "msg": "returning 502: no worker capacity to accept connection" },
+    { "offset_s": 130, "service": "edge-proxy", "level": "CRITICAL", "msg": "global 5xx rate 62%; CPU pinned at 100%" },
+    { "offset_s": 150, "service": "waf-engine", "level": "ERROR", "msg": "regex evaluation exceeded 40ms budget on managed rule 100417 (pattern contains nested quantifiers: (?:.*.*=.*))" },
+    { "offset_s": 600, "service": "edge-proxy", "level": "INFO", "msg": "operator initiated rollback to previous WAF ruleset" },
+    { "offset_s": 760, "service": "edge-proxy", "level": "INFO", "msg": "cpu usage 24%; 5xx rate falling back toward baseline" }
+  ],
+  "metrics": [
+    { "name": "cpu_utilization_pct", "unit": "percent", "service": "edge-proxy", "baseline": 35.0, "spike": 100.0, "spike_at_offset_s": 20, "ramp_s": 90 },
+    { "name": "http_5xx_rate", "unit": "ratio", "service": "edge-proxy", "baseline": 0.002, "spike": 0.62, "spike_at_offset_s": 60, "ramp_s": 90 }
+  ],
+  "deploys": [
+    { "service": "edge-proxy", "offset_s": 0, "commit": "7f3a9c1", "summary": "roll out WAF managed ruleset 2026.05.12 (adds ~30 new rules, incl. rule 100417)" }
+  ],
+  "ground_truth": {
+    "root_cause": "A newly deployed WAF managed-rule set (commit 7f3a9c1) contained a rule (100417) with a catastrophically backtracking regular expression. Evaluating that pattern against normal request traffic drove edge-proxy worker CPU to saturation within about a minute, so requests queued and then failed with 502s across effectively all traffic.",
+    "evidence_path": [
+      "deploy 7f3a9c1 to edge-proxy at 13:42 rolls out a new WAF managed ruleset",
+      "edge-proxy CPU climbs from ~35% to 100% beginning ~13:42:20, immediately after the deploy",
+      "waf-engine ERROR at 13:44:30: regex evaluation exceeded its time budget on managed rule 100417 (nested quantifiers)",
+      "edge-proxy 5xx rate rises to ~62% as workers saturate and the request queue grows",
+      "CPU and 5xx rate recover after the WAF ruleset is rolled back at ~13:52"
+    ],
+    "fix": "Roll back the WAF ruleset to the previous version. Add a regex-complexity / backtracking check and a per-rule CPU budget to the rule-deployment pipeline, and canary WAF rule changes on a small fraction of traffic before global rollout.",
+    "should_escalate": false
+  }
+}

@@ -1,0 +1,1403 @@
+{
+  "id": "scn_004",
+  "category": "ambiguous",
+  "difficulty": "hard",
+  "title": "Intermittent elevated error rate on notifications-api with no correlated signal",
+  "source_url": "https://www.microsoft.com/en-us/research/publication/gray-failure-the-achilles-heel-of-cloud-scale-systems/",
+  "source_note": "Constructed as a deliberately under-determined 'gray failure' case in the spirit of the Microsoft Research paper of that name: a real but subtle degradation with no clean root-cause signal in the available evidence. All services, logs, and metrics are fabricated for evaluation; this scenario has no single correct root cause and should be escalated.",
+  "incident_report": "notifications-api error rate has been intermittently elevated (roughly 3-5%, normally under 0.5%) since about 02:30 UTC. No deploys in the last 24 hours. Downstream providers look fine. It has partially recovered on its own. On-call wants a root cause before standing down.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-08-08T01:52:39.120243Z",
+      "service": "notifications-api",
+      "level": "WARN",
+      "msg": "slow request path=/products duration_ms=66"
+    },
+    {
+      "ts": "2026-08-08T01:53:20.725119Z",
+      "service": "notifications-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 139ms"
+    },
+    {
+      "ts": "2026-08-08T01:57:54.124401Z",
+      "service": "notifications-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 71ms"
+    },
+    {
+      "ts": "2026-08-08T01:58:37.365939Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "upstream notifications-api 200 69ms"
+    },
+    {
+      "ts": "2026-08-08T02:00:21.170244Z",
+      "service": "notifications-api",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 52ms"
+    },
+    {
+      "ts": "2026-08-08T02:01:11.625106Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "upstream notifications-api 200 68ms"
+    },
+    {
+      "ts": "2026-08-08T02:04:47.334327Z",
+      "service": "push-gateway",
+      "level": "INFO",
+      "msg": "upstream notifications-api 200 233ms"
+    },
+    {
+      "ts": "2026-08-08T02:05:14.551835Z",
+      "service": "push-gateway",
+      "level": "WARN",
+      "msg": "upstream notifications-api slow 18ms"
+    },
+    {
+      "ts": "2026-08-08T02:05:34.873828Z",
+      "service": "email-provider-proxy",
+      "level": "WARN",
+      "msg": "upstream notifications-api slow 149ms"
+    },
+    {
+      "ts": "2026-08-08T02:07:30.663177Z",
+      "service": "user-prefs-db",
+      "level": "INFO",
+      "msg": "checkpoint complete: wrote 303 buffers"
+    },
+    {
+      "ts": "2026-08-08T02:11:47.956432Z",
+      "service": "push-gateway",
+      "level": "INFO",
+      "msg": "route matched /products -> notifications-api"
+    },
+    {
+      "ts": "2026-08-08T02:12:16.881791Z",
+      "service": "email-provider-proxy",
+      "level": "WARN",
+      "msg": "upstream notifications-api slow 152ms"
+    },
+    {
+      "ts": "2026-08-08T02:12:30.575324Z",
+      "service": "user-prefs-db",
+      "level": "WARN",
+      "msg": "long-running query 153ms: SELECT ..."
+    },
+    {
+      "ts": "2026-08-08T02:14:56.472064Z",
+      "service": "notifications-api",
+      "level": "INFO",
+      "msg": "GET /search 200 in 200ms"
+    },
+    {
+      "ts": "2026-08-08T02:16:55.188464Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "upstream notifications-api 200 158ms"
+    },
+    {
+      "ts": "2026-08-08T02:17:37.552550Z",
+      "service": "push-gateway",
+      "level": "WARN",
+      "msg": "upstream notifications-api slow 82ms"
+    },
+    {
+      "ts": "2026-08-08T02:20:18.074401Z",
+      "service": "notifications-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 122ms"
+    },
+    {
+      "ts": "2026-08-08T02:21:49.259020Z",
+      "service": "user-prefs-db",
+      "level": "WARN",
+      "msg": "long-running query 88ms: SELECT ..."
+    },
+    {
+      "ts": "2026-08-08T02:23:31.914557Z",
+      "service": "user-prefs-db",
+      "level": "INFO",
+      "msg": "autovacuum: table \"events\" done"
+    },
+    {
+      "ts": "2026-08-08T02:24:17.535252Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "route matched /products -> notifications-api"
+    },
+    {
+      "ts": "2026-08-08T02:27:13.351721Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "upstream notifications-api 200 145ms"
+    },
+    {
+      "ts": "2026-08-08T02:29:06.683410Z",
+      "service": "notifications-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 161ms"
+    },
+    {
+      "ts": "2026-08-08T02:30:00Z",
+      "service": "notifications-api",
+      "level": "WARN",
+      "msg": "error rate 3.1% over last 5m (baseline ~0.4%)"
+    },
+    {
+      "ts": "2026-08-08T02:34:09.724632Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "route matched /api/v1/users/me -> notifications-api"
+    },
+    {
+      "ts": "2026-08-08T02:34:33.665384Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "route matched /cart -> notifications-api"
+    },
+    {
+      "ts": "2026-08-08T02:35:00Z",
+      "service": "notifications-api",
+      "level": "ERROR",
+      "msg": "unhandled exception in send path: context deadline exceeded (host n-api-7)"
+    },
+    {
+      "ts": "2026-08-08T02:37:23.686224Z",
+      "service": "push-gateway",
+      "level": "WARN",
+      "msg": "upstream notifications-api slow 128ms"
+    },
+    {
+      "ts": "2026-08-08T02:37:40.323763Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "upstream notifications-api 200 136ms"
+    },
+    {
+      "ts": "2026-08-08T02:39:31.924465Z",
+      "service": "push-gateway",
+      "level": "INFO",
+      "msg": "upstream notifications-api 200 222ms"
+    },
+    {
+      "ts": "2026-08-08T02:39:46.222933Z",
+      "service": "user-prefs-db",
+      "level": "INFO",
+      "msg": "connection received: host=10.0.582.89"
+    },
+    {
+      "ts": "2026-08-08T02:39:46.296187Z",
+      "service": "push-gateway",
+      "level": "INFO",
+      "msg": "upstream notifications-api 200 189ms"
+    },
+    {
+      "ts": "2026-08-08T02:40:00Z",
+      "service": "notifications-api",
+      "level": "WARN",
+      "msg": "error rate 4.6%; failures observed on 9 of 12 hosts, no single host dominates"
+    },
+    {
+      "ts": "2026-08-08T02:42:53.632764Z",
+      "service": "notifications-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2026-08-08T02:43:26.740739Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "route matched /products -> notifications-api"
+    },
+    {
+      "ts": "2026-08-08T02:44:08.944504Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "route matched /products -> notifications-api"
+    },
+    {
+      "ts": "2026-08-08T02:45:00Z",
+      "service": "notifications-api",
+      "level": "INFO",
+      "msg": "downstream email, sms, and push providers all reporting nominal latency and success rates"
+    },
+    {
+      "ts": "2026-08-08T02:52:49.035092Z",
+      "service": "push-gateway",
+      "level": "INFO",
+      "msg": "upstream notifications-api 200 68ms"
+    },
+    {
+      "ts": "2026-08-08T02:52:50.888929Z",
+      "service": "notifications-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-08-08T02:53:39.845876Z",
+      "service": "user-prefs-db",
+      "level": "INFO",
+      "msg": "checkpoint complete: wrote 249 buffers"
+    },
+    {
+      "ts": "2026-08-08T02:54:52.803540Z",
+      "service": "user-prefs-db",
+      "level": "WARN",
+      "msg": "long-running query 73ms: SELECT ..."
+    },
+    {
+      "ts": "2026-08-08T02:55:00Z",
+      "service": "notifications-api",
+      "level": "WARN",
+      "msg": "error rate 2.2%; partial self-recovery, no operator action taken"
+    },
+    {
+      "ts": "2026-08-08T02:58:10.410908Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "route matched /products -> notifications-api"
+    },
+    {
+      "ts": "2026-08-08T02:59:46.577997Z",
+      "service": "user-prefs-db",
+      "level": "INFO",
+      "msg": "autovacuum: table \"events\" done"
+    },
+    {
+      "ts": "2026-08-08T03:01:42.809286Z",
+      "service": "notifications-api",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=74"
+    },
+    {
+      "ts": "2026-08-08T03:05:24.956744Z",
+      "service": "notifications-api",
+      "level": "WARN",
+      "msg": "slow request path=/products duration_ms=210"
+    },
+    {
+      "ts": "2026-08-08T03:06:29.242314Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "upstream notifications-api 200 118ms"
+    },
+    {
+      "ts": "2026-08-08T03:07:48.776465Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "upstream notifications-api 200 67ms"
+    },
+    {
+      "ts": "2026-08-08T03:08:33.281004Z",
+      "service": "push-gateway",
+      "level": "WARN",
+      "msg": "upstream notifications-api slow 116ms"
+    },
+    {
+      "ts": "2026-08-08T03:09:14.702876Z",
+      "service": "push-gateway",
+      "level": "WARN",
+      "msg": "upstream notifications-api slow 89ms"
+    },
+    {
+      "ts": "2026-08-08T03:11:02.134099Z",
+      "service": "user-prefs-db",
+      "level": "INFO",
+      "msg": "connection received: host=10.0.553.220"
+    },
+    {
+      "ts": "2026-08-08T03:11:19.334365Z",
+      "service": "user-prefs-db",
+      "level": "INFO",
+      "msg": "connection received: host=10.0.441.153"
+    },
+    {
+      "ts": "2026-08-08T03:11:46.558215Z",
+      "service": "notifications-api",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 28ms"
+    },
+    {
+      "ts": "2026-08-08T03:12:24.664611Z",
+      "service": "user-prefs-db",
+      "level": "INFO",
+      "msg": "checkpoint complete: wrote 260 buffers"
+    },
+    {
+      "ts": "2026-08-08T03:13:22.391164Z",
+      "service": "email-provider-proxy",
+      "level": "INFO",
+      "msg": "route matched /api/v1/users/me -> notifications-api"
+    },
+    {
+      "ts": "2026-08-08T03:14:41.037612Z",
+      "service": "email-provider-proxy",
+      "level": "WARN",
+      "msg": "upstream notifications-api slow 77ms"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "error_rate",
+      "unit": "ratio",
+      "service": "notifications-api",
+      "points": [
+        [
+          "2026-08-08T01:50:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T01:51:00Z",
+          0.0039
+        ],
+        [
+          "2026-08-08T01:52:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T01:53:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T01:54:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T01:55:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T01:56:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T01:57:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T01:58:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T01:59:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T02:00:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T02:01:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T02:02:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T02:03:00Z",
+          0.0039
+        ],
+        [
+          "2026-08-08T02:04:00Z",
+          0.0039
+        ],
+        [
+          "2026-08-08T02:05:00Z",
+          0.0039
+        ],
+        [
+          "2026-08-08T02:06:00Z",
+          0.0039
+        ],
+        [
+          "2026-08-08T02:07:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T02:08:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T02:09:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T02:10:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T02:11:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T02:12:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T02:13:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T02:14:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T02:15:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T02:16:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T02:17:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T02:18:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T02:19:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T02:20:00Z",
+          0.0039
+        ],
+        [
+          "2026-08-08T02:21:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T02:22:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T02:23:00Z",
+          0.0039
+        ],
+        [
+          "2026-08-08T02:24:00Z",
+          0.004
+        ],
+        [
+          "2026-08-08T02:25:00Z",
+          0.0039
+        ],
+        [
+          "2026-08-08T02:26:00Z",
+          0.0041
+        ],
+        [
+          "2026-08-08T02:27:00Z",
+          0.0039
+        ],
+        [
+          "2026-08-08T02:28:00Z",
+          0.0039
+        ],
+        [
+          "2026-08-08T02:29:00Z",
+          0.0039
+        ],
+        [
+          "2026-08-08T02:30:00Z",
+          0.0039
+        ],
+        [
+          "2026-08-08T02:31:00Z",
+          0.0119
+        ],
+        [
+          "2026-08-08T02:32:00Z",
+          0.0196
+        ],
+        [
+          "2026-08-08T02:33:00Z",
+          0.0279
+        ],
+        [
+          "2026-08-08T02:34:00Z",
+          0.0357
+        ],
+        [
+          "2026-08-08T02:35:00Z",
+          0.0437
+        ],
+        [
+          "2026-08-08T02:36:00Z",
+          0.045
+        ],
+        [
+          "2026-08-08T02:37:00Z",
+          0.0455
+        ],
+        [
+          "2026-08-08T02:38:00Z",
+          0.0464
+        ],
+        [
+          "2026-08-08T02:39:00Z",
+          0.0459
+        ],
+        [
+          "2026-08-08T02:40:00Z",
+          0.045
+        ],
+        [
+          "2026-08-08T02:41:00Z",
+          0.0454
+        ],
+        [
+          "2026-08-08T02:42:00Z",
+          0.0464
+        ],
+        [
+          "2026-08-08T02:43:00Z",
+          0.0467
+        ],
+        [
+          "2026-08-08T02:44:00Z",
+          0.0441
+        ],
+        [
+          "2026-08-08T02:45:00Z",
+          0.0452
+        ],
+        [
+          "2026-08-08T02:46:00Z",
+          0.0443
+        ],
+        [
+          "2026-08-08T02:47:00Z",
+          0.0437
+        ],
+        [
+          "2026-08-08T02:48:00Z",
+          0.045
+        ],
+        [
+          "2026-08-08T02:49:00Z",
+          0.0453
+        ],
+        [
+          "2026-08-08T02:50:00Z",
+          0.0463
+        ],
+        [
+          "2026-08-08T02:51:00Z",
+          0.0456
+        ],
+        [
+          "2026-08-08T02:52:00Z",
+          0.0454
+        ],
+        [
+          "2026-08-08T02:53:00Z",
+          0.0449
+        ],
+        [
+          "2026-08-08T02:54:00Z",
+          0.0464
+        ],
+        [
+          "2026-08-08T02:55:00Z",
+          0.0447
+        ],
+        [
+          "2026-08-08T02:56:00Z",
+          0.0466
+        ],
+        [
+          "2026-08-08T02:57:00Z",
+          0.0465
+        ],
+        [
+          "2026-08-08T02:58:00Z",
+          0.0432
+        ],
+        [
+          "2026-08-08T02:59:00Z",
+          0.0466
+        ],
+        [
+          "2026-08-08T03:00:00Z",
+          0.0438
+        ],
+        [
+          "2026-08-08T03:01:00Z",
+          0.0451
+        ],
+        [
+          "2026-08-08T03:02:00Z",
+          0.0466
+        ],
+        [
+          "2026-08-08T03:03:00Z",
+          0.0448
+        ],
+        [
+          "2026-08-08T03:04:00Z",
+          0.045
+        ],
+        [
+          "2026-08-08T03:05:00Z",
+          0.0438
+        ],
+        [
+          "2026-08-08T03:06:00Z",
+          0.0453
+        ],
+        [
+          "2026-08-08T03:07:00Z",
+          0.0446
+        ],
+        [
+          "2026-08-08T03:08:00Z",
+          0.0457
+        ],
+        [
+          "2026-08-08T03:09:00Z",
+          0.0432
+        ],
+        [
+          "2026-08-08T03:10:00Z",
+          0.0436
+        ],
+        [
+          "2026-08-08T03:11:00Z",
+          0.0448
+        ],
+        [
+          "2026-08-08T03:12:00Z",
+          0.0438
+        ],
+        [
+          "2026-08-08T03:13:00Z",
+          0.0441
+        ],
+        [
+          "2026-08-08T03:14:00Z",
+          0.0445
+        ],
+        [
+          "2026-08-08T03:15:00Z",
+          0.0461
+        ]
+      ]
+    },
+    {
+      "name": "p95_latency_ms",
+      "unit": "milliseconds",
+      "service": "notifications-api",
+      "points": [
+        [
+          "2026-08-08T01:50:00Z",
+          140.3481
+        ],
+        [
+          "2026-08-08T01:51:00Z",
+          137.6084
+        ],
+        [
+          "2026-08-08T01:52:00Z",
+          141.4801
+        ],
+        [
+          "2026-08-08T01:53:00Z",
+          135.6269
+        ],
+        [
+          "2026-08-08T01:54:00Z",
+          138.8425
+        ],
+        [
+          "2026-08-08T01:55:00Z",
+          145.4886
+        ],
+        [
+          "2026-08-08T01:56:00Z",
+          145.455
+        ],
+        [
+          "2026-08-08T01:57:00Z",
+          138.5008
+        ],
+        [
+          "2026-08-08T01:58:00Z",
+          138.6977
+        ],
+        [
+          "2026-08-08T01:59:00Z",
+          143.4966
+        ],
+        [
+          "2026-08-08T02:00:00Z",
+          139.6716
+        ],
+        [
+          "2026-08-08T02:01:00Z",
+          134.8145
+        ],
+        [
+          "2026-08-08T02:02:00Z",
+          141.0886
+        ],
+        [
+          "2026-08-08T02:03:00Z",
+          137.8969
+        ],
+        [
+          "2026-08-08T02:04:00Z",
+          140.1657
+        ],
+        [
+          "2026-08-08T02:05:00Z",
+          142.3724
+        ],
+        [
+          "2026-08-08T02:06:00Z",
+          139.0447
+        ],
+        [
+          "2026-08-08T02:07:00Z",
+          136.2226
+        ],
+        [
+          "2026-08-08T02:08:00Z",
+          136.3393
+        ],
+        [
+          "2026-08-08T02:09:00Z",
+          141.2191
+        ],
+        [
+          "2026-08-08T02:10:00Z",
+          134.4776
+        ],
+        [
+          "2026-08-08T02:11:00Z",
+          141.6192
+        ],
+        [
+          "2026-08-08T02:12:00Z",
+          142.572
+        ],
+        [
+          "2026-08-08T02:13:00Z",
+          144.7643
+        ],
+        [
+          "2026-08-08T02:14:00Z",
+          134.5416
+        ],
+        [
+          "2026-08-08T02:15:00Z",
+          145.4985
+        ],
+        [
+          "2026-08-08T02:16:00Z",
+          142.5779
+        ],
+        [
+          "2026-08-08T02:17:00Z",
+          143.9982
+        ],
+        [
+          "2026-08-08T02:18:00Z",
+          138.3884
+        ],
+        [
+          "2026-08-08T02:19:00Z",
+          144.6218
+        ],
+        [
+          "2026-08-08T02:20:00Z",
+          140.6578
+        ],
+        [
+          "2026-08-08T02:21:00Z",
+          141.2721
+        ],
+        [
+          "2026-08-08T02:22:00Z",
+          139.5535
+        ],
+        [
+          "2026-08-08T02:23:00Z",
+          141.8898
+        ],
+        [
+          "2026-08-08T02:24:00Z",
+          136.0222
+        ],
+        [
+          "2026-08-08T02:25:00Z",
+          140.0915
+        ],
+        [
+          "2026-08-08T02:26:00Z",
+          134.7126
+        ],
+        [
+          "2026-08-08T02:27:00Z",
+          145.0253
+        ],
+        [
+          "2026-08-08T02:28:00Z",
+          137.9435
+        ],
+        [
+          "2026-08-08T02:29:00Z",
+          137.4916
+        ],
+        [
+          "2026-08-08T02:30:00Z",
+          143.694
+        ],
+        [
+          "2026-08-08T02:31:00Z",
+          151.8893
+        ],
+        [
+          "2026-08-08T02:32:00Z",
+          156.7958
+        ],
+        [
+          "2026-08-08T02:33:00Z",
+          159.0013
+        ],
+        [
+          "2026-08-08T02:34:00Z",
+          165.5729
+        ],
+        [
+          "2026-08-08T02:35:00Z",
+          172.5133
+        ],
+        [
+          "2026-08-08T02:36:00Z",
+          184.2461
+        ],
+        [
+          "2026-08-08T02:37:00Z",
+          181.8459
+        ],
+        [
+          "2026-08-08T02:38:00Z",
+          196.1791
+        ],
+        [
+          "2026-08-08T02:39:00Z",
+          198.8328
+        ],
+        [
+          "2026-08-08T02:40:00Z",
+          207.1691
+        ],
+        [
+          "2026-08-08T02:41:00Z",
+          205.9668
+        ],
+        [
+          "2026-08-08T02:42:00Z",
+          208.5566
+        ],
+        [
+          "2026-08-08T02:43:00Z",
+          203.1405
+        ],
+        [
+          "2026-08-08T02:44:00Z",
+          199.6792
+        ],
+        [
+          "2026-08-08T02:45:00Z",
+          205.2832
+        ],
+        [
+          "2026-08-08T02:46:00Z",
+          197.8956
+        ],
+        [
+          "2026-08-08T02:47:00Z",
+          208.219
+        ],
+        [
+          "2026-08-08T02:48:00Z",
+          204.0407
+        ],
+        [
+          "2026-08-08T02:49:00Z",
+          206.5522
+        ],
+        [
+          "2026-08-08T02:50:00Z",
+          211.1932
+        ],
+        [
+          "2026-08-08T02:51:00Z",
+          205.0805
+        ],
+        [
+          "2026-08-08T02:52:00Z",
+          197.5519
+        ],
+        [
+          "2026-08-08T02:53:00Z",
+          202.6031
+        ],
+        [
+          "2026-08-08T02:54:00Z",
+          212.2109
+        ],
+        [
+          "2026-08-08T02:55:00Z",
+          206.2962
+        ],
+        [
+          "2026-08-08T02:56:00Z",
+          200.643
+        ],
+        [
+          "2026-08-08T02:57:00Z",
+          204.0761
+        ],
+        [
+          "2026-08-08T02:58:00Z",
+          204.855
+        ],
+        [
+          "2026-08-08T02:59:00Z",
+          211.5631
+        ],
+        [
+          "2026-08-08T03:00:00Z",
+          197.3013
+        ],
+        [
+          "2026-08-08T03:01:00Z",
+          205.548
+        ],
+        [
+          "2026-08-08T03:02:00Z",
+          209.5887
+        ],
+        [
+          "2026-08-08T03:03:00Z",
+          205.4752
+        ],
+        [
+          "2026-08-08T03:04:00Z",
+          202.7041
+        ],
+        [
+          "2026-08-08T03:05:00Z",
+          208.7452
+        ],
+        [
+          "2026-08-08T03:06:00Z",
+          211.841
+        ],
+        [
+          "2026-08-08T03:07:00Z",
+          198.9295
+        ],
+        [
+          "2026-08-08T03:08:00Z",
+          209.3032
+        ],
+        [
+          "2026-08-08T03:09:00Z",
+          207.5088
+        ],
+        [
+          "2026-08-08T03:10:00Z",
+          208.3445
+        ],
+        [
+          "2026-08-08T03:11:00Z",
+          200.2707
+        ],
+        [
+          "2026-08-08T03:12:00Z",
+          203.2723
+        ],
+        [
+          "2026-08-08T03:13:00Z",
+          204.8951
+        ],
+        [
+          "2026-08-08T03:14:00Z",
+          199.1946
+        ],
+        [
+          "2026-08-08T03:15:00Z",
+          204.3521
+        ]
+      ]
+    },
+    {
+      "name": "heap_used_mb",
+      "unit": "megabytes",
+      "service": "notifications-api",
+      "points": [
+        [
+          "2026-08-08T01:50:00Z",
+          519.0842
+        ],
+        [
+          "2026-08-08T01:51:00Z",
+          513.3822
+        ],
+        [
+          "2026-08-08T01:52:00Z",
+          499.6313
+        ],
+        [
+          "2026-08-08T01:53:00Z",
+          523.7372
+        ],
+        [
+          "2026-08-08T01:54:00Z",
+          529.6143
+        ],
+        [
+          "2026-08-08T01:55:00Z",
+          524.5847
+        ],
+        [
+          "2026-08-08T01:56:00Z",
+          522.7086
+        ],
+        [
+          "2026-08-08T01:57:00Z",
+          511.4135
+        ],
+        [
+          "2026-08-08T01:58:00Z",
+          497.4486
+        ],
+        [
+          "2026-08-08T01:59:00Z",
+          517.0115
+        ],
+        [
+          "2026-08-08T02:00:00Z",
+          496.5073
+        ],
+        [
+          "2026-08-08T02:01:00Z",
+          517.5511
+        ],
+        [
+          "2026-08-08T02:02:00Z",
+          521.3159
+        ],
+        [
+          "2026-08-08T02:03:00Z",
+          499.6859
+        ],
+        [
+          "2026-08-08T02:04:00Z",
+          500.4991
+        ],
+        [
+          "2026-08-08T02:05:00Z",
+          499.0381
+        ],
+        [
+          "2026-08-08T02:06:00Z",
+          506.7843
+        ],
+        [
+          "2026-08-08T02:07:00Z",
+          500.7939
+        ],
+        [
+          "2026-08-08T02:08:00Z",
+          514.6329
+        ],
+        [
+          "2026-08-08T02:09:00Z",
+          518.0463
+        ],
+        [
+          "2026-08-08T02:10:00Z",
+          493.0113
+        ],
+        [
+          "2026-08-08T02:11:00Z",
+          528.9977
+        ],
+        [
+          "2026-08-08T02:12:00Z",
+          520.2772
+        ],
+        [
+          "2026-08-08T02:13:00Z",
+          515.4305
+        ],
+        [
+          "2026-08-08T02:14:00Z",
+          531.4927
+        ],
+        [
+          "2026-08-08T02:15:00Z",
+          492.8143
+        ],
+        [
+          "2026-08-08T02:16:00Z",
+          515.5489
+        ],
+        [
+          "2026-08-08T02:17:00Z",
+          503.6335
+        ],
+        [
+          "2026-08-08T02:18:00Z",
+          520.2679
+        ],
+        [
+          "2026-08-08T02:19:00Z",
+          520.5831
+        ],
+        [
+          "2026-08-08T02:20:00Z",
+          502.5498
+        ],
+        [
+          "2026-08-08T02:21:00Z",
+          507.5876
+        ],
+        [
+          "2026-08-08T02:22:00Z",
+          520.5079
+        ],
+        [
+          "2026-08-08T02:23:00Z",
+          511.1134
+        ],
+        [
+          "2026-08-08T02:24:00Z",
+          508.128
+        ],
+        [
+          "2026-08-08T02:25:00Z",
+          496.4423
+        ],
+        [
+          "2026-08-08T02:26:00Z",
+          491.8306
+        ],
+        [
+          "2026-08-08T02:27:00Z",
+          525.4191
+        ],
+        [
+          "2026-08-08T02:28:00Z",
+          495.6111
+        ],
+        [
+          "2026-08-08T02:29:00Z",
+          517.7159
+        ],
+        [
+          "2026-08-08T02:30:00Z",
+          509.8598
+        ],
+        [
+          "2026-08-08T02:31:00Z",
+          514.3943
+        ],
+        [
+          "2026-08-08T02:32:00Z",
+          515.7067
+        ],
+        [
+          "2026-08-08T02:33:00Z",
+          510.593
+        ],
+        [
+          "2026-08-08T02:34:00Z",
+          527.3387
+        ],
+        [
+          "2026-08-08T02:35:00Z",
+          546.9795
+        ],
+        [
+          "2026-08-08T02:36:00Z",
+          543.9176
+        ],
+        [
+          "2026-08-08T02:37:00Z",
+          547.9154
+        ],
+        [
+          "2026-08-08T02:38:00Z",
+          520.8136
+        ],
+        [
+          "2026-08-08T02:39:00Z",
+          526.9006
+        ],
+        [
+          "2026-08-08T02:40:00Z",
+          559.9219
+        ],
+        [
+          "2026-08-08T02:41:00Z",
+          555.4246
+        ],
+        [
+          "2026-08-08T02:42:00Z",
+          567.0023
+        ],
+        [
+          "2026-08-08T02:43:00Z",
+          550.7834
+        ],
+        [
+          "2026-08-08T02:44:00Z",
+          574.5228
+        ],
+        [
+          "2026-08-08T02:45:00Z",
+          571.1501
+        ],
+        [
+          "2026-08-08T02:46:00Z",
+          575.7263
+        ],
+        [
+          "2026-08-08T02:47:00Z",
+          555.2117
+        ],
+        [
+          "2026-08-08T02:48:00Z",
+          537.3743
+        ],
+        [
+          "2026-08-08T02:49:00Z",
+          538.3026
+        ],
+        [
+          "2026-08-08T02:50:00Z",
+          538.931
+        ],
+        [
+          "2026-08-08T02:51:00Z",
+          576.0654
+        ],
+        [
+          "2026-08-08T02:52:00Z",
+          563.9852
+        ],
+        [
+          "2026-08-08T02:53:00Z",
+          544.3652
+        ],
+        [
+          "2026-08-08T02:54:00Z",
+          550.24
+        ],
+        [
+          "2026-08-08T02:55:00Z",
+          568.0408
+        ],
+        [
+          "2026-08-08T02:56:00Z",
+          551.7195
+        ],
+        [
+          "2026-08-08T02:57:00Z",
+          561.4543
+        ],
+        [
+          "2026-08-08T02:58:00Z",
+          552.1283
+        ],
+        [
+          "2026-08-08T02:59:00Z",
+          552.9943
+        ],
+        [
+          "2026-08-08T03:00:00Z",
+          574.4594
+        ],
+        [
+          "2026-08-08T03:01:00Z",
+          558.382
+        ],
+        [
+          "2026-08-08T03:02:00Z",
+          551.2405
+        ],
+        [
+          "2026-08-08T03:03:00Z",
+          568.2593
+        ],
+        [
+          "2026-08-08T03:04:00Z",
+          545.6021
+        ],
+        [
+          "2026-08-08T03:05:00Z",
+          539.4916
+        ],
+        [
+          "2026-08-08T03:06:00Z",
+          570.6487
+        ],
+        [
+          "2026-08-08T03:07:00Z",
+          539.108
+        ],
+        [
+          "2026-08-08T03:08:00Z",
+          578.4485
+        ],
+        [
+          "2026-08-08T03:09:00Z",
+          566.7198
+        ],
+        [
+          "2026-08-08T03:10:00Z",
+          537.5401
+        ],
+        [
+          "2026-08-08T03:11:00Z",
+          548.8873
+        ],
+        [
+          "2026-08-08T03:12:00Z",
+          566.2988
+        ],
+        [
+          "2026-08-08T03:13:00Z",
+          578.1883
+        ],
+        [
+          "2026-08-08T03:14:00Z",
+          558.9434
+        ],
+        [
+          "2026-08-08T03:15:00Z",
+          563.2695
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "Undetermined. The evidence shows a modest, intermittent rise in notifications-api error rate spread across most hosts, with no correlated deploy, no downstream degradation, and no clear resource signal (latency barely moved, heap is flat). The available data is insufficient to identify a root cause.",
+    "evidence_path": [],
+    "fix": "Escalate to the notifications-api on-call team. Next steps beyond the current evidence: per-host error breakdown over a longer window, recent client/library changes from the largest callers, platform-level events such as host migrations or noisy neighbors, and a comparison of error types against the prior week.",
+    "should_escalate": true
+  }
+}

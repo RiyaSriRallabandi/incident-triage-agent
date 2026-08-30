@@ -1,0 +1,45 @@
+{
+  "id": "scn_003",
+  "category": "dependency_failure",
+  "difficulty": "medium",
+  "title": "Operator capacity command removes too many storage nodes; dependent services fail on object reads/writes",
+  "source_url": "https://aws.amazon.com/message/41926/",
+  "source_note": "Failure pattern and root-cause shape follow the AWS S3 2017-02-28 us-east-1 outage (a debugging command run with an incorrect argument removed more capacity than intended, forcing a multi-hour subsystem restart and breaking dependent services). Service names, log lines, metrics, node counts, and timestamps are fabricated for evaluation.",
+  "incident_report": "Starting ~18:07 UTC, media-api is returning 500s on most requests and image uploads are failing. The web app shows broken images site-wide. Nothing was deployed to media-api or uploads-worker recently. Platform team was doing some storage maintenance earlier in the hour.",
+  "incident_start": "2026-07-19T18:05:00Z",
+  "detected_offset_s": 120,
+  "window_before_s": 1800,
+  "window_after_s": 1200,
+  "primary_service": "object-store",
+  "distractor_services": [
+    { "name": "web-frontend", "role": "api" },
+    { "name": "search-api", "role": "api" },
+    { "name": "sessions-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": -300, "service": "object-store", "level": "INFO", "msg": "operator session opened: planned capacity maintenance on index tier" },
+    { "offset_s": 0, "service": "object-store", "level": "WARN", "msg": "capacity removal command executed: nodes_removed=48 (requested=4)" },
+    { "offset_s": 60, "service": "object-store", "level": "ERROR", "msg": "index subsystem dropped below quorum; entering recovery mode" },
+    { "offset_s": 130, "service": "media-api", "level": "ERROR", "msg": "object-store GET failed: 500 upstream_unavailable (retries exhausted)" },
+    { "offset_s": 190, "service": "uploads-worker", "level": "ERROR", "msg": "object-store PUT timed out after 30s; upload queue backing up (depth=8200)" },
+    { "offset_s": 300, "service": "object-store", "level": "CRITICAL", "msg": "index and placement subsystems require full restart; estimated recovery 3-4h" },
+    { "offset_s": 900, "service": "media-api", "level": "INFO", "msg": "serving stale objects from CDN cache where available; write path still failing" }
+  ],
+  "metrics": [
+    { "name": "availability_pct", "unit": "percent", "service": "object-store", "baseline": 99.99, "spike": 12.0, "spike_at_offset_s": 60, "ramp_s": 60 },
+    { "name": "error_rate", "unit": "ratio", "service": "media-api", "baseline": 0.001, "spike": 0.88, "spike_at_offset_s": 120, "ramp_s": 60 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "During planned index-tier capacity maintenance, an operator ran a capacity-removal command with an incorrect argument and removed 48 storage nodes instead of 4. That dropped the object-store index subsystem below quorum, forcing a multi-hour full restart of the index and placement subsystems. Every service depending on object reads and writes (media-api, uploads-worker) failed or degraded until object-store recovered.",
+    "evidence_path": [
+      "object-store WARN at 18:05: capacity removal command executed with nodes_removed=48 (requested=4)",
+      "object-store index subsystem drops below quorum and enters recovery at 18:06",
+      "media-api and uploads-worker begin failing object-store GET/PUT calls at 18:07-18:08",
+      "object-store availability falls to ~12%",
+      "object-store CRITICAL at 18:10: index and placement subsystems need a full multi-hour restart"
+    ],
+    "fix": "Complete the subsystem restart / restore the removed capacity. Add guardrails to the capacity tooling: cap how many nodes a single command can remove, require second-operator confirmation above a threshold, and refuse execution when the removal would take a subsystem below quorum.",
+    "should_escalate": false
+  }
+}

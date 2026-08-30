@@ -1,0 +1,689 @@
+{
+  "id": "scn_001",
+  "category": "bad_deploy",
+  "difficulty": "medium",
+  "title": "WAF ruleset deploy with a catastrophically backtracking regex saturates edge CPU",
+  "source_url": "https://blog.cloudflare.com/details-of-the-cloudflare-outage-on-july-2-2019/",
+  "source_note": "Failure pattern and root-cause shape are drawn from the Cloudflare 2019-07-02 outage (a WAF rule containing a pathological regex drove global CPU exhaustion). Service names, log lines, metrics, timestamps, and commit hash are fabricated for evaluation.",
+  "incident_report": "Since ~13:42 UTC the edge tier is serving a high rate of 502s for a large fraction of all traffic. Customer reports came in within a few minutes. No known infrastructure maintenance was scheduled. Edge hosts look CPU-bound.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-05-12T13:13:47.196678Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2026-05-12T13:18:19.332823Z",
+      "service": "edge-proxy",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-05-12T13:18:32.330761Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "upstream edge-proxy 200 188ms"
+    },
+    {
+      "ts": "2026-05-12T13:21:52.239256Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "SET key=session:340 ttl=3600"
+    },
+    {
+      "ts": "2026-05-12T13:21:54.256415Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "SET key=session:342 ttl=3600"
+    },
+    {
+      "ts": "2026-05-12T13:23:25.745905Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "upstream edge-proxy slow 40ms"
+    },
+    {
+      "ts": "2026-05-12T13:25:30.419114Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "evicted 482 keys (lru)"
+    },
+    {
+      "ts": "2026-05-12T13:26:17.033635Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "route matched /search -> edge-proxy"
+    },
+    {
+      "ts": "2026-05-12T13:28:32.477379Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "upstream edge-proxy 200 70ms"
+    },
+    {
+      "ts": "2026-05-12T13:28:39.397990Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "GET key=user:359 hit"
+    },
+    {
+      "ts": "2026-05-12T13:29:26.358242Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "upstream edge-proxy 200 198ms"
+    },
+    {
+      "ts": "2026-05-12T13:31:39.761804Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "evicted 647 keys (lru)"
+    },
+    {
+      "ts": "2026-05-12T13:33:48.523634Z",
+      "service": "edge-proxy",
+      "level": "INFO",
+      "msg": "POST /search 201 in 116ms"
+    },
+    {
+      "ts": "2026-05-12T13:37:17.861945Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "upstream edge-proxy 200 224ms"
+    },
+    {
+      "ts": "2026-05-12T13:37:52.457620Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "SET key=session:360 ttl=3600"
+    },
+    {
+      "ts": "2026-05-12T13:38:24.790726Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "route matched /search -> edge-proxy"
+    },
+    {
+      "ts": "2026-05-12T13:40:52.942371Z",
+      "service": "edge-proxy",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=143"
+    },
+    {
+      "ts": "2026-05-12T13:42:20Z",
+      "service": "edge-proxy",
+      "level": "WARN",
+      "msg": "cpu usage 78% and rising on all workers"
+    },
+    {
+      "ts": "2026-05-12T13:42:55.884596Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "evicted 576 keys (lru)"
+    },
+    {
+      "ts": "2026-05-12T13:43:00Z",
+      "service": "edge-proxy",
+      "level": "ERROR",
+      "msg": "worker CPU saturated; request queue growing (depth=4100)"
+    },
+    {
+      "ts": "2026-05-12T13:43:35Z",
+      "service": "edge-proxy",
+      "level": "ERROR",
+      "msg": "returning 502: no worker capacity to accept connection"
+    },
+    {
+      "ts": "2026-05-12T13:44:10Z",
+      "service": "edge-proxy",
+      "level": "CRITICAL",
+      "msg": "global 5xx rate 62%; CPU pinned at 100%"
+    },
+    {
+      "ts": "2026-05-12T13:44:30Z",
+      "service": "waf-engine",
+      "level": "ERROR",
+      "msg": "regex evaluation exceeded 40ms budget on managed rule 100417 (pattern contains nested quantifiers: (?:.*.*=.*))"
+    },
+    {
+      "ts": "2026-05-12T13:45:48.426325Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "upstream edge-proxy 200 63ms"
+    },
+    {
+      "ts": "2026-05-12T13:46:00.384194Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "upstream edge-proxy 200 10ms"
+    },
+    {
+      "ts": "2026-05-12T13:46:45.237176Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "route matched /api/v1/users/me -> edge-proxy"
+    },
+    {
+      "ts": "2026-05-12T13:46:58.951817Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "GET key=user:413 hit"
+    },
+    {
+      "ts": "2026-05-12T13:48:06.818902Z",
+      "service": "sessions-cache",
+      "level": "WARN",
+      "msg": "GET key=user:781 miss"
+    },
+    {
+      "ts": "2026-05-12T13:50:58.901561Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 237ms"
+    },
+    {
+      "ts": "2026-05-12T13:52:00Z",
+      "service": "edge-proxy",
+      "level": "INFO",
+      "msg": "operator initiated rollback to previous WAF ruleset"
+    },
+    {
+      "ts": "2026-05-12T13:53:39.554418Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-05-12T13:54:40Z",
+      "service": "edge-proxy",
+      "level": "INFO",
+      "msg": "cpu usage 24%; 5xx rate falling back toward baseline"
+    },
+    {
+      "ts": "2026-05-12T13:56:14.387796Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "upstream edge-proxy slow 28ms"
+    },
+    {
+      "ts": "2026-05-12T13:59:10.830244Z",
+      "service": "edge-proxy",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-05-12T14:02:27.840797Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "upstream edge-proxy 200 191ms"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "cpu_utilization_pct",
+      "unit": "percent",
+      "service": "edge-proxy",
+      "points": [
+        [
+          "2026-05-12T13:12:00Z",
+          36.005
+        ],
+        [
+          "2026-05-12T13:13:00Z",
+          36.2352
+        ],
+        [
+          "2026-05-12T13:14:00Z",
+          33.6205
+        ],
+        [
+          "2026-05-12T13:15:00Z",
+          33.9977
+        ],
+        [
+          "2026-05-12T13:16:00Z",
+          35.1359
+        ],
+        [
+          "2026-05-12T13:17:00Z",
+          34.5906
+        ],
+        [
+          "2026-05-12T13:18:00Z",
+          34.4933
+        ],
+        [
+          "2026-05-12T13:19:00Z",
+          36.2397
+        ],
+        [
+          "2026-05-12T13:20:00Z",
+          35.4102
+        ],
+        [
+          "2026-05-12T13:21:00Z",
+          35.5926
+        ],
+        [
+          "2026-05-12T13:22:00Z",
+          34.7823
+        ],
+        [
+          "2026-05-12T13:23:00Z",
+          34.3512
+        ],
+        [
+          "2026-05-12T13:24:00Z",
+          34.0198
+        ],
+        [
+          "2026-05-12T13:25:00Z",
+          35.3285
+        ],
+        [
+          "2026-05-12T13:26:00Z",
+          34.5161
+        ],
+        [
+          "2026-05-12T13:27:00Z",
+          35.0036
+        ],
+        [
+          "2026-05-12T13:28:00Z",
+          35.4628
+        ],
+        [
+          "2026-05-12T13:29:00Z",
+          34.1044
+        ],
+        [
+          "2026-05-12T13:30:00Z",
+          35.8974
+        ],
+        [
+          "2026-05-12T13:31:00Z",
+          34.1548
+        ],
+        [
+          "2026-05-12T13:32:00Z",
+          34.2736
+        ],
+        [
+          "2026-05-12T13:33:00Z",
+          35.7504
+        ],
+        [
+          "2026-05-12T13:34:00Z",
+          34.0098
+        ],
+        [
+          "2026-05-12T13:35:00Z",
+          35.9211
+        ],
+        [
+          "2026-05-12T13:36:00Z",
+          35.166
+        ],
+        [
+          "2026-05-12T13:37:00Z",
+          35.4331
+        ],
+        [
+          "2026-05-12T13:38:00Z",
+          35.3594
+        ],
+        [
+          "2026-05-12T13:39:00Z",
+          34.3736
+        ],
+        [
+          "2026-05-12T13:40:00Z",
+          34.5435
+        ],
+        [
+          "2026-05-12T13:41:00Z",
+          33.9959
+        ],
+        [
+          "2026-05-12T13:42:00Z",
+          33.9627
+        ],
+        [
+          "2026-05-12T13:43:00Z",
+          62.6534
+        ],
+        [
+          "2026-05-12T13:44:00Z",
+          97.954
+        ],
+        [
+          "2026-05-12T13:45:00Z",
+          97.3991
+        ],
+        [
+          "2026-05-12T13:46:00Z",
+          101.1492
+        ],
+        [
+          "2026-05-12T13:47:00Z",
+          96.0866
+        ],
+        [
+          "2026-05-12T13:48:00Z",
+          101.7361
+        ],
+        [
+          "2026-05-12T13:49:00Z",
+          100.409
+        ],
+        [
+          "2026-05-12T13:50:00Z",
+          100.5846
+        ],
+        [
+          "2026-05-12T13:51:00Z",
+          100.1907
+        ],
+        [
+          "2026-05-12T13:52:00Z",
+          103.6554
+        ],
+        [
+          "2026-05-12T13:53:00Z",
+          98.3901
+        ],
+        [
+          "2026-05-12T13:54:00Z",
+          102.8889
+        ],
+        [
+          "2026-05-12T13:55:00Z",
+          100.4893
+        ],
+        [
+          "2026-05-12T13:56:00Z",
+          101.3255
+        ],
+        [
+          "2026-05-12T13:57:00Z",
+          103.5079
+        ],
+        [
+          "2026-05-12T13:58:00Z",
+          101.8538
+        ],
+        [
+          "2026-05-12T13:59:00Z",
+          97.8983
+        ],
+        [
+          "2026-05-12T14:00:00Z",
+          98.5423
+        ],
+        [
+          "2026-05-12T14:01:00Z",
+          96.416
+        ],
+        [
+          "2026-05-12T14:02:00Z",
+          99.4498
+        ],
+        [
+          "2026-05-12T14:03:00Z",
+          97.446
+        ],
+        [
+          "2026-05-12T14:04:00Z",
+          99.9508
+        ],
+        [
+          "2026-05-12T14:05:00Z",
+          97.8733
+        ]
+      ]
+    },
+    {
+      "name": "http_5xx_rate",
+      "unit": "ratio",
+      "service": "edge-proxy",
+      "points": [
+        [
+          "2026-05-12T13:12:00Z",
+          0.0019
+        ],
+        [
+          "2026-05-12T13:13:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:14:00Z",
+          0.0019
+        ],
+        [
+          "2026-05-12T13:15:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:16:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:17:00Z",
+          0.0019
+        ],
+        [
+          "2026-05-12T13:18:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:19:00Z",
+          0.0019
+        ],
+        [
+          "2026-05-12T13:20:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:21:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:22:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:23:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:24:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:25:00Z",
+          0.0019
+        ],
+        [
+          "2026-05-12T13:26:00Z",
+          0.0021
+        ],
+        [
+          "2026-05-12T13:27:00Z",
+          0.0021
+        ],
+        [
+          "2026-05-12T13:28:00Z",
+          0.0019
+        ],
+        [
+          "2026-05-12T13:29:00Z",
+          0.0021
+        ],
+        [
+          "2026-05-12T13:30:00Z",
+          0.0019
+        ],
+        [
+          "2026-05-12T13:31:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:32:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:33:00Z",
+          0.0019
+        ],
+        [
+          "2026-05-12T13:34:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:35:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:36:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:37:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:38:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:39:00Z",
+          0.0019
+        ],
+        [
+          "2026-05-12T13:40:00Z",
+          0.0021
+        ],
+        [
+          "2026-05-12T13:41:00Z",
+          0.002
+        ],
+        [
+          "2026-05-12T13:42:00Z",
+          0.0021
+        ],
+        [
+          "2026-05-12T13:43:00Z",
+          0.0019
+        ],
+        [
+          "2026-05-12T13:44:00Z",
+          0.402
+        ],
+        [
+          "2026-05-12T13:45:00Z",
+          0.6303
+        ],
+        [
+          "2026-05-12T13:46:00Z",
+          0.621
+        ],
+        [
+          "2026-05-12T13:47:00Z",
+          0.6162
+        ],
+        [
+          "2026-05-12T13:48:00Z",
+          0.6139
+        ],
+        [
+          "2026-05-12T13:49:00Z",
+          0.5976
+        ],
+        [
+          "2026-05-12T13:50:00Z",
+          0.6207
+        ],
+        [
+          "2026-05-12T13:51:00Z",
+          0.6068
+        ],
+        [
+          "2026-05-12T13:52:00Z",
+          0.6162
+        ],
+        [
+          "2026-05-12T13:53:00Z",
+          0.6242
+        ],
+        [
+          "2026-05-12T13:54:00Z",
+          0.6207
+        ],
+        [
+          "2026-05-12T13:55:00Z",
+          0.6199
+        ],
+        [
+          "2026-05-12T13:56:00Z",
+          0.6042
+        ],
+        [
+          "2026-05-12T13:57:00Z",
+          0.6273
+        ],
+        [
+          "2026-05-12T13:58:00Z",
+          0.6173
+        ],
+        [
+          "2026-05-12T13:59:00Z",
+          0.6235
+        ],
+        [
+          "2026-05-12T14:00:00Z",
+          0.6364
+        ],
+        [
+          "2026-05-12T14:01:00Z",
+          0.6211
+        ],
+        [
+          "2026-05-12T14:02:00Z",
+          0.6409
+        ],
+        [
+          "2026-05-12T14:03:00Z",
+          0.6105
+        ],
+        [
+          "2026-05-12T14:04:00Z",
+          0.6243
+        ],
+        [
+          "2026-05-12T14:05:00Z",
+          0.6377
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [
+    {
+      "service": "edge-proxy",
+      "ts": "2026-05-12T13:42:00Z",
+      "commit": "7f3a9c1",
+      "summary": "roll out WAF managed ruleset 2026.05.12 (adds ~30 new rules, incl. rule 100417)"
+    }
+  ],
+  "ground_truth": {
+    "root_cause": "A newly deployed WAF managed-rule set (commit 7f3a9c1) contained a rule (100417) with a catastrophically backtracking regular expression. Evaluating that pattern against normal request traffic drove edge-proxy worker CPU to saturation within about a minute, so requests queued and then failed with 502s across effectively all traffic.",
+    "evidence_path": [
+      "deploy 7f3a9c1 to edge-proxy at 13:42 rolls out a new WAF managed ruleset",
+      "edge-proxy CPU climbs from ~35% to 100% beginning ~13:42:20, immediately after the deploy",
+      "waf-engine ERROR at 13:44:30: regex evaluation exceeded its time budget on managed rule 100417 (nested quantifiers)",
+      "edge-proxy 5xx rate rises to ~62% as workers saturate and the request queue grows",
+      "CPU and 5xx rate recover after the WAF ruleset is rolled back at ~13:52"
+    ],
+    "fix": "Roll back the WAF ruleset to the previous version. Add a regex-complexity / backtracking check and a per-rule CPU budget to the rule-deployment pipeline, and canary WAF rule changes on a small fraction of traffic before global rollout.",
+    "should_escalate": false
+  }
+}

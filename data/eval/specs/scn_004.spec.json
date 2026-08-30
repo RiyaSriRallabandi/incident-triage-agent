@@ -1,0 +1,38 @@
+{
+  "id": "scn_004",
+  "category": "ambiguous",
+  "difficulty": "hard",
+  "title": "Intermittent elevated error rate on notifications-api with no correlated signal",
+  "source_url": "https://www.microsoft.com/en-us/research/publication/gray-failure-the-achilles-heel-of-cloud-scale-systems/",
+  "source_note": "Constructed as a deliberately under-determined 'gray failure' case in the spirit of the Microsoft Research paper of that name: a real but subtle degradation with no clean root-cause signal in the available evidence. All services, logs, and metrics are fabricated for evaluation; this scenario has no single correct root cause and should be escalated.",
+  "incident_report": "notifications-api error rate has been intermittently elevated (roughly 3-5%, normally under 0.5%) since about 02:30 UTC. No deploys in the last 24 hours. Downstream providers look fine. It has partially recovered on its own. On-call wants a root cause before standing down.",
+  "incident_start": "2026-08-08T02:30:00Z",
+  "detected_offset_s": 900,
+  "window_before_s": 2400,
+  "window_after_s": 1800,
+  "primary_service": "notifications-api",
+  "distractor_services": [
+    { "name": "email-provider-proxy", "role": "gateway" },
+    { "name": "push-gateway", "role": "gateway" },
+    { "name": "user-prefs-db", "role": "db" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "notifications-api", "level": "WARN", "msg": "error rate 3.1% over last 5m (baseline ~0.4%)" },
+    { "offset_s": 300, "service": "notifications-api", "level": "ERROR", "msg": "unhandled exception in send path: context deadline exceeded (host n-api-7)" },
+    { "offset_s": 600, "service": "notifications-api", "level": "WARN", "msg": "error rate 4.6%; failures observed on 9 of 12 hosts, no single host dominates" },
+    { "offset_s": 900, "service": "notifications-api", "level": "INFO", "msg": "downstream email, sms, and push providers all reporting nominal latency and success rates" },
+    { "offset_s": 1500, "service": "notifications-api", "level": "WARN", "msg": "error rate 2.2%; partial self-recovery, no operator action taken" }
+  ],
+  "metrics": [
+    { "name": "error_rate", "unit": "ratio", "service": "notifications-api", "baseline": 0.004, "spike": 0.045, "spike_at_offset_s": 0, "ramp_s": 300 },
+    { "name": "p95_latency_ms", "unit": "milliseconds", "service": "notifications-api", "baseline": 140.0, "spike": 205.0, "spike_at_offset_s": 0, "ramp_s": 600 },
+    { "name": "heap_used_mb", "unit": "megabytes", "service": "notifications-api", "baseline": 512.0, "spike": 558.0, "spike_at_offset_s": 0, "ramp_s": 900 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "Undetermined. The evidence shows a modest, intermittent rise in notifications-api error rate spread across most hosts, with no correlated deploy, no downstream degradation, and no clear resource signal (latency barely moved, heap is flat). The available data is insufficient to identify a root cause.",
+    "evidence_path": [],
+    "fix": "Escalate to the notifications-api on-call team. Next steps beyond the current evidence: per-host error breakdown over a longer window, recent client/library changes from the largest callers, platform-level events such as host migrations or noisy neighbors, and a comparison of error types against the prior week.",
+    "should_escalate": true
+  }
+}

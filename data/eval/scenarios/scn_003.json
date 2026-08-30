@@ -1,0 +1,674 @@
+{
+  "id": "scn_003",
+  "category": "dependency_failure",
+  "difficulty": "medium",
+  "title": "Operator capacity command removes too many storage nodes; dependent services fail on object reads/writes",
+  "source_url": "https://aws.amazon.com/message/41926/",
+  "source_note": "Failure pattern and root-cause shape follow the AWS S3 2017-02-28 us-east-1 outage (a debugging command run with an incorrect argument removed more capacity than intended, forcing a multi-hour subsystem restart and breaking dependent services). Service names, log lines, metrics, node counts, and timestamps are fabricated for evaluation.",
+  "incident_report": "Starting ~18:07 UTC, media-api is returning 500s on most requests and image uploads are failing. The web app shows broken images site-wide. Nothing was deployed to media-api or uploads-worker recently. Platform team was doing some storage maintenance earlier in the hour.",
+  "synthetic_logs": [
+    {
+      "ts": "2026-07-19T17:35:42.417765Z",
+      "service": "web-frontend",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-07-19T17:37:05.771095Z",
+      "service": "object-store",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 110ms"
+    },
+    {
+      "ts": "2026-07-19T17:37:25.733756Z",
+      "service": "sessions-cache",
+      "level": "WARN",
+      "msg": "GET key=user:218 miss"
+    },
+    {
+      "ts": "2026-07-19T17:38:05.147110Z",
+      "service": "sessions-cache",
+      "level": "WARN",
+      "msg": "GET key=user:450 miss"
+    },
+    {
+      "ts": "2026-07-19T17:39:58.288389Z",
+      "service": "sessions-cache",
+      "level": "WARN",
+      "msg": "GET key=user:357 miss"
+    },
+    {
+      "ts": "2026-07-19T17:40:08.062741Z",
+      "service": "web-frontend",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 22ms"
+    },
+    {
+      "ts": "2026-07-19T17:42:28.905568Z",
+      "service": "web-frontend",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-07-19T17:47:06.852181Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2026-07-19T17:48:23.762689Z",
+      "service": "object-store",
+      "level": "INFO",
+      "msg": "GET /products 200 in 219ms"
+    },
+    {
+      "ts": "2026-07-19T17:49:09.781680Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 240ms"
+    },
+    {
+      "ts": "2026-07-19T17:51:31.432341Z",
+      "service": "search-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=16"
+    },
+    {
+      "ts": "2026-07-19T17:53:11.964276Z",
+      "service": "object-store",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=5"
+    },
+    {
+      "ts": "2026-07-19T17:54:40.791337Z",
+      "service": "object-store",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=234"
+    },
+    {
+      "ts": "2026-07-19T17:55:21.095611Z",
+      "service": "object-store",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 30ms"
+    },
+    {
+      "ts": "2026-07-19T17:55:42.386145Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 120ms"
+    },
+    {
+      "ts": "2026-07-19T17:57:06.479439Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-07-19T17:57:50.189508Z",
+      "service": "object-store",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 30ms"
+    },
+    {
+      "ts": "2026-07-19T18:00:00Z",
+      "service": "object-store",
+      "level": "INFO",
+      "msg": "operator session opened: planned capacity maintenance on index tier"
+    },
+    {
+      "ts": "2026-07-19T18:03:09.474148Z",
+      "service": "object-store",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-07-19T18:04:53.483765Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 228ms"
+    },
+    {
+      "ts": "2026-07-19T18:05:00Z",
+      "service": "object-store",
+      "level": "WARN",
+      "msg": "capacity removal command executed: nodes_removed=48 (requested=4)"
+    },
+    {
+      "ts": "2026-07-19T18:06:00Z",
+      "service": "object-store",
+      "level": "ERROR",
+      "msg": "index subsystem dropped below quorum; entering recovery mode"
+    },
+    {
+      "ts": "2026-07-19T18:07:10Z",
+      "service": "media-api",
+      "level": "ERROR",
+      "msg": "object-store GET failed: 500 upstream_unavailable (retries exhausted)"
+    },
+    {
+      "ts": "2026-07-19T18:08:10Z",
+      "service": "uploads-worker",
+      "level": "ERROR",
+      "msg": "object-store PUT timed out after 30s; upload queue backing up (depth=8200)"
+    },
+    {
+      "ts": "2026-07-19T18:10:00Z",
+      "service": "object-store",
+      "level": "CRITICAL",
+      "msg": "index and placement subsystems require full restart; estimated recovery 3-4h"
+    },
+    {
+      "ts": "2026-07-19T18:14:43.853892Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-07-19T18:15:21.849223Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 129ms"
+    },
+    {
+      "ts": "2026-07-19T18:16:01.532919Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-07-19T18:16:41.021205Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "GET key=user:234 hit"
+    },
+    {
+      "ts": "2026-07-19T18:16:54.026145Z",
+      "service": "web-frontend",
+      "level": "INFO",
+      "msg": "POST /search 201 in 29ms"
+    },
+    {
+      "ts": "2026-07-19T18:20:00Z",
+      "service": "media-api",
+      "level": "INFO",
+      "msg": "serving stale objects from CDN cache where available; write path still failing"
+    },
+    {
+      "ts": "2026-07-19T18:21:13.449102Z",
+      "service": "object-store",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2026-07-19T18:22:18.746334Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2026-07-19T18:24:54.200164Z",
+      "service": "sessions-cache",
+      "level": "INFO",
+      "msg": "SET key=session:179 ttl=3600"
+    },
+    {
+      "ts": "2026-07-19T18:26:23.632622Z",
+      "service": "search-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "availability_pct",
+      "unit": "percent",
+      "service": "object-store",
+      "points": [
+        [
+          "2026-07-19T17:35:00Z",
+          96.2311
+        ],
+        [
+          "2026-07-19T17:36:00Z",
+          96.1619
+        ],
+        [
+          "2026-07-19T17:37:00Z",
+          97.1616
+        ],
+        [
+          "2026-07-19T17:38:00Z",
+          99.4869
+        ],
+        [
+          "2026-07-19T17:39:00Z",
+          98.6166
+        ],
+        [
+          "2026-07-19T17:40:00Z",
+          103.304
+        ],
+        [
+          "2026-07-19T17:41:00Z",
+          100.3321
+        ],
+        [
+          "2026-07-19T17:42:00Z",
+          99.6117
+        ],
+        [
+          "2026-07-19T17:43:00Z",
+          97.3464
+        ],
+        [
+          "2026-07-19T17:44:00Z",
+          96.3914
+        ],
+        [
+          "2026-07-19T17:45:00Z",
+          101.0531
+        ],
+        [
+          "2026-07-19T17:46:00Z",
+          97.9844
+        ],
+        [
+          "2026-07-19T17:47:00Z",
+          98.0907
+        ],
+        [
+          "2026-07-19T17:48:00Z",
+          103.7019
+        ],
+        [
+          "2026-07-19T17:49:00Z",
+          100.1934
+        ],
+        [
+          "2026-07-19T17:50:00Z",
+          97.065
+        ],
+        [
+          "2026-07-19T17:51:00Z",
+          101.5086
+        ],
+        [
+          "2026-07-19T17:52:00Z",
+          96.3052
+        ],
+        [
+          "2026-07-19T17:53:00Z",
+          103.1029
+        ],
+        [
+          "2026-07-19T17:54:00Z",
+          101.0443
+        ],
+        [
+          "2026-07-19T17:55:00Z",
+          99.9626
+        ],
+        [
+          "2026-07-19T17:56:00Z",
+          96.837
+        ],
+        [
+          "2026-07-19T17:57:00Z",
+          103.9111
+        ],
+        [
+          "2026-07-19T17:58:00Z",
+          101.4157
+        ],
+        [
+          "2026-07-19T17:59:00Z",
+          102.0634
+        ],
+        [
+          "2026-07-19T18:00:00Z",
+          100.0073
+        ],
+        [
+          "2026-07-19T18:01:00Z",
+          98.5401
+        ],
+        [
+          "2026-07-19T18:02:00Z",
+          96.2343
+        ],
+        [
+          "2026-07-19T18:03:00Z",
+          99.2108
+        ],
+        [
+          "2026-07-19T18:04:00Z",
+          103.1437
+        ],
+        [
+          "2026-07-19T18:05:00Z",
+          97.1237
+        ],
+        [
+          "2026-07-19T18:06:00Z",
+          97.7437
+        ],
+        [
+          "2026-07-19T18:07:00Z",
+          12.3607
+        ],
+        [
+          "2026-07-19T18:08:00Z",
+          12.3466
+        ],
+        [
+          "2026-07-19T18:09:00Z",
+          12.15
+        ],
+        [
+          "2026-07-19T18:10:00Z",
+          11.7175
+        ],
+        [
+          "2026-07-19T18:11:00Z",
+          11.621
+        ],
+        [
+          "2026-07-19T18:12:00Z",
+          12.3935
+        ],
+        [
+          "2026-07-19T18:13:00Z",
+          12.1329
+        ],
+        [
+          "2026-07-19T18:14:00Z",
+          12.1665
+        ],
+        [
+          "2026-07-19T18:15:00Z",
+          12.358
+        ],
+        [
+          "2026-07-19T18:16:00Z",
+          11.7621
+        ],
+        [
+          "2026-07-19T18:17:00Z",
+          12.1866
+        ],
+        [
+          "2026-07-19T18:18:00Z",
+          11.8124
+        ],
+        [
+          "2026-07-19T18:19:00Z",
+          11.6398
+        ],
+        [
+          "2026-07-19T18:20:00Z",
+          12.0621
+        ],
+        [
+          "2026-07-19T18:21:00Z",
+          11.7041
+        ],
+        [
+          "2026-07-19T18:22:00Z",
+          11.6508
+        ],
+        [
+          "2026-07-19T18:23:00Z",
+          11.7184
+        ],
+        [
+          "2026-07-19T18:24:00Z",
+          12.1273
+        ],
+        [
+          "2026-07-19T18:25:00Z",
+          11.666
+        ],
+        [
+          "2026-07-19T18:26:00Z",
+          12.3698
+        ],
+        [
+          "2026-07-19T18:27:00Z",
+          12.3173
+        ]
+      ]
+    },
+    {
+      "name": "error_rate",
+      "unit": "ratio",
+      "service": "media-api",
+      "points": [
+        [
+          "2026-07-19T17:35:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:36:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:37:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:38:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:39:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:40:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:41:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:42:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:43:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:44:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:45:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:46:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:47:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:48:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:49:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:50:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:51:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:52:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:53:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:54:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:55:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:56:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:57:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:58:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T17:59:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T18:00:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T18:01:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T18:02:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T18:03:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T18:04:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T18:05:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T18:06:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T18:07:00Z",
+          0.001
+        ],
+        [
+          "2026-07-19T18:08:00Z",
+          0.8748
+        ],
+        [
+          "2026-07-19T18:09:00Z",
+          0.9089
+        ],
+        [
+          "2026-07-19T18:10:00Z",
+          0.8503
+        ],
+        [
+          "2026-07-19T18:11:00Z",
+          0.8965
+        ],
+        [
+          "2026-07-19T18:12:00Z",
+          0.8871
+        ],
+        [
+          "2026-07-19T18:13:00Z",
+          0.8974
+        ],
+        [
+          "2026-07-19T18:14:00Z",
+          0.88
+        ],
+        [
+          "2026-07-19T18:15:00Z",
+          0.8448
+        ],
+        [
+          "2026-07-19T18:16:00Z",
+          0.908
+        ],
+        [
+          "2026-07-19T18:17:00Z",
+          0.8461
+        ],
+        [
+          "2026-07-19T18:18:00Z",
+          0.8781
+        ],
+        [
+          "2026-07-19T18:19:00Z",
+          0.9029
+        ],
+        [
+          "2026-07-19T18:20:00Z",
+          0.8467
+        ],
+        [
+          "2026-07-19T18:21:00Z",
+          0.8885
+        ],
+        [
+          "2026-07-19T18:22:00Z",
+          0.9123
+        ],
+        [
+          "2026-07-19T18:23:00Z",
+          0.9099
+        ],
+        [
+          "2026-07-19T18:24:00Z",
+          0.8643
+        ],
+        [
+          "2026-07-19T18:25:00Z",
+          0.8827
+        ],
+        [
+          "2026-07-19T18:26:00Z",
+          0.8694
+        ],
+        [
+          "2026-07-19T18:27:00Z",
+          0.8788
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "During planned index-tier capacity maintenance, an operator ran a capacity-removal command with an incorrect argument and removed 48 storage nodes instead of 4. That dropped the object-store index subsystem below quorum, forcing a multi-hour full restart of the index and placement subsystems. Every service depending on object reads and writes (media-api, uploads-worker) failed or degraded until object-store recovered.",
+    "evidence_path": [
+      "object-store WARN at 18:05: capacity removal command executed with nodes_removed=48 (requested=4)",
+      "object-store index subsystem drops below quorum and enters recovery at 18:06",
+      "media-api and uploads-worker begin failing object-store GET/PUT calls at 18:07-18:08",
+      "object-store availability falls to ~12%",
+      "object-store CRITICAL at 18:10: index and placement subsystems need a full multi-hour restart"
+    ],
+    "fix": "Complete the subsystem restart / restore the removed capacity. Add guardrails to the capacity tooling: cap how many nodes a single command can remove, require second-operator confirmation above a threshold, and refuse execution when the removal would take a subsystem below quorum.",
+    "should_escalate": false
+  }
+}
