@@ -40,6 +40,12 @@ Verify LLM access once keys are set:
 uv run python scripts/smoke_llm.py
 ```
 
+Build the runbook retrieval index (downloads the embedding model on first run):
+
+```bash
+uv run python scripts/build_runbook_index.py
+```
+
 ## Data
 
 All incident data is synthetic or derived from public postmortems. No production
