@@ -31,8 +31,10 @@ data/runbook_index/
 
 # LangSmith / local run artifacts
 .langsmith/
-runs/
+/runs/
 *.log
+# committed eval artifacts are the exception (the report cites them)
+!data/eval/runs/
 
 # OS / editor
 .DS_Store
