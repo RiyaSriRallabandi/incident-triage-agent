@@ -12,7 +12,6 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
-.python-version
 
 # uv
 # (uv.lock IS committed — reproducible installs)
