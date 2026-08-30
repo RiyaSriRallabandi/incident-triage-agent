@@ -23,7 +23,7 @@ Provider = Literal["groq", "gemini"]
 # LLM-judge and ablation comparisons.
 DEFAULT_MODELS: dict[Provider, str] = {
     "groq": "openai/gpt-oss-20b",
-    "gemini": "gemini-2.5-flash",
+    "gemini": "gemini-3.6-flash",
 }
 
 GROQ_LARGE_MODEL = "openai/gpt-oss-120b"

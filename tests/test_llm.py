@@ -55,11 +55,11 @@ _live = Settings()
 def test_groq_live_roundtrip():
     model = get_chat_model("groq")
     reply = model.invoke("Reply with the single word: pong")
-    assert "pong" in reply.content.lower()
+    assert "pong" in reply.text.lower()
 
 
 @pytest.mark.skipif(not _live.gemini_api_key, reason="GEMINI_API_KEY not set")
 def test_gemini_live_roundtrip():
     model = get_chat_model("gemini")
     reply = model.invoke("Reply with the single word: pong")
-    assert "pong" in reply.content.lower()
+    assert "pong" in reply.text.lower()

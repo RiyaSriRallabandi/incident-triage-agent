@@ -26,7 +26,7 @@ def check(provider: Provider) -> bool:
         print(f"FAILED: {exc}")
         return False
     print(f"model: {getattr(model, 'model_name', '?')}")
-    print(f"reply: {reply.content.strip()}")
+    print(f"reply: {reply.text.strip()}")
     return True
 
 
