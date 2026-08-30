@@ -1,0 +1,66 @@
+{
+  "tag": "dev-baseline",
+  "scenario_id": "scn_029",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_029",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The fleet scale-up in the morning caused the total number of client connections from orders-service to exceed the database connection limit on orders-db, resulting in connection acquire failures (\"FATAL: sorry, too many clients already\").",
+      "confidence": 0.99,
+      "evidence": [
+        "orders-service connection_acquire_error_rate metric spiked starting at 11:33 UTC from 0.001 to ~0.15",
+        "orders-db db_active_connections metric increased up to ~505 starting around 11:31 UTC",
+        "orders-service logs show: FATAL: sorry, too many clients already; ~15% of requests failing to acquire a DB connection"
+      ],
+      "recommended_fix": "Increase the maximum connection limit on orders-db to accommodate the scaled-up fleet or implement a connection pooler (such as PgBouncer) to manage database connections efficiently across instances. Follow up by reviewing per-instance connection limits in orders-service."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The incident report states that orders-service is experiencing database connection errors following a morning scale-up of the fleet. I need to check the connection acquire error rate metric on orders-service to understand the exact error pattern over time.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "orders-service",
+          "metric": "connection_acquire_error_rate",
+          "start": "2027-01-14T10:50:00Z",
+          "end": "2027-01-14T11:59:00Z"
+        },
+        "result": "orders-service / connection_acquire_error_rate (ratio)\nsummary: first=0.001, last=0.1473, min=0.001, max=0.1529, change +15190.0% (first value -> most extreme value)\npoints: 10:50=0.001, 10:51=0.001, 10:52=0.001, 10:53=0.001, 10:54=0.001, 10:55=0.001, 10:56=0.001, 10:57=0.001, 10:58=0.001, 10:59=0.001, 11:00=0.001, 11:01=0.001, 11:02=0.001, 11:03=0.001, 11:04=0.001, 11:05=0.001, 11:06=0.001, 11:07=0.001, 11:08=0.001, 11:09=0.001, 11:10=0.001, 11:11=0.001, 11:12=0.001, 11:13=0.001, 11:14=0.001, 11:15=0.001, 11:16=0.001, 11:17=0.001, 11:18=0.001, 11:19=0.001, 11:20=0.001, 11:21=0.001, 11:22=0.001, 11:23=0.001, 11:24=0.001, 11:25=0.001, 11:26=0.001, 11:27=0.001, 11:28=0.001, 11:29=0.001, 11:30=0.001, 11:31=0.001, 11:32=0.001, 11:33=0.0753, 11:34=0.1473, 11:35=0.1487, 11:36=0.1517, 11:37=0.1477, 11:38=0.1479, 11:39=0.152, 11:40=0.1475, 11:41=0.1478, 11:42=0.1485, 11:43=0.152, 11:44=0.1491, 11:45=0.1498, 11:46=0.1507, 11:47=0.1513, 11:48=0.1484, 11:49=0.1495, 11:50=0.1512, 11:51=0.1488, 11:52=0.1486, 11:53=0.1498, 11:54=0.1487, 11:55=0.1521, 11:56=0.1481, 11:57=0.1529, 11:58=0.1496, 11:59=0.1473",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The connection acquire error rate on orders-service spikes starting around 11:33 UTC. Next, I should check the active connections metric on orders-db to see if the database has reached its connection limit following the fleet scale-up.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "orders-db",
+          "metric": "db_active_connections",
+          "start": "2027-01-14T10:50:00Z",
+          "end": "2027-01-14T11:59:00Z"
+        },
+        "result": "orders-db / db_active_connections (count)\nsummary: first=385.2159, last=504.9487, min=373.0157, max=509.1683, change +32.2% (first value -> most extreme value)\npoints: 10:50=385.216, 10:51=376.962, 10:52=386.629, 10:53=383.803, 10:54=373.847, 10:55=375.656, 10:56=386.002, 10:57=385.627, 10:58=387.033, 10:59=385.067, 11:00=380.684, 11:01=379.419, 11:02=373.324, 11:03=384.741, 11:04=387.326, 11:05=386.395, 11:06=385.618, 11:07=378.871, 11:08=378.953, 11:09=387.455, 11:10=386.515, 11:11=379.85, 11:12=385.142, 11:13=383.82, 11:14=384.726, 11:15=383.104, 11:16=379.908, 11:17=373.016, 11:18=374.205, 11:19=385.654, 11:20=382.896, 11:21=386.212, 11:22=380.646, 11:23=381.762, 11:24=386.036, 11:25=383.538, 11:26=373.606, 11:27=382.68, 11:28=379.27, 11:29=386.049, 11:30=384.079, 11:31=446.45, 11:32=491.832, 11:33=490.843, 11:34=500.221, 11:35=493.982, 11:36=498.518, 11:37=497.337, 11:38=496.766, 11:39=491.357, 11:40=494.267, 11:41=492.675, 11:42=508.193, 11:43=491.498, 11:44=500.24, 11:45=504.107, 11:46=500.785, 11:47=509.168, 11:48=501.768, 11:49=490.846, 11:50=506.89, 11:51=497.034, 11:52=507.186, 11:53=501.864, 11:54=491.127, 11:55=503.915, 11:56=498.402, 11:57=508.915, 11:58=503.819, 11:59=504.949",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The active connections on orders-db have hit around 505, coinciding with the connection acquire errors on orders-service starting at 11:33. I should search the logs of orders-service to see specific error messages regarding database connection limits or exhaustion.",
+        "tool": "search_logs",
+        "args": {
+          "service": "orders-service",
+          "query": "connection",
+          "start": "2027-01-14T11:30:00Z",
+          "end": "2027-01-14T11:40:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2027-01-14T11:32:00Z  orders-service  ERROR  FATAL: sorry, too many clients already; ~15% of requests failing to acquire a DB connection",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 3,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

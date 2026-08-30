@@ -1,0 +1,91 @@
+{
+  "tag": "dev-baseline",
+  "scenario_id": "scn_012",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_012",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The search-api deployment (bump ranking model to v7; minor query-parser refactor) introduced a regression that caused the p99 latency to roughly double starting around 04:00 UTC.",
+      "confidence": 0.9,
+      "evidence": [
+        "search-api / p99_latency_ms changed from ~299ms to ~615ms (+110.8%)",
+        "search-api deploy at 2026-11-03T22:30:00Z: bump ranking model to v7; minor query-parser refactor",
+        "search-api cpu_utilization_pct remained flat between 44.2% and 48.9%"
+      ],
+      "recommended_fix": "Investigate the ranking model v7 and query-parser refactor changes for performance bottlenecks, and consider rolling back the deployment if necessary."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "We need to check the p99 latency metric for search-api directly to confirm the reported behavior and timing within the incident window.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "search-api",
+          "metric": "p99_latency_ms",
+          "start": "2026-11-03T22:30:00Z",
+          "end": "2026-11-04T04:50:00Z"
+        },
+        "result": "search-api / p99_latency_ms (milliseconds)\nsummary: first=299.4944, last=615.846, min=294.2416, max=631.37, change +110.8% (first value -> most extreme value)\npoints: 03:00=299.494, 03:01=302.034, 03:02=298.719, 03:03=295.853, 03:04=298.841, 03:05=294.627, 03:06=298.065, 03:07=298.293, 03:08=301.133, 03:09=296.464, 03:10=305.187, 03:11=304.322, 03:12=305.34, 03:13=300.097, 03:14=296.315, 03:15=304.205, 03:16=298.197, 03:17=301.06, 03:18=296.206, 03:19=299.117, 03:20=302.322, 03:21=301.319, 03:22=303.857, 03:23=300.199, 03:24=305.461, 03:25=300.066, 03:26=298.742, 03:27=295.045, 03:28=305.699, 03:29=298.219, 03:30=304.978, 03:31=302.346, 03:32=297.607, 03:33=295.308, 03:34=304.742, 03:35=301.939, 03:36=301.406, 03:37=301.294, 03:38=297.835, 03:39=301.29, 03:40=299.97, 03:41=296.824, 03:42=296.181, 03:43=296.238, 03:44=296.385, 03:45=300.12, 03:46=294.977, 03:47=296.736, 03:48=299.017, 03:49=305.159, 03:50=297.789, 03:51=300.728, 03:52=298.584, 03:53=295.368, 03:54=298.847, 03:55=294.605, 03:56=296.587, 03:57=305.363, 03:58=294.242, 03:59=298.019, 04:00=294.491, 04:01=337.706, 04:02=358.024, 04:03=391.198, 04:04=419.457, 04:05=454.368, 04:06=497.628, 04:07=516.787, 04:08=549.665, 04:09=595.15, 04:10=610.751, 04:11=608.989, 04:12=617.335, 04:13=625.484, 04:14=628.758, 04:15=628.532, 04:16=625.574, 04:17=622.596, 04:18=608.517, 04:19=617.616, 04:20=626.925, 04:21=615.651, 04:22=620.881, 04:23=608.491, 04:24=611.633, 04:25=614.778, 04:26=614.615, 04:27=618.006, 04:28=630.967, 04:29=630.962, 04:30=611.161, 04:31=630.145, 04:32=614.785, 04:33=618.993, 04:34=622.633, 04:35=611.188, 04:36=612.482, 04:37=622.54, 04:38=628.621, 04:39=615.444, 04:40=631.37, 04:41=625.628, 04:42=608.467, 04:43=626.131, 04:44=620.687, 04:45=617.163, 04:46=627.458, 04:47=627.974, 04:48=610.861, 04:49=625.918, 04:50=615.846",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed the p99 latency increase on search-api, and we should now check if any recent deployments occurred around the time the latency doubled.",
+        "tool": "get_recent_deploys",
+        "args": {
+          "service": "search-api",
+          "start": "2026-11-03T22:30:00Z",
+          "end": "2026-11-04T04:50:00Z"
+        },
+        "result": "1 deploy(s):\n2026-11-03T22:30:00Z  search-api  c1c2c3c  bump ranking model to v7; minor query-parser refactor",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "A deployment occurred for search-api right at the start of the window bumping the ranking model to v7, so we should now search search-api logs to check for any related warnings or performance anomalies during the incident window.",
+        "tool": "search_logs",
+        "args": {
+          "service": "search-api",
+          "query": "ranking",
+          "start": "2026-11-03T22:30:00Z",
+          "end": "2026-11-04T04:50:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "We see a deployment of ranking model v7 right before the latency spike, so we should check error or warning logs in search-api without restricting to the keyword 'ranking' to see if there are other clues or slow queries.",
+        "tool": "search_logs",
+        "args": {
+          "service": "search-api",
+          "query": "slow",
+          "start": "2026-11-03T22:30:00Z",
+          "end": "2026-11-04T04:50:00Z"
+        },
+        "result": "3 of 3 matching log lines:\n2026-11-04T03:26:58Z  search-api  WARN  slow request path=/search duration_ms=231\n2026-11-04T04:01:12Z  search-api  WARN  slow request path=/products duration_ms=223\n2026-11-04T04:49:39Z  search-api  WARN  slow request path=/api/v1/users/me duration_ms=53",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "We see a deployment of ranking model v7 and some slow requests, but we have 2 remaining tool calls and should check other services like suggest-service or cpu metrics on search-api to fully confirm whether resource utilization or another service dependency contributed to the latency increase.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "search-api",
+          "metric": "cpu_utilization_pct",
+          "start": "2026-11-03T22:30:00Z",
+          "end": "2026-11-04T04:50:00Z"
+        },
+        "result": "search-api / cpu_utilization_pct (percent)\nsummary: first=45.1872, last=47.5302, min=44.2299, max=48.8719, change +8.2% (first value -> most extreme value)\npoints: 03:00=45.1872, 03:01=45.2864, 03:02=44.2925, 03:03=45.1031, 03:04=44.374, 03:05=44.3415, 03:06=45.1391, 03:07=45.7281, 03:08=45.5962, 03:09=45.1487, 03:10=44.4947, 03:11=45.5825, 03:12=44.3996, 03:13=45.6457, 03:14=45.3062, 03:15=44.6137, 03:16=45.4592, 03:17=45.2927, 03:18=44.7226, 03:19=45.7719, 03:20=44.8253, 03:21=45.5353, 03:22=44.2299, 03:23=44.5905, 03:24=45.4941, 03:25=44.3595, 03:26=44.3825, 03:27=44.8078, 03:28=45.0938, 03:29=45.0247, 03:30=44.2859, 03:31=45.8853, 03:32=44.587, 03:33=45.2775, 03:34=44.8386, 03:35=45.8557, 03:36=45.3101, 03:37=44.4977, 03:38=44.2486, 03:39=44.7305, 03:40=44.7524, 03:41=44.7516, 03:42=45.7671, 03:43=45.8777, 03:44=45.557, 03:45=44.8042, 03:46=45.5646, 03:47=44.7814, 03:48=44.633, 03:49=44.9338, 03:50=45.874, 03:51=44.7443, 03:52=45.8821, 03:53=45.2883, 03:54=45.8683, 03:55=45.6729, 03:56=44.6682, 03:57=45.0423, 03:58=45.0798, 03:59=44.6925, 04:00=45.3223, 04:01=44.7085, 04:02=46.0522, 04:03=46.5723, 04:04=46.8489, 04:05=46.8104, 04:06=46.4141, 04:07=46.9188, 04:08=47.1779, 04:09=48.3131, 04:10=48.1216, 04:11=48.0538, 04:12=47.0588, 04:13=48.235, 04:14=47.5949, 04:15=48.561, 04:16=47.2759, 04:17=48.1169, 04:18=47.379, 04:19=48.8042, 04:20=48.8719, 04:21=47.3681, 04:22=48.2954, 04:23=48.0149, 04:24=48.0915, 04:25=48.5837, 04:26=48.6503, 04:27=47.9457, 04:28=48.7022, 04:29=47.9702, 04:30=47.7584, 04:31=48.4542, 04:32=48.2527, 04:33=47.4616, 04:34=47.2857, 04:35=48.5681, 04:36=48.7387, 04:37=48.0365, 04:38=47.452, 04:39=47.8654, 04:40=47.6729, 04:41=48.5899, 04:42=48.047, 04:43=48.3014, 04:44=47.5601, 04:45=48.6681, 04:46=48.5517, 04:47=47.8804, 04:48=48.1469, 04:49=47.7325, 04:50=47.5302",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 5,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

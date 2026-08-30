@@ -1,0 +1,66 @@
+{
+  "tag": "dev-baseline",
+  "scenario_id": "scn_003",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_003",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The object-store index subsystem dropped below quorum and entered recovery mode during platform team storage maintenance, causing upstream unavailability and exhausting retries for the media-api.",
+      "confidence": 1.0,
+      "evidence": [
+        "2026-07-19T18:07:10Z  media-api  ERROR  object-store GET failed: 500 upstream_unavailable (retries exhausted)",
+        "object-store / availability_pct dropped sharply from ~99% to ~12% starting at 18:07 UTC",
+        "2026-07-19T18:06:00Z  object-store  ERROR  index subsystem dropped below quorum; entering recovery mode"
+      ],
+      "recommended_fix": "Coordinate with the platform team to restore the object-store index subsystem quorum and exit recovery mode. Follow up by investigating storage maintenance procedures to prevent quorum loss during future maintenance."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "We know media-api is returning 500s and storage maintenance occurred earlier. We should check the error logs for media-api to see the underlying exceptions and failing dependencies.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "media-api",
+          "start": "2026-07-19T17:35:00Z",
+          "end": "2026-07-19T18:27:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-07-19T18:07:10Z  media-api  ERROR  object-store GET failed: 500 upstream_unavailable (retries exhausted)",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The media-api error indicates an upstream failure to object-store; checking the object-store availability metric will confirm if storage maintenance caused a service outage.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "object-store",
+          "metric": "availability_pct",
+          "start": "2026-07-19T17:35:00Z",
+          "end": "2026-07-19T18:27:00Z"
+        },
+        "result": "object-store / availability_pct (percent)\nsummary: first=98.1106, last=12.1586, min=11.8105, max=101.9506, change -88.0% (first value -> most extreme value)\npoints: 17:35=98.1106, 17:36=98.0759, 17:37=98.5758, 17:38=99.7384, 17:39=99.3033, 17:40=101.647, 17:41=100.161, 17:42=99.8009, 17:43=98.6682, 17:44=98.1907, 17:45=100.522, 17:46=98.9872, 17:47=99.0404, 17:48=101.846, 17:49=100.092, 17:50=98.5275, 17:51=100.749, 17:52=98.1476, 17:53=101.546, 17:54=100.517, 17:55=99.9763, 17:56=98.4135, 17:57=101.951, 17:58=100.703, 17:59=101.027, 18:00=99.9987, 18:01=99.265, 18:02=98.1121, 18:03=99.6004, 18:04=101.567, 18:05=98.5568, 18:06=98.8669, 18:07=12.1804, 18:08=12.1733, 18:09=12.075, 18:10=11.8587, 18:11=11.8105, 18:12=12.1967, 18:13=12.0664, 18:14=12.0832, 18:15=12.179, 18:16=11.881, 18:17=12.0933, 18:18=11.9062, 18:19=11.8199, 18:20=12.031, 18:21=11.8521, 18:22=11.8254, 18:23=11.8592, 18:24=12.0636, 18:25=11.833, 18:26=12.1849, 18:27=12.1586",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The media‑api errors point to an upstream failure in object‑store, and the availability metric shows a sharp drop. To confirm the root cause we need to inspect object‑store logs for errors or maintenance events during the window.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "object-store",
+          "start": "2026-07-19T17:35:00Z",
+          "end": "2026-07-19T18:27:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-07-19T18:06:00Z  object-store  ERROR  index subsystem dropped below quorum; entering recovery mode",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 3,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

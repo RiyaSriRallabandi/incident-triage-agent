@@ -1,0 +1,101 @@
+{
+  "tag": "dev-baseline",
+  "scenario_id": "scn_027",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_027",
+    "outcome": "escalate",
+    "diagnosis": null,
+    "escalation": {
+      "reason": "The tool-call budget was exhausted before the investigation could fully localize the root cause of the periodic error spikes, which exhibit intermittent behavior with no correlated deploys or resource saturation.",
+      "evidence_gathered": [],
+      "suggested_next_steps": [
+        "Investigate background jobs, scheduled tasks, or cron triggers running every 90-120 minutes that might align with the error spike intervals.",
+        "Inspect upstream client traffic patterns and retry policies for periodicity.",
+        "Capture deeper traces or network telemetry during the next occurrence of the error spike window."
+      ]
+    },
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The orders-api is experiencing periodic error spikes, so I need to check its error rate and latency metrics over the incident window to understand the exact pattern and timing.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "orders-api",
+          "metric": "error_rate",
+          "start": "2027-01-05T01:00:00Z",
+          "end": "2027-01-05T04:30:00Z"
+        },
+        "result": "orders-api / error_rate (ratio)\nsummary: first=0.005, last=0.0604, min=0.0049, max=0.0622, change +1144.0% (first value -> most extreme value)\npoints: 01:00=0.005, 01:01=0.005, 01:02=0.005, 01:03=0.005, 01:04=0.0049, 01:05=0.005, 01:06=0.005, 01:07=0.0049, 01:08=0.005, 01:09=0.005, 01:10=0.0049, 01:11=0.005, 01:12=0.005, 01:13=0.0049, 01:14=0.005, 01:15=0.0051, 01:16=0.0049, 01:17=0.005, 01:18=0.0049, 01:19=0.005, 01:20=0.0051, 01:21=0.0049, 01:22=0.005, 01:23=0.005, 01:24=0.0049, 01:25=0.005, 01:26=0.005, 01:27=0.005, 01:28=0.0049, 01:29=0.0051, 01:30=0.005, 01:31=0.005, 01:32=0.005, 01:33=0.005, 01:34=0.0051, 01:35=0.0051, 01:36=0.0049, 01:37=0.0051, 01:38=0.0051, 01:39=0.005, 01:40=0.005, 01:41=0.005, 01:42=0.0051, 01:43=0.0049, 01:44=0.0051, 01:45=0.0051, 01:46=0.0049, 01:47=0.0049, 01:48=0.0049, 01:49=0.005, 01:50=0.0051, 01:51=0.005, 01:52=0.0051, 01:53=0.005, 01:54=0.005, 01:55=0.005, 01:56=0.005, 01:57=0.0051, 01:58=0.005, 01:59=0.0049, 02:00=0.005, 02:01=0.0617, 02:02=0.0607, 02:03=0.0617, 02:04=0.0599, 02:05=0.0605, 02:06=0.0622, 02:07=0.0602, 02:08=0.0607, 02:09=0.0606, 02:10=0.0618, 02:11=0.0598, 02:12=0.0606, 02:13=0.0605, 02:14=0.0609, 02:15=0.0599, 02:16=0.0598, 02:17=0.061, 02:18=0.0613, 02:19=0.0617, 02:20=0.0613, 02:21=0.0605, 02:22=0.0622, 02:23=0.0621, 02:24=0.0614, 02:25=0.0622, 02:26=0.0606, 02:27=0.0614, 02:28=0.0605, 02:29=0.0611, 02:30=0.0605, 02:31=0.06, 02:32=0.0622, 02:33=0.0608, 02:34=0.0611, 02:35=0.0621, 02:36=0.0617, 02:37=0.0609, 02:38=0.0602, 02:39=0.0619, 02:40=0.062, 02:41=0.0612, 02:42=0.0614, 02:43=0.0613, 02:44=0.0614, 02:45=0.0619, 02:46=0.0616, 02:47=0.0606, 02:48=0.061, 02:49=0.0607, 02:50=0.0599, 02:51=0.062, 02:52=0.0598, 02:53=0.0615, 02:54=0.0619, 02:55=0.0611, 02:56=0.06, 02:57=0.0604, 02:58=0.0599, 02:59=0.0605, 03:00=0.0601, 03:01=0.0613, 03:02=0.0598, 03:03=0.0598, 03:04=0.0598, 03:05=0.0607, 03:06=0.061, 03:07=0.061, 03:08=0.0617, 03:09=0.0605, 03:10=0.06, 03:11=0.0605, 03:12=0.0606, 03:13=0.0598, 03:14=0.0621, 03:15=0.0613, 03:16=0.0602, 03:17=0.062, 03:18=0.0609, 03:19=0.0613, 03:20=0.0606, 03:21=0.0603, 03:22=0.0607, 03:23=0.0599, 03:24=0.0612, 03:25=0.0605, 03:26=0.0606, 03:27=0.0612, 03:28=0.0612, 03:29=0.0603, 03:30=0.0612, 03:31=0.0616, 03:32=0.0606, 03:33=0.0616, 03:34=0.062, 03:35=0.0607, 03:36=0.0602, 03:37=0.0606, 03:38=0.0615, 03:39=0.0601, 03:40=0.0621, 03:41=0.062, 03:42=0.0616, 03:43=0.0598, 03:44=0.0612, 03:45=0.06, 03:46=0.0601, 03:47=0.0612, 03:48=0.0609, 03:49=0.0599, 03:50=0.0617, 03:51=0.0617, 03:52=0.062, 03:53=0.061, 03:54=0.0607, 03:55=0.0609, 03:56=0.0617, 03:57=0.0614, 03:58=0.06, 03:59=0.062, 04:00=0.0605, 04:01=0.0621, 04:02=0.0603, 04:03=0.0615, 04:04=0.0614, 04:05=0.0622, 04:06=0.0603, 04:07=0.0619, 04:08=0.061, 04:09=0.0613, 04:10=0.061, 04:11=0.0611, 04:12=0.0617, 04:13=0.0607, 04:14=0.0617, 04:15=0.0605, 04:16=0.0609, 04:17=0.0599, 04:18=0.0598, 04:19=0.0612, 04:20=0.0612, 04:21=0.0614, 04:22=0.0612, 04:23=0.0602, 04:24=0.0602, 04:25=0.0615, 04:26=0.0607, 04:27=0.062, 04:28=0.0618, 04:29=0.0621, 04:30=0.0604",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed the error rate on orders-api starts spiking around 02:00 UTC. Now I need to search the logs for orders-api around that time to identify the specific errors or downstream dependencies failing.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "orders-api",
+          "start": "2027-01-05T01:50:00Z",
+          "end": "2027-01-05T02:15:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2027-01-05T02:00:00Z  orders-api  WARN  error rate 6.1% for ~8 minutes then back to baseline (~0.5%)",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "We saw a log entry indicating an error rate spike in orders-api starting at 02:00 UTC, but we need to check logs for other errors or downstream dependencies during that time window to find the root cause.",
+        "tool": "search_logs",
+        "args": {
+          "query": "timeout",
+          "service": "orders-api",
+          "start": "2027-01-05T01:50:00Z",
+          "end": "2027-01-05T02:15:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "Since orders-api errors periodically without deploys, I should check the cpu_utilization_pct metric to see if resource exhaustion or CPU saturation correlates with the error spikes.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "orders-api",
+          "metric": "cpu_utilization_pct",
+          "start": "2027-01-05T01:00:00Z",
+          "end": "2027-01-05T04:30:00Z"
+        },
+        "result": "orders-api / cpu_utilization_pct (percent)\nsummary: first=50.9741, last=51.1473, min=49.0294, max=52.9999, change +4.0% (first value -> most extreme value)\npoints: 01:00=50.9741, 01:01=50.6867, 01:02=50.7638, 01:03=50.9949, 01:04=49.0863, 01:05=50.5995, 01:06=49.5515, 01:07=49.3728, 01:08=49.3269, 01:09=50.6408, 01:10=49.849, 01:11=50.137, 01:12=49.0294, 01:13=50.6591, 01:14=49.7375, 01:15=50.5904, 01:16=50.3284, 01:17=50.8371, 01:18=50.8439, 01:19=50.6905, 01:20=49.4194, 01:21=50.0883, 01:22=50.2071, 01:23=49.0372, 01:24=50.7842, 01:25=50.8195, 01:26=49.8618, 01:27=49.2053, 01:28=50.4272, 01:29=50.7675, 01:30=49.2178, 01:31=49.7997, 01:32=50.1102, 01:33=50.5703, 01:34=50.9074, 01:35=50.1829, 01:36=50.3605, 01:37=50.1221, 01:38=49.4948, 01:39=49.9448, 01:40=50.6657, 01:41=50.1685, 01:42=50.7213, 01:43=49.3746, 01:44=50.5506, 01:45=49.5012, 01:46=50.3831, 01:47=50.7723, 01:48=49.381, 01:49=50.4869, 01:50=50.7889, 01:51=50.1084, 01:52=50.0687, 01:53=50.9894, 01:54=50.9826, 01:55=50.4654, 01:56=50.5105, 01:57=50.4206, 01:58=49.1262, 01:59=50.5296, 02:00=50.6683, 02:01=50.5849, 02:02=50.0157, 02:03=50.2963, 02:04=52.0138, 02:05=51.2317, 02:06=50.9849, 02:07=52.4054, 02:08=52.1333, 02:09=52.453, 02:10=52.9245, 02:11=52.4836, 02:12=51.6353, 02:13=52.9457, 02:14=51.0662, 02:15=51.0591, 02:16=52.7721, 02:17=51.1499, 02:18=52.7587, 02:19=52.2221, 02:20=52.539, 02:21=52.2458, 02:22=51.4265, 02:23=51.1646, 02:24=52.5944, 02:25=51.5482, 02:26=52.9526, 02:27=52.6937, 02:28=52.6835, 02:29=52.8283, 02:30=52.7701, 02:31=51.6802, 02:32=52.1492, 02:33=52.3876, 02:34=51.2288, 02:35=51.4899, 02:36=52.1159, 02:37=51.0043, 02:38=52.0655, 02:39=52.3894, 02:40=51.3763, 02:41=52.5337, 02:42=51.9982, 02:43=51.2348, 02:44=52.3615, 02:45=52.0065, 02:46=52.1544, 02:47=51.8978, 02:48=52.7488, 02:49=51.1506, 02:50=52.8172, 02:51=52.2446, 02:52=51.1381, 02:53=52.8275, 02:54=52.3597, 02:55=52.5109, 02:56=51.57, 02:57=51.2271, 02:58=51.2496, 02:59=51.1521, 03:00=51.8681, 03:01=52.9636, 03:02=52.1253, 03:03=52.0339, 03:04=52.7172, 03:05=52.3779, 03:06=51.9822, 03:07=52.761, 03:08=52.5376, 03:09=52.3571, 03:10=51.168, 03:11=51.7244, 03:12=52.3091, 03:13=51.4767, 03:14=51.2559, 03:15=51.2511, 03:16=51.646, 03:17=52.607, 03:18=52.2304, 03:19=51.6375, 03:20=51.6293, 03:21=51.9491, 03:22=51.0603, 03:23=52.6072, 03:24=51.6977, 03:25=51.6919, 03:26=51.7166, 03:27=51.8805, 03:28=52.1414, 03:29=51.478, 03:30=52.6176, 03:31=51.3495, 03:32=52.9806, 03:33=52.5141, 03:34=51.897, 03:35=51.3826, 03:36=51.7236, 03:37=52.7122, 03:38=51.5547, 03:39=51.4062, 03:40=51.8394, 03:41=52.6067, 03:42=51.7031, 03:43=52.8585, 03:44=52.3398, 03:45=52.0627, 03:46=51.7034, 03:47=52.0392, 03:48=51.7476, 03:49=52.501, 03:50=51.7353, 03:51=52.9999, 03:52=52.9979, 03:53=52.4709, 03:54=52.055, 03:55=51.2281, 03:56=51.2371, 03:57=52.407, 03:58=51.3684, 03:59=51.0007, 04:00=51.664, 04:01=51.498, 04:02=51.2177, 04:03=52.4551, 04:04=52.1838, 04:05=52.0317, 04:06=51.8254, 04:07=51.677, 04:08=51.2941, 04:09=52.4128, 04:10=51.0964, 04:11=52.8269, 04:12=51.8975, 04:13=51.2219, 04:14=51.9237, 04:15=52.1175, 04:16=52.3208, 04:17=51.6379, 04:18=52.7205, 04:19=51.2435, 04:20=52.7593, 04:21=51.0093, 04:22=52.4432, 04:23=51.4868, 04:24=51.293, 04:25=52.4699, 04:26=51.4877, 04:27=51.5684, 04:28=51.597, 04:29=51.1553, 04:30=51.1473",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "We should check the p95_latency_ms metric for orders-api over the incident window to see how latency behaves during the periodic error spikes.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "orders-api",
+          "metric": "p95_latency_ms",
+          "start": "2027-01-05T01:00:00Z",
+          "end": "2027-01-05T04:30:00Z"
+        },
+        "result": "orders-api / p95_latency_ms (milliseconds)\nsummary: first=158.0402, last=172.9508, min=156.8538, max=178.4817, change +12.9% (first value -> most extreme value)\npoints: 01:00=158.04, 01:01=159.584, 01:02=158.709, 01:03=161.4, 01:04=160.108, 01:05=158.571, 01:06=161.846, 01:07=160.357, 01:08=157.735, 01:09=162.6, 01:10=160.304, 01:11=162.243, 01:12=158.258, 01:13=162.862, 01:14=162.721, 01:15=159.322, 01:16=160.261, 01:17=163.129, 01:18=157.286, 01:19=161.374, 01:20=161.804, 01:21=161.34, 01:22=161.598, 01:23=161.038, 01:24=161.8, 01:25=162.686, 01:26=163.068, 01:27=158.736, 01:28=158.736, 01:29=160.076, 01:30=156.854, 01:31=162.944, 01:32=161.79, 01:33=159.285, 01:34=161.325, 01:35=160.857, 01:36=160.029, 01:37=163.196, 01:38=160.64, 01:39=159.815, 01:40=161.356, 01:41=158.513, 01:42=157.415, 01:43=157.879, 01:44=162.925, 01:45=159.064, 01:46=156.955, 01:47=157.744, 01:48=157.846, 01:49=158.899, 01:50=159.956, 01:51=162.689, 01:52=159.357, 01:53=162.508, 01:54=160.995, 01:55=156.931, 01:56=162.174, 01:57=159.721, 01:58=162.407, 01:59=160.48, 02:00=158.897, 02:01=165.625, 02:02=167.567, 02:03=170.879, 02:04=168.761, 02:05=171.68, 02:06=174.887, 02:07=175.213, 02:08=173.554, 02:09=175.537, 02:10=176.651, 02:11=175.104, 02:12=176.322, 02:13=175.202, 02:14=177.019, 02:15=172.882, 02:16=175.362, 02:17=176.286, 02:18=175.846, 02:19=171.884, 02:20=177.242, 02:21=178.478, 02:22=173.796, 02:23=173.928, 02:24=177.603, 02:25=175.378, 02:26=178.157, 02:27=173.205, 02:28=178.295, 02:29=172.716, 02:30=176.135, 02:31=173.925, 02:32=175.642, 02:33=177.489, 02:34=175.196, 02:35=175.13, 02:36=171.859, 02:37=172.873, 02:38=174.394, 02:39=177.766, 02:40=177.863, 02:41=176.082, 02:42=172.94, 02:43=177.924, 02:44=172.527, 02:45=177.607, 02:46=174.368, 02:47=173.352, 02:48=176.795, 02:49=176.25, 02:50=177.789, 02:51=175.194, 02:52=177.044, 02:53=172.772, 02:54=174.967, 02:55=173.229, 02:56=175.423, 02:57=173.833, 02:58=172.413, 02:59=174.743, 03:00=172.004, 03:01=177.055, 03:02=171.883, 03:03=175.285, 03:04=174.49, 03:05=178.197, 03:06=177.477, 03:07=176.435, 03:08=174.645, 03:09=177.58, 03:10=177.388, 03:11=175.567, 03:12=173.902, 03:13=178.028, 03:14=176.461, 03:15=174.71, 03:16=178.331, 03:17=172.117, 03:18=172.948, 03:19=175.793, 03:20=177.711, 03:21=173.632, 03:22=175.931, 03:23=173.893, 03:24=173.968, 03:25=174.613, 03:26=177.397, 03:27=177.126, 03:28=176.753, 03:29=175.905, 03:30=173.87, 03:31=177.481, 03:32=174.51, 03:33=173.602, 03:34=172.381, 03:35=174.565, 03:36=173.237, 03:37=172.326, 03:38=177.598, 03:39=175.445, 03:40=171.94, 03:41=176.379, 03:42=173.958, 03:43=175.525, 03:44=175.014, 03:45=177.111, 03:46=174.798, 03:47=172.705, 03:48=175.307, 03:49=174.256, 03:50=171.726, 03:51=172.633, 03:52=175.308, 03:53=172.79, 03:54=175.447, 03:55=177.104, 03:56=174.997, 03:57=178.482, 03:58=173.339, 03:59=175.636, 04:00=174.898, 04:01=173.911, 04:02=177.8, 04:03=176.473, 04:04=176.48, 04:05=176.609, 04:06=172.303, 04:07=175.485, 04:08=173.231, 04:09=175.643, 04:10=175.214, 04:11=175.679, 04:12=177.179, 04:13=173.004, 04:14=176.211, 04:15=173.682, 04:16=176.581, 04:17=172.738, 04:18=176.369, 04:19=173.554, 04:20=172.5, 04:21=177.608, 04:22=174.922, 04:23=174.567, 04:24=172.16, 04:25=173.003, 04:26=176.828, 04:27=177.604, 04:28=172.439, 04:29=178.469, 04:30=172.951",
+        "error": false
+      },
+      {
+        "step": 6,
+        "plan_reasoning": "Since orders-api errors periodically every 90-120 minutes without deploys or CPU exhaustion, I should check the runbook library for known patterns related to periodic error spikes.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "periodic error spikes"
+        },
+        "result": "5 runbook section(s):\n\n[1] cpu-saturation.md > How to confirm (score 0.4612)\n- Confirm the spike is CPU specifically, not memory or I/O wait.\n- Correlate the onset with deploy history and with any change in request mix.\n- Capture a CPU profile or flame graph if the service is still up; look for a\n  single dominant frame.\n- Check for log lines naming a slow rule, slow query, or evaluation-budget\n  exceeded.\n\n[2] when-to-escalate-inconclusive-evidence.md > Escalate when (score 0.4557)\n- The error or latency change is modest and intermittent, spread across most\n  hosts, with no single host or shard dominating.\n- No deploy, config change, or operator action correlates with the onset.\n- Downstream dependencies and shared infrastructure all report healthy.\n- Resource signals are flat: CPU, memory, connection pools, and queues are within\n  normal range.\n- The incident partially self-recovers without any action taken.\n- Two or more plausible causes fit the evidence equally well and cannot be\n  distinguished without data you do not have.\n\n[3] retry-storm-amplification.md > Symptoms (score 0.4338)\nA small latency increase in a downstream dependency is followed by a\ndisproportionately large spike in traffic to that dependency and in resource use\non the caller. Outbound request rate from the caller rises well above its inbound\nrequest rate. The caller degrades or fails even though the downstream problem was\nminor.\n\n[4] retry-storm-amplification.md > Likely causes (score 0.3776)\n- Client retries with no backoff, no jitter, and no retry budget. Every slow call\n  becomes several calls, multiplying load by the retry count.\n- Retries stacked at multiple layers (library, service mesh, gateway) so the\n  amplification compounds.\n- Timeouts set longer than the caller's own deadline, so retries pile up while the\n  original request is still waiting.\n\n[5] retry-storm-amplification.md > How to confirm (score 0.3742)\n- Compare the caller's outbound request rate to its inbound request rate. A ratio\n  well above 1 during the incident indicates amplification.\n- Look for log lines showing repeated attempts against the same dependency.\n- Check the retry configuration: fixed-interval or immediate retries, and absence\n  of a circuit breaker, are the tell.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 6,
+    "hit_budget_cap": true
+  },
+  "error": null
+}

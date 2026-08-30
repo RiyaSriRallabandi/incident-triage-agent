@@ -1,0 +1,92 @@
+{
+  "tag": "dev-baseline",
+  "scenario_id": "scn_024",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_024",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "CDN-edge failure in the EU region causing asset serving errors and high latency for static assets while origin and API endpoints remain unaffected",
+      "confidence": 0.95,
+      "evidence": [
+        "EU users report site looks broken - images and styles not loading starting around 16:20 UTC",
+        "static-assets / asset_error_rate_eu spiked from 0.0051 to 0.1204 at 16:21 UTC and reached ~0.35",
+        "static-assets / asset_p95_latency_ms_eu jumped from ~120ms to over 4000ms starting at 16:22 UTC",
+        "2026-12-18T16:26:00Z static-assets INFO origin asset serving is healthy; API endpoints unaffected; issue is CDN-edge only, EU only"
+      ],
+      "recommended_fix": "Investigate CDN-edge caching configurations, routing rules, and node health specifically for the EU region. Follow up by checking CDN vendor status and edge node logs."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "EU users are reporting broken images and styles starting around 16:20 UTC, while static-assets metrics are available for the EU region. I will query the static-assets asset_error_rate_eu metric to confirm the failure pattern and timing.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "static-assets",
+          "metric": "asset_error_rate_eu",
+          "start": "2026-12-18T15:50:00Z",
+          "end": "2026-12-18T16:54:00Z"
+        },
+        "result": "static-assets / asset_error_rate_eu (ratio)\nsummary: first=0.0049, last=0.3544, min=0.0049, max=0.3567, change +7179.6% (first value -> most extreme value)\npoints: 15:50=0.0049, 15:51=0.005, 15:52=0.005, 15:53=0.0049, 15:54=0.0051, 15:55=0.0051, 15:56=0.0051, 15:57=0.0051, 15:58=0.0051, 15:59=0.0049, 16:00=0.005, 16:01=0.0049, 16:02=0.0051, 16:03=0.0049, 16:04=0.0049, 16:05=0.0051, 16:06=0.0049, 16:07=0.005, 16:08=0.0049, 16:09=0.0051, 16:10=0.0051, 16:11=0.0051, 16:12=0.0051, 16:13=0.0049, 16:14=0.0049, 16:15=0.0049, 16:16=0.0049, 16:17=0.005, 16:18=0.005, 16:19=0.005, 16:20=0.0051, 16:21=0.1204, 16:22=0.2319, 16:23=0.3434, 16:24=0.3486, 16:25=0.3483, 16:26=0.3442, 16:27=0.3507, 16:28=0.3561, 16:29=0.3567, 16:30=0.3441, 16:31=0.3557, 16:32=0.3545, 16:33=0.3463, 16:34=0.3519, 16:35=0.3493, 16:36=0.354, 16:37=0.3475, 16:38=0.3483, 16:39=0.3446, 16:40=0.3517, 16:41=0.3452, 16:42=0.345, 16:43=0.3476, 16:44=0.3524, 16:45=0.3458, 16:46=0.3556, 16:47=0.3521, 16:48=0.3491, 16:49=0.3493, 16:50=0.3456, 16:51=0.3553, 16:52=0.348, 16:53=0.3548, 16:54=0.3544",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed that asset_error_rate_eu for static-assets spikes starting at 16:21 UTC. I will now search the static-assets logs around this time to identify the specific errors.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "static-assets",
+          "start": "2026-12-18T16:15:00Z",
+          "end": "2026-12-18T16:30:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "Since searching for the generic term 'error' in static-assets logs yielded no results, I will query the other available static-assets metric, asset_p95_latency_ms_eu, to check if latency degradation correlates with the error spike.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "static-assets",
+          "metric": "asset_p95_latency_ms_eu",
+          "start": "2026-12-18T15:50:00Z",
+          "end": "2026-12-18T16:54:00Z"
+        },
+        "result": "static-assets / asset_p95_latency_ms_eu (milliseconds)\nsummary: first=120.8842, last=3988.3423, min=117.8598, max=4079.548, change +3274.8% (first value -> most extreme value)\npoints: 15:50=120.884, 15:51=118.409, 15:52=121.77, 15:53=121.457, 15:54=122.057, 15:55=120.555, 15:56=118.776, 15:57=119.52, 15:58=121.045, 15:59=122.282, 16:00=121.605, 16:01=117.998, 16:02=119.714, 16:03=121.907, 16:04=117.86, 16:05=119.26, 16:06=118.843, 16:07=119.7, 16:08=118.249, 16:09=121.216, 16:10=120.144, 16:11=118.913, 16:12=119.346, 16:13=122.027, 16:14=120.238, 16:15=119.691, 16:16=120.067, 16:17=120.563, 16:18=119.805, 16:19=118.49, 16:20=121.112, 16:21=120.231, 16:22=1421.94, 16:23=2667.64, 16:24=3974.49, 16:25=4061.41, 16:26=3988.94, 16:27=3951.8, 16:28=3989.79, 16:29=4030.51, 16:30=3942.46, 16:31=3947.61, 16:32=3933.24, 16:33=3991.73, 16:34=4079.55, 16:35=4023.03, 16:36=4008.21, 16:37=3969.89, 16:38=4038.02, 16:39=4025.19, 16:40=4013.63, 16:41=3949.07, 16:42=3967.28, 16:43=4045.59, 16:44=4033.72, 16:45=4051.82, 16:46=4024.9, 16:47=4027.79, 16:48=4069.89, 16:49=3943.85, 16:50=3980.91, 16:51=4057.28, 16:52=3953.75, 16:53=3921.55, 16:54=3988.34",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "Since static-assets logs returned no matching lines for 'error', I will search for recent deployments on the static-assets service to see if a configuration or asset change coincided with the latency and error rate spike.",
+        "tool": "get_recent_deploys",
+        "args": {
+          "service": "static-assets",
+          "start": "2026-12-18T15:50:00Z",
+          "end": "2026-12-18T16:54:00Z"
+        },
+        "result": "No deploys found in the given scope.",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "Since no logs were found with the term 'error', I will search the static-assets logs without a query string or with a broader search to see any activity or failure indications during the incident window.",
+        "tool": "search_logs",
+        "args": {
+          "query": "EU",
+          "service": "static-assets",
+          "start": "2026-12-18T16:15:00Z",
+          "end": "2026-12-18T16:30:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-12-18T16:26:00Z  static-assets  INFO  origin asset serving is healthy; API endpoints unaffected; issue is CDN-edge only, EU only",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 5,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

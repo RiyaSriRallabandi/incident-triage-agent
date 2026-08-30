@@ -1,0 +1,52 @@
+{
+  "tag": "dev-baseline",
+  "scenario_id": "scn_014",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_014",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The product-api refactor deployed at 10:20 caused cache hit rate to drop by 96.9%, leading to a massive spike in read load on products-db and causing product pages to time out.",
+      "confidence": 0.99,
+      "evidence": [
+        "1 deploy(s): 2026-11-13T10:20:00Z product-api e4f5a6b refactor product detail assembly",
+        "product-api / cache_hit_rate change -96.9% dropping from ~0.94 to 0.0295 following the deploy at 10:20",
+        "Database team reports product-api read load is way up"
+      ],
+      "recommended_fix": "Rollback the product-api refactor deploy (e4f5a6b) to restore the cache hit rate. Follow up by investigating the caching logic regression introduced in the product detail assembly refactor."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "Product pages are slow following a product-api deploy and increased read load on products-db. I will check the recent deploys for product-api to see what changed around 10:20.",
+        "tool": "get_recent_deploys",
+        "args": {
+          "service": "product-api",
+          "start": "2026-11-13T09:50:00Z",
+          "end": "2026-11-13T10:44:00Z"
+        },
+        "result": "1 deploy(s):\n2026-11-13T10:20:00Z  product-api  e4f5a6b  refactor product detail assembly",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We know a deploy occurred at 10:20 and database read load is up. I will now query the product-api metrics for cache hit rate and latency to see the impact of the refactor.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "product-api",
+          "metric": "cache_hit_rate",
+          "start": "2026-11-13T09:50:00Z",
+          "end": "2026-11-13T10:44:00Z"
+        },
+        "result": "product-api / cache_hit_rate (ratio)\nsummary: first=0.937, last=0.0296, min=0.0295, max=0.9577, change -96.9% (first value -> most extreme value)\npoints: 09:50=0.937, 09:51=0.9533, 09:52=0.9521, 09:53=0.9305, 09:54=0.9419, 09:55=0.9345, 09:56=0.9577, 09:57=0.9328, 09:58=0.9455, 09:59=0.9433, 10:00=0.9385, 10:01=0.9511, 10:02=0.9447, 10:03=0.9274, 10:04=0.9494, 10:05=0.9481, 10:06=0.9521, 10:07=0.9454, 10:08=0.9349, 10:09=0.9453, 10:10=0.9571, 10:11=0.9392, 10:12=0.9531, 10:13=0.9563, 10:14=0.9359, 10:15=0.9437, 10:16=0.9323, 10:17=0.9576, 10:18=0.9462, 10:19=0.9275, 10:20=0.9362, 10:21=0.9226, 10:22=0.4896, 10:23=0.0301, 10:24=0.0305, 10:25=0.0304, 10:26=0.0303, 10:27=0.03, 10:28=0.0298, 10:29=0.0295, 10:30=0.0299, 10:31=0.0302, 10:32=0.0301, 10:33=0.0299, 10:34=0.0303, 10:35=0.0295, 10:36=0.0303, 10:37=0.0303, 10:38=0.0297, 10:39=0.0295, 10:40=0.0297, 10:41=0.0302, 10:42=0.0299, 10:43=0.0299, 10:44=0.0296",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 2,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

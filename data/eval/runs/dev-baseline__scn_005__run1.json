@@ -1,0 +1,106 @@
+{
+  "tag": "dev-baseline",
+  "scenario_id": "scn_005",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_005",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "A scheduled backbone capacity audit on core routers caused authoritative nameservers to become unreachable from the edge, resulting in a collapse of DNS resolution and leaving edge load balancers unable to reach backends.",
+      "confidence": 0.95,
+      "evidence": [
+        "edge-lb / http_5xx_rate metric spiked from 0.003 to 0.9591 at 15:43 UTC",
+        "dns-auth / dns_resolution_success_rate metric dropped sharply from ~1.0 to 0.0204 at 15:42 UTC",
+        "dns-auth log: authoritative nameservers unreachable from edge; health checks failing at 15:41 UTC",
+        "network-automation log: scheduled backbone capacity audit starting on core routers at 15:30 UTC"
+      ],
+      "recommended_fix": "Investigate the routing or configuration changes applied during the backbone capacity audit on core routers. Revert or correct the core router configurations to restore reachability to the authoritative nameservers, and follow up by reviewing network automation audit procedures to prevent unintended blocking of internal/edge traffic."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The edge load balancers are returning 503s for all traffic and cannot reach backends, so checking the http_5xx_rate metric for edge-lb will quantify the exact impact and timeline.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "edge-lb",
+          "metric": "http_5xx_rate",
+          "start": "2026-09-14T15:10:00Z",
+          "end": "2026-09-14T16:02:00Z"
+        },
+        "result": "edge-lb / http_5xx_rate (ratio)\nsummary: first=0.003, last=0.9562, min=0.003, max=0.9885, change +32850.0% (first value -> most extreme value)\npoints: 15:10=0.003, 15:11=0.003, 15:12=0.003, 15:13=0.003, 15:14=0.003, 15:15=0.003, 15:16=0.003, 15:17=0.003, 15:18=0.003, 15:19=0.003, 15:20=0.003, 15:21=0.003, 15:22=0.003, 15:23=0.003, 15:24=0.003, 15:25=0.003, 15:26=0.003, 15:27=0.003, 15:28=0.003, 15:29=0.003, 15:30=0.003, 15:31=0.003, 15:32=0.003, 15:33=0.003, 15:34=0.003, 15:35=0.003, 15:36=0.003, 15:37=0.003, 15:38=0.003, 15:39=0.003, 15:40=0.0031, 15:41=0.003, 15:42=0.003, 15:43=0.9591, 15:44=0.9823, 15:45=0.9742, 15:46=0.9798, 15:47=0.9812, 15:48=0.9543, 15:49=0.9541, 15:50=0.9885, 15:51=0.9521, 15:52=0.967, 15:53=0.9763, 15:54=0.9754, 15:55=0.9556, 15:56=0.9845, 15:57=0.9672, 15:58=0.9662, 15:59=0.9628, 16:00=0.9564, 16:01=0.9558, 16:02=0.9562",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed that edge-lb 5xx rates spiked sharply at 15:43 UTC. Since edge load balancers cannot reach any backends and dns-auth has a dns_resolution_success_rate metric, we should check dns-auth metrics to see if DNS resolution failed around the same time.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "dns-auth",
+          "metric": "dns_resolution_success_rate",
+          "start": "2026-09-14T15:10:00Z",
+          "end": "2026-09-14T16:02:00Z"
+        },
+        "result": "dns-auth / dns_resolution_success_rate (ratio)\nsummary: first=1.0008, last=0.0201, min=0.0196, max=1.0189, change -98.0% (first value -> most extreme value)\npoints: 15:10=1.0008, 15:11=1.0118, 15:12=0.9855, 15:13=1.0189, 15:14=1.0138, 15:15=1.0058, 15:16=0.98, 15:17=0.9933, 15:18=0.9868, 15:19=1.0095, 15:20=0.9957, 15:21=1.0188, 15:22=1.0189, 15:23=0.9879, 15:24=1.0142, 15:25=1.0023, 15:26=0.991, 15:27=1.0125, 15:28=0.9948, 15:29=1.0003, 15:30=0.9815, 15:31=0.9887, 15:32=1.0066, 15:33=0.9873, 15:34=1.0026, 15:35=0.9994, 15:36=1.0188, 15:37=0.997, 15:38=1.0093, 15:39=0.9976, 15:40=0.9882, 15:41=0.9897, 15:42=0.0204, 15:43=0.0201, 15:44=0.0199, 15:45=0.0199, 15:46=0.02, 15:47=0.0204, 15:48=0.02, 15:49=0.0199, 15:50=0.0196, 15:51=0.0202, 15:52=0.0201, 15:53=0.02, 15:54=0.0201, 15:55=0.0199, 15:56=0.02, 15:57=0.0197, 15:58=0.0199, 15:59=0.0197, 16:00=0.0197, 16:01=0.0203, 16:02=0.0201",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "We observed that dns_resolution_success_rate dropped sharply at 15:42 UTC, coinciding with the edge-lb 5xx spike. To understand why DNS resolution failed, we should search the dns-auth logs around this timeframe.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "dns-auth",
+          "start": "2026-09-14T15:40:00Z",
+          "end": "2026-09-14T15:45:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-09-14T15:41:00Z  dns-auth  ERROR  authoritative nameservers unreachable from edge; health checks failing",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "We confirmed that dns-auth began failing at 15:42 UTC due to authoritative nameservers becoming unreachable from the edge. Let's check network-automation or search its logs around the scheduled backbone capacity audit to find the root cause.",
+        "tool": "search_logs",
+        "args": {
+          "query": "audit",
+          "service": "network-automation",
+          "start": "2026-09-14T15:30:00Z",
+          "end": "2026-09-14T15:45:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-09-14T15:30:00Z  network-automation  INFO  scheduled backbone capacity audit starting on core routers",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "We saw the backbone capacity audit starting at 15:30 UTC, and dns-auth failed right after at 15:42 UTC. Let's search network-automation logs around 15:40-15:45 UTC to see if the audit or related routing changes caused the nameserver unreachability.",
+        "tool": "search_logs",
+        "args": {
+          "query": "core routers",
+          "service": "network-automation",
+          "start": "2026-09-14T15:30:00Z",
+          "end": "2026-09-14T15:45:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-09-14T15:30:00Z  network-automation  INFO  scheduled backbone capacity audit starting on core routers",
+        "error": false
+      },
+      {
+        "step": 6,
+        "plan_reasoning": "We have established that the backbone capacity audit started at 15:30 UTC and DNS resolution and edge backends failed starting at 15:42 UTC. Let's search network-automation logs for any error or completion messages around 15:40 to 15:45 UTC to pinpoint the exact network change that severed the authoritative nameservers.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "network-automation",
+          "start": "2026-09-14T15:40:00Z",
+          "end": "2026-09-14T15:45:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 6,
+    "hit_budget_cap": true
+  },
+  "error": null
+}

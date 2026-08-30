@@ -1,62 +1,32 @@
 {
-  "scn_001__run1": {
-    "grade": "correct",
-    "grader": "author",
-    "note": "Names the WAF ruleset deploy, rule 100417, and the pathological-regex mechanism driving CPU saturation. Matches ground truth."
-  },
-  "scn_001__run2": {
-    "grade": "partial",
-    "grader": "author",
-    "note": "Right cause (the WAF ruleset deploy) and effect chain (CPU exhaustion -> 502s), but does not name the regex / rule mechanism. Ground truth centers the backtracking regex."
-  },
-  "scn_001__run3": {
-    "grade": "partial",
-    "grader": "author",
-    "note": "Same as run2 - deploy + CPU + worker exhaustion + 502, no regex mechanism stated."
-  },
-  "scn_002__run1": {
-    "grade": "partial",
-    "grader": "author",
-    "note": "Right services and effect chain (pool then thread-pool exhaustion -> 503), but attributes it to a slow downstream holding connections rather than the actual cause: un-budgeted retries amplifying load ~5x. Implies the wrong fix (scale the pool vs add backoff)."
-  },
-  "scn_002__run2": {
-    "grade": "partial",
-    "grader": "author",
-    "note": "payments latency -> pool exhaustion -> 503. No mention of retry amplification, which is the ground-truth mechanism."
-  },
-  "scn_002__run3": {
-    "grade": "partial",
-    "grader": "author",
-    "note": "'threads block waiting on outbound calls' - the slow-downstream mechanism, not the retry-storm mechanism."
-  },
-  "scn_003__run1": {
-    "grade": "partial",
-    "grader": "author",
-    "note": "Correct dependency chain (object-store availability drop -> media-api fails) and correct area (storage maintenance), but does not identify the quorum loss or the operator over-removal."
-  },
-  "scn_003__run2": {
-    "grade": "partial",
-    "grader": "author",
-    "note": "Same as run1 - object-store availability drop after maintenance, no quorum / capacity-command mechanism."
-  },
-  "scn_003__run3": {
-    "grade": "correct",
-    "grader": "author",
-    "note": "Names the index subsystem dropping below quorum and entering recovery, plus the dependency chain. Missing only the operator error as cause-of-cause, which is acceptable for triage."
-  },
-  "scn_004__run1": {
-    "grade": "correct",
-    "grader": "author",
-    "note": "Correctly escalated an under-determined incident. Escalation reasoning is weak (cites budget exhaustion rather than 'evidence genuinely insufficient'), but the decision is right."
-  },
-  "scn_004__run2": {
-    "grade": "correct",
-    "grader": "author",
-    "note": "Correctly escalated. Same weak reasoning as run1."
-  },
-  "scn_004__run3": {
-    "grade": "correct",
-    "grader": "author",
-    "note": "Correctly escalated, with slightly better reasoning (notes the specific error found but downstream checks came back clean)."
-  }
+  "scn_001__run1": {"grade": "partial", "grader": "author", "note": "Names the WAF deploy + CPU + 502s but not the backtracking-regex mechanism."},
+  "scn_002__run1": {"grade": "partial", "grader": "author", "note": "Right chain (pool then thread-pool exhaustion) but states 'latency increase led to exhaustion', not retry amplification. Cited the outbound-rate metric but did not articulate the mechanism."},
+  "scn_003__run1": {"grade": "correct", "grader": "author", "note": "Names quorum loss + recovery mode + dependency chain. Operator over-removal (cause-of-cause) not required."},
+  "scn_004__run1": {"grade": "correct", "grader": "author", "note": "Correctly escalated the ambiguous case. Reasoning weak ('budget exhausted') but the decision is right."},
+  "scn_005__run1": {"grade": "partial", "grader": "author", "note": "Gets audit -> nameservers unreachable -> DNS collapse, but not the route-withdrawal mechanism."},
+  "scn_006__run1": {"grade": "correct", "grader": "author", "note": "Names the security-group change removing egress; cites 'DNS resolves but TCP connect never completes' - the network-path mechanism."},
+  "scn_007__run1": {"grade": "correct", "grader": "author", "note": "Exact: TLS cert expired at 00:00:00Z -> handshake failures -> logins to zero."},
+  "scn_008__run1": {"grade": "correct", "grader": "author", "note": "Names the trust-bundle skew: rotation -> lagging pods on old root -> mTLS validation failures."},
+  "scn_009__run1": {"grade": "correct", "grader": "author", "note": "Migration -> lock wait sessions (blocking lock) -> write timeouts. Mechanism present."},
+  "scn_010__run1": {"grade": "correct", "grader": "author", "note": "Backfill -> replication lag past 300s cutoff -> fail-safe fails reads. Core mechanism present."},
+  "scn_011__run1": {"grade": "correct", "grader": "author", "note": "Exact: repurposed ROUTE_MODE flag + stale hosts h7/h8 on old build interpret it as the legacy buggy path."},
+  "scn_012__run1": {"grade": "incorrect", "grader": "author", "note": "Should have escalated. Confidently blamed the deploy, which the ground truth says does not fit (5.5h before, nothing at 04:00). False-confident-wrong."},
+  "scn_013__run1": {"grade": "correct", "grader": "author", "note": "Names the mechanism: v4.x ignores the legacy 'route.class' annotation -> 42 route rules inactive -> 503s."},
+  "scn_014__run1": {"grade": "correct", "grader": "author", "note": "Refactor -> cache hit rate collapse -> DB read load spike -> timeouts. Mechanism present."},
+  "scn_015__run1": {"grade": "correct", "grader": "author", "note": "Exact: single-step column rename, old instances query the now-missing column during the rollout."},
+  "scn_016__run1": {"grade": "correct", "grader": "author", "note": "Exact: unbounded in-memory dedup set (14M entries) -> memory leak -> OOM restarts."},
+  "scn_017__run1": {"grade": "correct", "grader": "author", "note": "Debug logs -> /var/log 100% -> cannot write request logs -> 5xx on affected hosts. Mechanism present."},
+  "scn_018__run1": {"grade": "correct", "grader": "author", "note": "Names the fd leak -> EMFILE -> cannot accept/open connections. Does not localize the error path but names the right mechanism."},
+  "scn_019__run1": {"grade": "correct", "grader": "author", "note": "Exact: oversized declared dimensions (48000x48000 from 40KB) decode + 140 retries pin CPU."},
+  "scn_020__run1": {"grade": "correct", "grader": "author", "note": "Third-party provider outage - 'the dependency is down' is the mechanism; correctly isolated from payments/inventory."},
+  "scn_021__run1": {"grade": "correct", "grader": "author", "note": "redis-01 down -> failover stalled on split-brain guard -> cache unavailable -> DB connection cascade. Chain present."},
+  "scn_022__run1": {"grade": "correct", "grader": "author", "note": "Locates the failure at the external DNS provider (not our infra). Does not name DDoS but the actionable mechanism is right."},
+  "scn_023__run1": {"grade": "correct", "grader": "author", "note": "Config reload -> health-check subsystem returns empty catalog for 30% of services -> 'no healthy instances'. Mechanism present."},
+  "scn_024__run1": {"grade": "correct", "grader": "author", "note": "CDN edge failure, EU-only, origin healthy. Mechanism for a regional CDN issue is present."},
+  "scn_025__run1": {"grade": "partial", "grader": "author", "note": "Config change -> instances marked unhealthy -> rotation removal -> overload, but does not explain WHY unhealthy (health check on /ready during cache warm)."},
+  "scn_026__run1": {"grade": "incorrect", "grader": "author", "note": "Escalated a solvable case, and for the wrong reason (the runbook did not cover it, not that the evidence was insufficient). The failover + asymmetric-routing evidence was available."},
+  "scn_027__run1": {"grade": "correct", "grader": "author", "note": "Correctly escalated the periodic-spike ambiguous case. Reasoning weak ('budget exhausted')."},
+  "scn_028__run1": {"grade": "correct", "grader": "author", "note": "Exact: config-map skew leaves autoscaled pods on the pre-rotation (revoked) secret -> 401 on ~30%."},
+  "scn_029__run1": {"grade": "correct", "grader": "author", "note": "Exact: fleet scale-up pushes total pooled connections past max_connections -> 'too many clients already'."},
+  "scn_030__run1": {"grade": "partial", "grader": "author", "note": "Attributes it to import VOLUME driving CPU. The real mechanism is the plan regression after ANALYZE (index scan -> seq scan). Wrong mechanism -> wrong fix."}
 }

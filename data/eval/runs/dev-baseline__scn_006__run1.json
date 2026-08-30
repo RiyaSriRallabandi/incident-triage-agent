@@ -1,0 +1,67 @@
+{
+  "tag": "dev-baseline",
+  "scenario_id": "scn_006",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_006",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "Cloud infra team security-group change blocked outbound connections from payments-gateway to processor.acme-pay.com",
+      "confidence": 0.95,
+      "evidence": [
+        "payments-gateway / outbound_connect_errors_per_s surged from 0.2 to over 45 errors per second starting at 11:08 UTC",
+        "2026-09-22T11:07:00Z payments-gateway WARN outbound connection to processor.acme-pay.com timing out (connect timeout 10s)",
+        "2026-09-22T11:11:00Z payments-gateway INFO DNS resolves processor.acme-pay.com fine; TCP connect never completes",
+        "Cloud infra team pushed a security-group change this morning"
+      ],
+      "recommended_fix": "Review and revert or modify the security-group change pushed this morning by the cloud infrastructure team to restore outbound TCP connectivity from the payments-gateway to processor.acme-pay.com."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "All card payments are failing at checkout, pointing to the payments-gateway service. We should check its outbound connection errors and payment authorization success rate metrics.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "payments-gateway",
+          "metric": "outbound_connect_errors_per_s",
+          "start": "2026-09-22T10:35:00Z",
+          "end": "2026-09-22T11:35:00Z"
+        },
+        "result": "payments-gateway / outbound_connect_errors_per_s (count_per_second)\nsummary: first=0.2003, last=45.0704, min=0.1965, max=45.8063, change +22768.8% (first value -> most extreme value)\npoints: 10:35=0.2003, 10:36=0.2021, 10:37=0.2007, 10:38=0.1972, 10:39=0.2027, 10:40=0.2032, 10:41=0.2008, 10:42=0.2036, 10:43=0.1969, 10:44=0.1969, 10:45=0.1994, 10:46=0.1965, 10:47=0.1971, 10:48=0.197, 10:49=0.1973, 10:50=0.2026, 10:51=0.1969, 10:52=0.2027, 10:53=0.1977, 10:54=0.1997, 10:55=0.203, 10:56=0.2004, 10:57=0.2023, 10:58=0.1981, 10:59=0.1984, 11:00=0.2038, 11:01=0.2012, 11:02=0.1967, 11:03=0.2, 11:04=0.1976, 11:05=0.1993, 11:06=0.2009, 11:07=0.1996, 11:08=15.3613, 11:09=30.5022, 11:10=44.7676, 11:11=44.3829, 11:12=45.08, 11:13=44.5062, 11:14=44.382, 11:15=45.8063, 11:16=44.238, 11:17=44.9881, 11:18=45.8046, 11:19=44.5101, 11:20=45.4866, 11:21=45.2416, 11:22=45.5447, 11:23=44.9591, 11:24=45.5393, 11:25=45.654, 11:26=45.2111, 11:27=44.4878, 11:28=44.1676, 11:29=45.493, 11:30=44.5057, 11:31=45.4847, 11:32=45.6534, 11:33=44.8392, 11:34=45.1319, 11:35=45.0704",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The outbound_connect_errors_per_s metric shows a sudden spike around 11:08, indicating connection failures from payments-gateway. To confirm the cause, we should inspect the gateway logs for connection errors during that period.",
+        "tool": "search_logs",
+        "args": {
+          "query": "connection timeout",
+          "service": "payments-gateway",
+          "start": "2026-09-22T11:07:00Z",
+          "end": "2026-09-22T11:20:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-09-22T11:07:00Z  payments-gateway  WARN  outbound connection to processor.acme-pay.com timing out (connect timeout 10s)",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The outbound connection errors spike and a single timeout log suggest a connectivity issue, likely due to the recent security‑group change. To confirm the root cause, we need more logs from payments‑gateway around the spike to see if multiple timeouts or blocked connections are occurring.",
+        "tool": "search_logs",
+        "args": {
+          "query": "processor.acme-pay.com",
+          "service": "payments-gateway",
+          "start": "2026-09-22T11:07:00Z",
+          "end": "2026-09-22T11:20:00Z"
+        },
+        "result": "2 of 2 matching log lines:\n2026-09-22T11:07:00Z  payments-gateway  WARN  outbound connection to processor.acme-pay.com timing out (connect timeout 10s)\n2026-09-22T11:11:00Z  payments-gateway  INFO  DNS resolves processor.acme-pay.com fine; TCP connect never completes",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 3,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

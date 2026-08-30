@@ -1,0 +1,78 @@
+{
+  "tag": "dev-baseline",
+  "scenario_id": "scn_015",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_015",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The billing-api deployment performed a breaking database schema migration (renaming invoices.amount to amount_cents) combined with code in a single release, causing old instances running during the rollout to fail invoice writes because the 'amount' column no longer exists.",
+      "confidence": 1.0,
+      "evidence": [
+        "2026-11-17T22:00:00Z billing-api a7b8c9d rename invoices.amount -> amount_cents (migration + code in one release)",
+        "billing-api / schema_errors_per_s spiked from ~0 to ~30 starting at 22:02 UTC",
+        "2026-11-17T22:01:00Z billing-api ERROR old instances: column invoices.amount does not exist (SQLSTATE 42703); invoice writes failing"
+      ],
+      "recommended_fix": "Roll back the billing-api deployment to the previous stable version immediately to restore compatibility with the pre-migration schema, or complete the rollout if safe, but rolling back is standard for mixed-version schema incompatibility. Follow up by separating breaking database schema migrations from code deployments in the future (e.g., expand-and-contract pattern)."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "Since the incident report mentions a billing-api deploy and database migration starting right before failures began, checking recent deployments for billing-api will help confirm what version shipped and if the migration is still in progress.",
+        "tool": "get_recent_deploys",
+        "args": {
+          "service": "billing-api",
+          "start": "2026-11-17T21:30:00Z",
+          "end": "2026-11-17T22:22:00Z"
+        },
+        "result": "1 deploy(s):\n2026-11-17T22:00:00Z  billing-api  a7b8c9d  rename invoices.amount -> amount_cents (migration + code in one release)",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We know a billing-api deploy occurred at 22:00 involving a schema migration renaming invoices.amount to amount_cents. To verify the impact on the database schema and write errors, I will query the billing-api metrics for schema errors.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "billing-api",
+          "metric": "schema_errors_per_s",
+          "start": "2026-11-17T21:30:00Z",
+          "end": "2026-11-17T22:22:00Z"
+        },
+        "result": "billing-api / schema_errors_per_s (count_per_second)\nsummary: first=0.0088, last=29.7692, min=-0.0164, max=30.5773, change +347369.3% (first value -> most extreme value)\npoints: 21:30=0.0088, 21:31=0.0153, 21:32=-0.0132, 21:33=0.0094, 21:34=0.0004, 21:35=0.0034, 21:36=-0.0029, 21:37=0.003, 21:38=0.0004, 21:39=-0.0071, 21:40=0.0075, 21:41=-0.0002, 21:42=-0.0033, 21:43=-0.0028, 21:44=-0.0137, 21:45=-0.011, 21:46=-0.0164, 21:47=-0.0084, 21:48=-0.0013, 21:49=0.0013, 21:50=-0.0095, 21:51=0.0179, 21:52=0.0114, 21:53=-0.0157, 21:54=0.0177, 21:55=-0.0118, 21:56=0.0145, 21:57=0.0021, 21:58=-0.0005, 21:59=0.0195, 22:00=-0.0149, 22:01=-0.0022, 22:02=29.8435, 22:03=29.6908, 22:04=30.2122, 22:05=29.8002, 22:06=30.1786, 22:07=29.6421, 22:08=30.2569, 22:09=30.5597, 22:10=29.5948, 22:11=30.5127, 22:12=30.116, 22:13=30.3201, 22:14=29.8953, 22:15=30.5773, 22:16=30.5207, 22:17=29.713, 22:18=29.9314, 22:19=29.9111, 22:20=30.0038, 22:21=29.6733, 22:22=29.7692",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "We have confirmed that billing-api deployed at 22:00 with a schema migration renaming invoices.amount to amount_cents, and schema errors spiked immediately at 22:02. Searching billing-api logs for errors around that time will provide specific log evidence of the failure.",
+        "tool": "search_logs",
+        "args": {
+          "query": "amount_cents",
+          "service": "billing-api",
+          "start": "2026-11-17T22:00:00Z",
+          "end": "2026-11-17T22:10:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "Since searching for 'amount_cents' returned no logs, I will search billing-api logs generally for 'error' starting from the deploy time at 22:00 to see the exact stack trace or error message causing the schema errors spike.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "billing-api",
+          "start": "2026-11-17T22:00:00Z",
+          "end": "2026-11-17T22:10:00Z"
+        },
+        "result": "2 of 2 matching log lines:\n2026-11-17T22:01:00Z  billing-api  ERROR  old instances: column invoices.amount does not exist (SQLSTATE 42703); invoice writes failing\n2026-11-17T22:02:00Z  billing-api  ERROR  ~50% of invoice creation requests failing during the rollout",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 4,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

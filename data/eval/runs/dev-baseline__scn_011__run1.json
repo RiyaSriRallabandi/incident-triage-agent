@@ -1,0 +1,79 @@
+{
+  "tag": "dev-baseline",
+  "scenario_id": "scn_011",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_011",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The fleet rollout of order-router with repurposed flag ROUTE_MODE caused hosts h7 and h8 on a previous build to interpret the flag as the legacy routing path, resulting in duplicate order submissions.",
+      "confidence": 0.95,
+      "evidence": [
+        "2026-10-28T14:30:00Z order-router 9a8b7c6 repurpose flag ROUTE_MODE; fleet rollout in progress",
+        "order-router / erroneous_order_rate spiked starting at 14:32 (0.0169) and 14:33 (0.0591), reaching ~0.12",
+        "2026-10-28T14:32:00Z order-router WARN hosts h7,h8 on previous build: ROUTE_MODE flag interpreted as the legacy routing path",
+        "2026-10-28T14:34:00Z order-router ERROR duplicate order submissions detected from the legacy routing path (h7,h8): 220 affected orders"
+      ],
+      "recommended_fix": "Immediately halt the order-router fleet rollout and update or drain hosts h7 and h8 to ensure uniform build versions across the fleet. As a follow-up, improve version consistency checks before flag repurposing deployments."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The incident report mentions a rollout of order-router started just before orders started failing, so I should check recent deploys for the order-router service.",
+        "tool": "get_recent_deploys",
+        "args": {
+          "service": "order-router",
+          "start": "2026-10-28T14:00:00Z",
+          "end": "2026-10-28T14:54:00Z"
+        },
+        "result": "1 deploy(s):\n2026-10-28T14:30:00Z  order-router  9a8b7c6  repurpose flag ROUTE_MODE; fleet rollout in progress",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We know that order-router was recently deployed with a repurposed flag ROUTE_MODE right around when the incident started. I should query the erroneous_order_rate metric for order-router to see the exact pattern and timing of the failures.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "order-router",
+          "metric": "erroneous_order_rate",
+          "start": "2026-10-28T14:00:00Z",
+          "end": "2026-10-28T14:54:00Z"
+        },
+        "result": "order-router / erroneous_order_rate (ratio)\nsummary: first=-0.0104, last=0.1194, min=-0.017, max=0.1224, change +1276.9% (first value -> most extreme value)\npoints: 14:00=-0.0104, 14:01=0.0143, 14:02=0.0147, 14:03=-0.0119, 14:04=-0.0101, 14:05=-0.0052, 14:06=-0.0024, 14:07=0.0023, 14:08=0.0072, 14:09=0.0026, 14:10=0.0041, 14:11=0.0019, 14:12=-0.016, 14:13=-0.0141, 14:14=0.0194, 14:15=-0.0114, 14:16=0.0174, 14:17=0.016, 14:18=0.0125, 14:19=-0.0103, 14:20=-0.007, 14:21=-0.0095, 14:22=-0.0037, 14:23=-0.002, 14:24=0.0122, 14:25=-0.017, 14:26=-0.0145, 14:27=-0.0022, 14:28=0.0085, 14:29=0.0142, 14:30=-0.0036, 14:31=0.007, 14:32=0.0169, 14:33=0.0591, 14:34=0.1219, 14:35=0.1221, 14:36=0.121, 14:37=0.1187, 14:38=0.1191, 14:39=0.1194, 14:40=0.1207, 14:41=0.1211, 14:42=0.1198, 14:43=0.1224, 14:44=0.1218, 14:45=0.1214, 14:46=0.1216, 14:47=0.1188, 14:48=0.1193, 14:49=0.1191, 14:50=0.1186, 14:51=0.12, 14:52=0.1221, 14:53=0.1188, 14:54=0.1194",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "We confirmed that order-router had a deploy at 14:30 and its erroneous_order_rate spiked immediately at 14:32. I should now search the logs of order-router around that time window to inspect error details and find the exact cause.",
+        "tool": "search_logs",
+        "args": {
+          "service": "order-router",
+          "query": "ROUTE_MODE",
+          "start": "2026-10-28T14:30:00Z",
+          "end": "2026-10-28T14:40:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-10-28T14:32:00Z  order-router  WARN  hosts h7,h8 on previous build: ROUTE_MODE flag interpreted as the legacy routing path",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "Logs indicate that hosts h7 and h8 were on a previous build and interpreted the ROUTE_MODE flag as the legacy routing path when the rollout started. I should search for logs around erroneous order details or errors from order-router during the incident window to confirm the failure mode.",
+        "tool": "search_logs",
+        "args": {
+          "service": "order-router",
+          "query": "error",
+          "start": "2026-10-28T14:30:00Z",
+          "end": "2026-10-28T14:40:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-10-28T14:34:00Z  order-router  ERROR  duplicate order submissions detected from the legacy routing path (h7,h8): 220 affected orders",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 4,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

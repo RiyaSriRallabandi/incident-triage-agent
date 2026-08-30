@@ -1,0 +1,77 @@
+{
+  "tag": "dev-baseline",
+  "scenario_id": "scn_023",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_023",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The service-discovery config change applied this morning triggered a config reload that caused the health-check subsystem to return empty results for 30% of services, resulting in widespread 'no healthy instances' errors.",
+      "confidence": 1.0,
+      "evidence": [
+        "service-discovery / discovery_catalog_completeness dropped from 1.0188 down to a minimum of 0.3922 starting around 10:02 UTC",
+        "2026-12-15T10:00:00Z service-discovery WARN config reload applied; catalog re-sync in progress",
+        "2026-12-15T10:01:00Z service-discovery ERROR health-check subsystem returning empty results for 30% of services after the reload",
+        "2026-12-15T10:20:00Z service-discovery INFO rolled back the config reload; catalog re-synced from a healthy replica; backends restored"
+      ],
+      "recommended_fix": "The platform team already rolled back the config reload at 10:20 UTC and restored backends. For follow-up, thoroughly review and fix the service-discovery configuration change to prevent health-check subsystem failures prior to re-applying."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The incident report mentions a service-discovery config change this morning and widespread errors reporting 'no healthy instances'. We should check the service-discovery metrics to see if discovery catalog completeness dropped around 10:03 UTC.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "service-discovery",
+          "metric": "discovery_catalog_completeness",
+          "start": "2026-12-15T09:30:00Z",
+          "end": "2026-12-15T10:28:00Z"
+        },
+        "result": "service-discovery / discovery_catalog_completeness (ratio)\nsummary: first=1.0145, last=0.3929, min=0.3922, max=1.0188, change -61.3% (first value -> most extreme value)\npoints: 09:30=1.0145, 09:31=0.9887, 09:32=1.0111, 09:33=1.0095, 09:34=1.008, 09:35=1.0019, 09:36=0.9824, 09:37=1.0146, 09:38=1.0143, 09:39=0.9862, 09:40=1.0144, 09:41=0.9865, 09:42=1.0149, 09:43=1.0056, 09:44=1.0124, 09:45=0.9996, 09:46=0.9916, 09:47=0.993, 09:48=1.0137, 09:49=0.9934, 09:50=1.0097, 09:51=1.0113, 09:52=0.9905, 09:53=0.9959, 09:54=1.0021, 09:55=0.9969, 09:56=0.9952, 09:57=1.0014, 09:58=1.0104, 09:59=0.9993, 10:00=1.0188, 10:01=1.0134, 10:02=0.6914, 10:03=0.4049, 10:04=0.4069, 10:05=0.3953, 10:06=0.401, 10:07=0.3932, 10:08=0.3923, 10:09=0.3983, 10:10=0.4069, 10:11=0.3997, 10:12=0.3986, 10:13=0.4055, 10:14=0.393, 10:15=0.3933, 10:16=0.3934, 10:17=0.4022, 10:18=0.3978, 10:19=0.3962, 10:20=0.3922, 10:21=0.4018, 10:22=0.3989, 10:23=0.408, 10:24=0.3933, 10:25=0.4005, 10:26=0.4014, 10:27=0.3938, 10:28=0.3929",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed that discovery catalog completeness dropped significantly starting at 10:02 UTC. We should now search logs in the service-discovery service to see what errors or config issues occurred around that time.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "service-discovery",
+          "start": "2026-12-15T09:30:00Z",
+          "end": "2026-12-15T10:28:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-12-15T10:01:00Z  service-discovery  ERROR  health-check subsystem returning empty results for 30% of services after the reload",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "We found a log in service-discovery indicating that the health-check subsystem returned empty results after a reload. We should check the runbook library for troubleshooting guidance related to service-discovery health checks or config reloads.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "service-discovery health-check reload"
+        },
+        "result": "5 runbook section(s):\n\n[1] cpu-saturation.md > How to confirm (score 0.3955)\n- Confirm the spike is CPU specifically, not memory or I/O wait.\n- Correlate the onset with deploy history and with any change in request mix.\n- Capture a CPU profile or flame graph if the service is still up; look for a\n  single dominant frame.\n- Check for log lines naming a slow rule, slow query, or evaluation-budget\n  exceeded.\n\n[2] retry-storm-amplification.md > Likely causes (score 0.3734)\n- Client retries with no backoff, no jitter, and no retry budget. Every slow call\n  becomes several calls, multiplying load by the retry count.\n- Retries stacked at multiple layers (library, service mesh, gateway) so the\n  amplification compounds.\n- Timeouts set longer than the caller's own deadline, so retries pile up while the\n  original request is still waiting.\n\n[3] retry-storm-amplification.md > How to confirm (score 0.3722)\n- Compare the caller's outbound request rate to its inbound request rate. A ratio\n  well above 1 during the incident indicates amplification.\n- Look for log lines showing repeated attempts against the same dependency.\n- Check the retry configuration: fixed-interval or immediate retries, and absence\n  of a circuit breaker, are the tell.\n\n[4] dns-and-network-failures.md > Mitigation (score 0.3415)\nRoll back the DNS or network change. Flush caches where a stale answer is stuck.\nAdd health-checked failover for critical names and monitor resolution success\nrate as a first-class signal.\n\n[5] operator-capacity-change-incident.md > How to confirm (score 0.3405)\n- Search logs and audit trails for operator sessions and capacity or routing\n  commands in the window before the first symptom.\n- Compare the parameter that was used against the parameter that was intended\n  (requested versus applied).\n- Check whether the change took a system below a safety threshold such as quorum\n  or minimum healthy count.",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "The runbook search for health-check reload did not return a specific section due to broad matching. Let's search logs for service-discovery specifically around config reload or health checks to pinpoint the root cause.",
+        "tool": "search_logs",
+        "args": {
+          "query": "reload",
+          "service": "service-discovery",
+          "start": "2026-12-15T09:30:00Z",
+          "end": "2026-12-15T10:28:00Z"
+        },
+        "result": "3 of 3 matching log lines:\n2026-12-15T10:00:00Z  service-discovery  WARN  config reload applied; catalog re-sync in progress\n2026-12-15T10:01:00Z  service-discovery  ERROR  health-check subsystem returning empty results for 30% of services after the reload\n2026-12-15T10:20:00Z  service-discovery  INFO  rolled back the config reload; catalog re-synced from a healthy replica; backends restored",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 4,
+    "hit_budget_cap": false
+  },
+  "error": null
+}
