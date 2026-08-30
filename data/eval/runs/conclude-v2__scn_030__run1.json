@@ -1,0 +1,90 @@
+{
+  "tag": "conclude-v2",
+  "scenario_id": "scn_030",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_030",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "A plan regression occurred where q_dashboard_summary switched from an index scan to a sequential scan following a stats update, causing reporting-db CPU utilization and query p95 latency to spike dramatically.",
+      "confidence": 0.95,
+      "evidence": [
+        "reporting-db / db_cpu_utilization_pct summary: first=34.6078, last=97.5796, change +182.1%",
+        "reporting-db / query_p95_latency_ms summary: first=39.9553, last=12199.3052, change +30486.2%",
+        "2027-01-20T08:05:00Z reporting-db ERROR plan regression confirmed: q_dashboard_summary switched from index scan to seq scan after the stats update",
+        "database-degradation.md > Mitigation: Kill or pause the offending query, transaction, or batch job. Add the missing index or pin the plan."
+      ],
+      "recommended_fix": "Kill or pause the offending query, pin the execution plan for q_dashboard_summary, or revert the statistics update to restore the index scan."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "Database CPU is near 100% and there was a large data import. Checking reporting-db metrics will confirm the timing and severity of the CPU spike.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "reporting-db",
+          "metric": "db_cpu_utilization_pct",
+          "start": "2027-01-20T07:30:00Z",
+          "end": "2027-01-20T08:30:00Z"
+        },
+        "result": "reporting-db / db_cpu_utilization_pct (percent)\nsummary: first=34.6078, last=97.5796, min=34.3049, max=97.6372, change +182.1% (first value -> most extreme value)\npoints: 07:30=34.6078, 07:31=35.4342, 07:32=35.6394, 07:33=34.6317, 07:34=35.2035, 07:35=34.7637, 07:36=35.5936, 07:37=35.1892, 07:38=34.6391, 07:39=35.3163, 07:40=35.362, 07:41=34.34, 07:42=35.1277, 07:43=35.2482, 07:44=35.6249, 07:45=35.0954, 07:46=34.3141, 07:47=34.9553, 07:48=34.3918, 07:49=35.1276, 07:50=34.6937, 07:51=35.1845, 07:52=34.9251, 07:53=34.5302, 07:54=35.0858, 07:55=35.6985, 07:56=34.6526, 07:57=34.3049, 07:58=35.2254, 07:59=34.4069, 08:00=35.6724, 08:01=34.8277, 08:02=65.6842, 08:03=95.1756, 08:04=96.402, 08:05=94.6369, 08:06=97.3343, 08:07=96.9807, 08:08=96.0332, 08:09=96.1281, 08:10=94.3153, 08:11=95.2581, 08:12=95.4421, 08:13=95.8821, 08:14=96.3517, 08:15=95.3169, 08:16=96.3727, 08:17=97.5699, 08:18=96.1941, 08:19=95.5776, 08:20=97.5133, 08:21=95.4894, 08:22=97.3495, 08:23=97.6372, 08:24=94.2233, 08:25=97.0863, 08:26=96.0673, 08:27=95.7778, 08:28=95.0185, 08:29=97.0652, 08:30=97.5796",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed reporting-db CPU spikes sharply to over 95% starting at 08:02 UTC. Checking query latency metrics on the reporting database will help us understand the impact on queries.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "reporting-db",
+          "metric": "query_p95_latency_ms",
+          "start": "2027-01-20T07:30:00Z",
+          "end": "2027-01-20T08:30:00Z"
+        },
+        "result": "reporting-db / query_p95_latency_ms (milliseconds)\nsummary: first=39.9553, last=12199.3052, min=39.2347, max=12220.7889, change +30486.2% (first value -> most extreme value)\npoints: 07:30=39.9553, 07:31=39.3024, 07:32=40.1183, 07:33=40.345, 07:34=39.8331, 07:35=39.8248, 07:36=39.8934, 07:37=39.5171, 07:38=39.5005, 07:39=39.8872, 07:40=40.5898, 07:41=40.3044, 07:42=39.9476, 07:43=40.7863, 07:44=39.4946, 07:45=39.2956, 07:46=39.3096, 07:47=40.6123, 07:48=39.4644, 07:49=40.2666, 07:50=39.3469, 07:51=39.6898, 07:52=39.79, 07:53=40.6619, 07:54=40.282, 07:55=40.5768, 07:56=40.1557, 07:57=40.5522, 07:58=39.2347, 07:59=39.5666, 08:00=39.6392, 08:01=5997.89, 08:02=11870, 08:03=12124.7, 08:04=11998.7, 08:05=12155.7, 08:06=12202.9, 08:07=11861.5, 08:08=12220.8, 08:09=12071.1, 08:10=12203.4, 08:11=12185.6, 08:12=12016.3, 08:13=12205.1, 08:14=11949.4, 08:15=11940.9, 08:16=12209.5, 08:17=11929.7, 08:18=12219.6, 08:19=12042.1, 08:20=11977.4, 08:21=12195.2, 08:22=12004.3, 08:23=12031.9, 08:24=11770.3, 08:25=12105.3, 08:26=11820.2, 08:27=11983, 08:28=11871, 08:29=11971.1, 08:30=12199.3",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "Reporting-db CPU and query latency spiked dramatically around 08:02 UTC. We should search logs on the ingest-worker or reporting-db to see if the large data import caused heavy locking or resource contention during that time.",
+        "tool": "search_logs",
+        "args": {
+          "query": "import",
+          "service": "ingest-worker",
+          "start": "2027-01-20T07:30:00Z",
+          "end": "2027-01-20T08:30:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "Since searching logs for 'import' on ingest-worker returned nothing, let's search logs across the reporting-db service around 08:02 UTC to see what queries or events triggered the CPU and latency spike.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "reporting-db",
+          "start": "2027-01-20T08:00:00Z",
+          "end": "2027-01-20T08:05:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2027-01-20T08:05:00Z  reporting-db  ERROR  plan regression confirmed: q_dashboard_summary switched from index scan to seq scan after the stats update",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "We found a log indicating a plan regression on q_dashboard_summary due to a stats update. Let's check the runbook library for troubleshooting guidance on plan regression or statistics updates.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "plan regression"
+        },
+        "result": "5 runbook section(s):\n\n[1] bad-deploy-correlated-regression.md > References (score 0.2234)\n- Google SRE Book, \"Postmortem Culture\" and \"Release Engineering\" chapters:\n  https://sre.google/books/\n\n[2] database-degradation.md > Mitigation (score 0.2186)\nKill or pause the offending query, transaction, or batch job. Add the missing\nindex or pin the plan. Route reads away from lagging replicas. Raise connection\nlimits only as a stopgap. Schedule heavy maintenance away from peak.\n\n[3] bad-deploy-correlated-regression.md > Symptoms (score 0.2015)\nA step change in latency, error rate, or resource use that begins within minutes\nof a code or configuration rollout. The change is often sharp rather than gradual,\nand it may be limited to the service that was deployed or to a subset of hosts if\nthe rollout is still in progress.\n\n[4] bad-deploy-correlated-regression.md > How to confirm (score 0.1694)\n- Line up the incident start against deploy history for the affected service.\n  A deploy whose timestamp precedes the first symptom by 1 to 10 minutes is a\n  strong lead.\n- Check whether hosts on the new build differ from hosts still on the old build.\n- Look for errors that name a specific new rule, flag, or code path.\n\n[5] memory-leak-and-oom.md > How to confirm (score 0.1616)\n- Plot memory over time: a steady upward slope independent of request rate points\n  to a leak; a step change points to a config or workload change.\n- Check restart and OOM-kill counts for the service.\n- Capture a heap dump and compare object counts over time, or watch which pool or\n  cache grows without bound.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 5,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

@@ -1,0 +1,826 @@
+{
+  "baseline": {
+    "tag": "dev-baseline",
+    "n_runs": 30,
+    "n_crashed": 0,
+    "root_cause_accuracy": 0.741,
+    "root_cause_partial_rate": 0.222,
+    "escalation_decision_accuracy": 0.933,
+    "false_confident_wrong_rate": 0.033,
+    "mean_tool_calls": 4.13,
+    "budget_cap_rate": 0.2,
+    "mean_error_steps": 0.0,
+    "citation_grounding_rate": 0.552,
+    "fabricated_citation_rate": 0.448,
+    "failure_stages": {
+      "misread_evidence": 1,
+      "missing_tool_call": 1
+    },
+    "per_scenario": [
+      {
+        "scenario_id": "scn_001",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "partial": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 6.0,
+        "grounded_citation_rate": 0.5
+      },
+      {
+        "scenario_id": "scn_002",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "partial": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 6.0,
+        "grounded_citation_rate": 0.5
+      },
+      {
+        "scenario_id": "scn_003",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 3.0,
+        "grounded_citation_rate": 0.667
+      },
+      {
+        "scenario_id": "scn_004",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "n/a": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 6.0,
+        "grounded_citation_rate": null
+      },
+      {
+        "scenario_id": "scn_005",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "partial": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 6.0,
+        "grounded_citation_rate": 0.75
+      },
+      {
+        "scenario_id": "scn_006",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 3.0,
+        "grounded_citation_rate": 0.5
+      },
+      {
+        "scenario_id": "scn_007",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 2.0,
+        "grounded_citation_rate": 0.5
+      },
+      {
+        "scenario_id": "scn_008",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 6.0,
+        "grounded_citation_rate": 0.667
+      },
+      {
+        "scenario_id": "scn_009",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 3.0,
+        "grounded_citation_rate": 0.333
+      },
+      {
+        "scenario_id": "scn_010",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 3.0,
+        "grounded_citation_rate": 0.333
+      },
+      {
+        "scenario_id": "scn_011",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 4.0,
+        "grounded_citation_rate": 1.0
+      },
+      {
+        "scenario_id": "scn_012",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "incorrect": 1
+        },
+        "escalation_calls": {
+          "false_diagnosis": 1
+        },
+        "mean_tool_calls": 5.0,
+        "grounded_citation_rate": 0.333
+      },
+      {
+        "scenario_id": "scn_013",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 5.0,
+        "grounded_citation_rate": 0.5
+      },
+      {
+        "scenario_id": "scn_014",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 2.0,
+        "grounded_citation_rate": 0.667
+      },
+      {
+        "scenario_id": "scn_015",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 4.0,
+        "grounded_citation_rate": 0.667
+      },
+      {
+        "scenario_id": "scn_016",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 4.0,
+        "grounded_citation_rate": 0.5
+      },
+      {
+        "scenario_id": "scn_017",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 3.0,
+        "grounded_citation_rate": 0.75
+      },
+      {
+        "scenario_id": "scn_018",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 4.0,
+        "grounded_citation_rate": 1.0
+      },
+      {
+        "scenario_id": "scn_019",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 5.0,
+        "grounded_citation_rate": 0.667
+      },
+      {
+        "scenario_id": "scn_020",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 2.0,
+        "grounded_citation_rate": 0.75
+      },
+      {
+        "scenario_id": "scn_021",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 3.0,
+        "grounded_citation_rate": 0.333
+      },
+      {
+        "scenario_id": "scn_022",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "partial": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 5.0,
+        "grounded_citation_rate": 0.333
+      },
+      {
+        "scenario_id": "scn_023",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 4.0,
+        "grounded_citation_rate": 0.75
+      },
+      {
+        "scenario_id": "scn_024",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 5.0,
+        "grounded_citation_rate": 0.25
+      },
+      {
+        "scenario_id": "scn_025",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "partial": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 4.0,
+        "grounded_citation_rate": 0.25
+      },
+      {
+        "scenario_id": "scn_026",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "n/a": 1
+        },
+        "escalation_calls": {
+          "missed_escalation": 1
+        },
+        "mean_tool_calls": 4.0,
+        "grounded_citation_rate": null
+      },
+      {
+        "scenario_id": "scn_027",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "n/a": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 6.0,
+        "grounded_citation_rate": null
+      },
+      {
+        "scenario_id": "scn_028",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 4.0,
+        "grounded_citation_rate": 0.5
+      },
+      {
+        "scenario_id": "scn_029",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "correct": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 3.0,
+        "grounded_citation_rate": 0.333
+      },
+      {
+        "scenario_id": "scn_030",
+        "n_runs": 1,
+        "root_cause_grades": {
+          "partial": 1
+        },
+        "escalation_calls": {
+          "correct": 1
+        },
+        "mean_tool_calls": 4.0,
+        "grounded_citation_rate": 0.333
+      }
+    ],
+    "calibration": {
+      "n": 30,
+      "raw_agreement": 0.9666666666666667,
+      "cohen_kappa": 0.9166666666666666,
+      "disagreements": [
+        [
+          "scn_022__run1",
+          "correct",
+          "partial"
+        ]
+      ]
+    }
+  },
+  "comparisons": [
+    {
+      "variant": "conclude-v2",
+      "summary": {
+        "tag": "conclude-v2",
+        "n_runs": 30,
+        "n_crashed": 0,
+        "root_cause_accuracy": 0.81,
+        "root_cause_partial_rate": 0.19,
+        "escalation_decision_accuracy": 0.8,
+        "false_confident_wrong_rate": 0.0,
+        "mean_tool_calls": 3.73,
+        "budget_cap_rate": 0.133,
+        "mean_error_steps": 0.0,
+        "citation_grounding_rate": 0.878,
+        "fabricated_citation_rate": 0.122,
+        "failure_stages": {
+          "wrong_tool_args": 3,
+          "missing_tool_call": 3
+        },
+        "per_scenario": [
+          {
+            "scenario_id": "scn_001",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "n/a": 1
+            },
+            "escalation_calls": {
+              "missed_escalation": 1
+            },
+            "mean_tool_calls": 5.0,
+            "grounded_citation_rate": null
+          },
+          {
+            "scenario_id": "scn_002",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "n/a": 1
+            },
+            "escalation_calls": {
+              "missed_escalation": 1
+            },
+            "mean_tool_calls": 4.0,
+            "grounded_citation_rate": null
+          },
+          {
+            "scenario_id": "scn_003",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "partial": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 3.0,
+            "grounded_citation_rate": 0.75
+          },
+          {
+            "scenario_id": "scn_004",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "n/a": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 6.0,
+            "grounded_citation_rate": null
+          },
+          {
+            "scenario_id": "scn_005",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "n/a": 1
+            },
+            "escalation_calls": {
+              "missed_escalation": 1
+            },
+            "mean_tool_calls": 6.0,
+            "grounded_citation_rate": null
+          },
+          {
+            "scenario_id": "scn_006",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 4.0,
+            "grounded_citation_rate": 1.0
+          },
+          {
+            "scenario_id": "scn_007",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 2.0,
+            "grounded_citation_rate": 0.6
+          },
+          {
+            "scenario_id": "scn_008",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "n/a": 1
+            },
+            "escalation_calls": {
+              "missed_escalation": 1
+            },
+            "mean_tool_calls": 6.0,
+            "grounded_citation_rate": null
+          },
+          {
+            "scenario_id": "scn_009",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 4.0,
+            "grounded_citation_rate": 1.0
+          },
+          {
+            "scenario_id": "scn_010",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 2.0,
+            "grounded_citation_rate": 0.667
+          },
+          {
+            "scenario_id": "scn_011",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 3.0,
+            "grounded_citation_rate": 1.0
+          },
+          {
+            "scenario_id": "scn_012",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "n/a": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 5.0,
+            "grounded_citation_rate": null
+          },
+          {
+            "scenario_id": "scn_013",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 4.0,
+            "grounded_citation_rate": 1.0
+          },
+          {
+            "scenario_id": "scn_014",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 3.0,
+            "grounded_citation_rate": 1.0
+          },
+          {
+            "scenario_id": "scn_015",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "partial": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 3.0,
+            "grounded_citation_rate": 1.0
+          },
+          {
+            "scenario_id": "scn_016",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 5.0,
+            "grounded_citation_rate": 1.0
+          },
+          {
+            "scenario_id": "scn_017",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "partial": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 3.0,
+            "grounded_citation_rate": 1.0
+          },
+          {
+            "scenario_id": "scn_018",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "partial": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 3.0,
+            "grounded_citation_rate": 0.75
+          },
+          {
+            "scenario_id": "scn_019",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 4.0,
+            "grounded_citation_rate": 1.0
+          },
+          {
+            "scenario_id": "scn_020",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 2.0,
+            "grounded_citation_rate": 0.75
+          },
+          {
+            "scenario_id": "scn_021",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 3.0,
+            "grounded_citation_rate": 0.667
+          },
+          {
+            "scenario_id": "scn_022",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 3.0,
+            "grounded_citation_rate": 1.0
+          },
+          {
+            "scenario_id": "scn_023",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 2.0,
+            "grounded_citation_rate": 0.667
+          },
+          {
+            "scenario_id": "scn_024",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "n/a": 1
+            },
+            "escalation_calls": {
+              "missed_escalation": 1
+            },
+            "mean_tool_calls": 3.0,
+            "grounded_citation_rate": null
+          },
+          {
+            "scenario_id": "scn_025",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 3.0,
+            "grounded_citation_rate": 1.0
+          },
+          {
+            "scenario_id": "scn_026",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "n/a": 1
+            },
+            "escalation_calls": {
+              "missed_escalation": 1
+            },
+            "mean_tool_calls": 3.0,
+            "grounded_citation_rate": null
+          },
+          {
+            "scenario_id": "scn_027",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "n/a": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 6.0,
+            "grounded_citation_rate": null
+          },
+          {
+            "scenario_id": "scn_028",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 4.0,
+            "grounded_citation_rate": 0.75
+          },
+          {
+            "scenario_id": "scn_029",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 3.0,
+            "grounded_citation_rate": 0.75
+          },
+          {
+            "scenario_id": "scn_030",
+            "n_runs": 1,
+            "root_cause_grades": {
+              "correct": 1
+            },
+            "escalation_calls": {
+              "correct": 1
+            },
+            "mean_tool_calls": 5.0,
+            "grounded_citation_rate": 1.0
+          }
+        ],
+        "calibration": null
+      },
+      "tests": [
+        {
+          "metric": "correct_rate",
+          "test": "mcnemar_exact",
+          "n": 30,
+          "baseline": 0.733,
+          "variant": 0.667,
+          "delta": -0.067,
+          "statistic": 4.0,
+          "p_value": 0.7539,
+          "note": "4 improved, 6 regressed, of 10 discordant pairs"
+        },
+        {
+          "metric": "confidence",
+          "test": "wilcoxon_signed_rank",
+          "n": 21,
+          "baseline": 0.985,
+          "variant": 0.945,
+          "delta": -0.04,
+          "statistic": 0.0,
+          "p_value": 0.0005,
+          "note": "15 non-zero pairs"
+        },
+        {
+          "metric": "tool_calls_used",
+          "test": "wilcoxon_signed_rank",
+          "n": 30,
+          "baseline": 4.133,
+          "variant": 3.733,
+          "delta": -0.4,
+          "statistic": 37.5,
+          "p_value": 0.0267,
+          "note": "18 non-zero pairs"
+        },
+        {
+          "metric": "citation_grounding_rate",
+          "test": "wilcoxon_signed_rank",
+          "n": 21,
+          "baseline": 0.556,
+          "variant": 0.874,
+          "delta": 0.318,
+          "statistic": 6.5,
+          "p_value": 0.0004,
+          "note": "19 non-zero pairs"
+        }
+      ]
+    }
+  ]
+}

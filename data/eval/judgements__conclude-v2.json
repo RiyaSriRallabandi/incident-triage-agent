@@ -1,0 +1,302 @@
+[
+  {
+    "scenario_id": "scn_001",
+    "run_index": 1,
+    "agent_outcome": "escalate",
+    "root_cause_grade": "n/a",
+    "escalation_call": "missed_escalation",
+    "false_confident_wrong": false,
+    "failure_stage": "wrong_tool_args",
+    "reasoning": "The agent needed the WAF engine error log indicating the regex backtracking (e.g., \"regex evaluation exceeded its time budget on managed rule 100417\"), but it searched the logs with the query \"WAF\", which did not match that entry and thus missed the key evidence, leading to an incomplete conclusion."
+  },
+  {
+    "scenario_id": "scn_002",
+    "run_index": 1,
+    "agent_outcome": "escalate",
+    "root_cause_grade": "n/a",
+    "escalation_call": "missed_escalation",
+    "false_confident_wrong": false,
+    "failure_stage": "missing_tool_call",
+    "reasoning": "The agent never gathered evidence about checkout\u2011api's retry behavior (e.g., retry counts, backoff, or retry budget), which is essential to link the payments latency spike to the DB pool exhaustion. This missing piece caused the incorrect conclusion."
+  },
+  {
+    "scenario_id": "scn_003",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "partial",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly points to storage maintenance and the resulting object-store availability drop that caused media\u2011api errors, but it attributes the failure to generic disruption and exhausted retries rather than the specific mechanism of the index subsystem dropping below quorum due to an over\u2011aggressive node removal command. This missing mechanism would lead to a different fix, so the answer is only partially correct."
+  },
+  {
+    "scenario_id": "scn_004",
+    "run_index": 1,
+    "agent_outcome": "escalate",
+    "root_cause_grade": "n/a",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "correctly escalated an under-determined incident"
+  },
+  {
+    "scenario_id": "scn_005",
+    "run_index": 1,
+    "agent_outcome": "escalate",
+    "root_cause_grade": "n/a",
+    "escalation_call": "missed_escalation",
+    "false_confident_wrong": false,
+    "failure_stage": "wrong_tool_args",
+    "reasoning": "The agent never retrieved the critical network\u2011automation warning about the route withdrawal; it searched logs for \"error\" (and later only for \"audit\" and \"router\"), missing the relevant WARN entry at 15:40. This misuse of query arguments prevented obtaining the key evidence, making the first failure a wrong_tool_args stage."
+  },
+  {
+    "scenario_id": "scn_006",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that the security\u2011group change blocked outbound TCP connections from the payments\u2011gateway to the external payment processor, which matches the ground\u2011truth mechanism of an egress rule removal causing connection timeouts."
+  },
+  {
+    "scenario_id": "scn_007",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identified that the auth-service TLS certificate expired at the exact wall\u2011clock time, causing TLS handshake failures and the drop in login success rate, which matches the ground\u2011truth mechanism and fix."
+  },
+  {
+    "scenario_id": "scn_008",
+    "run_index": 1,
+    "agent_outcome": "escalate",
+    "root_cause_grade": "n/a",
+    "escalation_call": "missed_escalation",
+    "false_confident_wrong": false,
+    "failure_stage": "missing_tool_call",
+    "reasoning": "The agent never gathered the critical evidence that mesh\u2011control detected a trust\u2011bundle version skew (12 of 40 pods still on the old root). Without this piece the root cause could not be identified, so the first failure is a missing_tool_call."
+  },
+  {
+    "scenario_id": "scn_009",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies the migration that added an index on users.last_seen_at and explains that it caused database lock\u2011wait sessions (i.e., an AccessExclusiveLock) which blocked all writes and led to the 5\u202fs statement timeouts, matching the ground\u2011truth mechanism."
+  },
+  {
+    "scenario_id": "scn_010",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies the unthrottled backfill as the root cause and explains the mechanism: it created replication lag that crossed the 300\u2011second safety cutoff, causing analytics\u2011api\u2019s fail\u2011safe to stop serving reads. This matches the ground\u2011truth mechanism, leading to the same fix (throttle the backfill)."
+  },
+  {
+    "scenario_id": "scn_011",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that the rollout left hosts h7 and h8 on an older build which misinterpreted the repurposed ROUTE_MODE flag as the buggy legacy routing path, causing duplicate/malformed orders\u2014the same mechanism described in the ground truth."
+  },
+  {
+    "scenario_id": "scn_012",
+    "run_index": 1,
+    "agent_outcome": "escalate",
+    "root_cause_grade": "n/a",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "correctly escalated an under-determined incident"
+  },
+  {
+    "scenario_id": "scn_013",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly pinpointed the ingress\u2011controller upgrade to version 4.x and the ignored legacy 'route.class' annotation as the mechanism that broke route matching, leading to the 503 errors, which matches the ground\u2011truth cause."
+  },
+  {
+    "scenario_id": "scn_014",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that the product\u2011api refactor removed caching, causing the cache hit rate to collapse, which drove a massive increase in database reads and the observed latency spike. This matches the ground\u2011truth mechanism, so the implied fix (restore caching/rollback) is the same."
+  },
+  {
+    "scenario_id": "scn_015",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "partial",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies the billing\u2011api service, the concurrent migration that renamed invoices.amount, and the resulting schema mismatch, but misstates the direction of the failure\u2014blaming the new\u2011code instances rather than the old\u2011code instances that still query the dropped column. This reversal leads to a different implied fix, so the answer is only partially correct."
+  },
+  {
+    "scenario_id": "scn_016",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies a memory leak caused by unbounded resource accumulation in notification-worker, matching the ground\u2011truth mechanism of an unbounded deduplication set that leads to OOM\u2011kills and restarts. This points to the same fix of bounding the set, so the root cause is correctly captured."
+  },
+  {
+    "scenario_id": "scn_017",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "partial",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that /var/log disk exhaustion on certain hosts caused the api-server 5xx errors, matching the symptom chain. However, it omits the root mechanism\u2014debug\u2011level logging that generated the excess log volume\u2014so the implied remediation (e.g., just freeing space) could differ from the true fix of reverting the log level."
+  },
+  {
+    "scenario_id": "scn_018",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "partial",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly points to file\u2011descriptor exhaustion (EMFILE) as the immediate mechanism causing the 30% 5xx rate, but it does not identify the underlying leak of connections on a specific error path that creates the exhaustion. Without that detail, the implied fix would differ from the ground\u2011truth fix."
+  },
+  {
+    "scenario_id": "scn_019",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent pinpointed the malicious 40KB image with 48000x48000 dimensions that caused extreme CPU consumption during decoding, which is the core mechanism requiring a max\u2011decoded\u2011dimension guard and blocklisting. Although it omitted the retry amplification detail, the identified mechanism leads to the same fix as the ground truth."
+  },
+  {
+    "scenario_id": "scn_020",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identified the external tax\u2011calculation provider (api.taxly.io) as the failing service and stated that its outage caused timeouts, which directly matches the ground\u2011truth mechanism of the provider returning 503 and timing out, leading to checkout failures."
+  },
+  {
+    "scenario_id": "scn_021",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that redis-01 went down and that failover to redis-02 was blocked by a split\u2011brain guard, resulting in a complete cache outage that caused downstream load and errors. This matches the ground\u2011truth mechanism and points to the same remediation (promote redis-02 and restore the cache)."
+  },
+  {
+    "scenario_id": "scn_022",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies the external DNS provider as the affected service and attributes the failures to a DDoS attack on that provider, matching the ground\u2011truth mechanism and leading to the same mitigation (activating a secondary DNS provider)."
+  },
+  {
+    "scenario_id": "scn_023",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies the service\u2011discovery config reload as the trigger and specifies that it corrupted the health\u2011check subsystem, causing empty results and the 'no healthy instances' errors, which matches the ground\u2011truth mechanism and thus leads to the same fix."
+  },
+  {
+    "scenario_id": "scn_024",
+    "run_index": 1,
+    "agent_outcome": "escalate",
+    "root_cause_grade": "n/a",
+    "escalation_call": "missed_escalation",
+    "false_confident_wrong": false,
+    "failure_stage": "wrong_tool_args",
+    "reasoning": "The agent\u2019s second step queried the static\u2011assets logs with the keyword \u2018error\u2019, which missed the relevant log entries that mentioned the CDN\u2011edge issue. This incorrect query prevented it from obtaining the key evidence early, leading to a faulty investigation path."
+  },
+  {
+    "scenario_id": "scn_025",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies the config change that pointed the load balancer health check to /ready, explains that the health checks returned 503 during the cache warm\u2011up, and that this caused instances to be marked unhealthy and overload, matching the ground\u2011truth mechanism."
+  },
+  {
+    "scenario_id": "scn_026",
+    "run_index": 1,
+    "agent_outcome": "escalate",
+    "root_cause_grade": "n/a",
+    "escalation_call": "missed_escalation",
+    "false_confident_wrong": false,
+    "failure_stage": "missing_tool_call",
+    "reasoning": "The agent never collected the crucial packet\u2011capture or routing evidence that shows the asymmetric path and stateful firewall drops, instead stopping after generic runbook searches. This missing evidence prevented correct root\u2011cause identification, so the first failure was a missing tool call."
+  },
+  {
+    "scenario_id": "scn_027",
+    "run_index": 1,
+    "agent_outcome": "escalate",
+    "root_cause_grade": "n/a",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "correctly escalated an under-determined incident"
+  },
+  {
+    "scenario_id": "scn_028",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that the secret rotation revoked the old secret and that a subset of partner\u2011api\u2011gateway pods started after 13:40 were using a stale configuration containing the revoked secret, which explains the ~30% authentication failures. This matches the ground\u2011truth mechanism and leads to the same fix (redeploy to refresh config)."
+  },
+  {
+    "scenario_id": "scn_029",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that the morning scale\u2011up increased the number of service instances, causing the total number of database connections to exceed the server's max_connections limit, which produced the 'too many clients already' errors and ~15% request failures. This matches the ground\u2011truth mechanism (cumulative connection demand crossing the fixed limit) and would lead to the same fix of reducing per\u2011instance pool size and/or raising max_connections."
+  },
+  {
+    "scenario_id": "scn_030",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identified that a stats\u2011update\u2011triggered plan regression caused q_dashboard_summary to switch from an index scan to a sequential scan, driving CPU and latency spikes\u2014exactly the mechanism described in the ground truth."
+  }
+]

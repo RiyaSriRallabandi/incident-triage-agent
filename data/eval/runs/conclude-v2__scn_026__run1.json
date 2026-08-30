@@ -1,0 +1,62 @@
+{
+  "tag": "conclude-v2",
+  "scenario_id": "scn_026",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_026",
+    "outcome": "escalate",
+    "diagnosis": null,
+    "escalation": {
+      "reason": "While the evidence clearly shows a sharp increase in TCP resets and long flow error rates on the region-gateway starting at 09:19 UTC following a planned firewall failover by the network team, the exact root cause mechanism within the firewall configuration or state table handling that causes connection resets on streaming and large file uploads has not been isolated.",
+      "evidence_gathered": [],
+      "suggested_next_steps": [
+        "Engage the network team to review firewall configuration changes and failover logs from the morning failover.",
+        "Inspect region-gateway firewall state table limits, timeout settings for long-lived connections, and MTU/fragmentation settings.",
+        "Examine upstream and downstream router logs around 09:19 UTC for dropped packets or state sync issues."
+      ]
+    },
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "Large file uploads and streaming responses are failing with connection resets following a planned firewall failover by the network team. I will query the network-related metrics on the region-gateway to check for TCP resets.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "region-gateway",
+          "metric": "tcp_resets_per_s",
+          "start": "2026-12-27T08:45:00Z",
+          "end": "2026-12-27T10:05:00Z"
+        },
+        "result": "region-gateway / tcp_resets_per_s (count_per_second)\nsummary: first=5.084, last=206.8698, min=4.9005, max=214.095, change +4111.2% (first value -> most extreme value)\npoints: 08:45=5.084, 08:46=4.9219, 08:47=5.0771, 08:48=4.9042, 08:49=5.0908, 08:50=5.0502, 08:51=4.9005, 08:52=5.0262, 08:53=5.0598, 08:54=5.0149, 08:55=4.9093, 08:56=5.0478, 08:57=4.9204, 08:58=5.0838, 08:59=4.9155, 09:00=4.9104, 09:01=5.0237, 09:02=5.0239, 09:03=4.9257, 09:04=5.0187, 09:05=5.0083, 09:06=5.0304, 09:07=4.9437, 09:08=5.052, 09:09=5.0189, 09:10=5.0491, 09:11=5.0575, 09:12=4.9222, 09:13=5.0245, 09:14=4.9485, 09:15=5.0186, 09:16=4.9652, 09:17=5.0169, 09:18=4.9616, 09:19=5.0062, 09:20=45.9298, 09:21=85.3012, 09:22=130.552, 09:23=167.686, 09:24=208.814, 09:25=212.117, 09:26=214.095, 09:27=211.722, 09:28=213.405, 09:29=210.015, 09:30=211.813, 09:31=209.355, 09:32=211.806, 09:33=213.649, 09:34=206.123, 09:35=205.831, 09:36=209.349, 09:37=212.444, 09:38=207.324, 09:39=213.802, 09:40=210.865, 09:41=207.968, 09:42=207.151, 09:43=211.227, 09:44=211.932, 09:45=213.598, 09:46=212.789, 09:47=208.476, 09:48=210.172, 09:49=206.584, 09:50=211.147, 09:51=208.434, 09:52=209.643, 09:53=206.796, 09:54=210.806, 09:55=211.982, 09:56=210.112, 09:57=212.933, 09:58=208.088, 09:59=209.037, 10:00=206.088, 10:01=212.731, 10:02=210.623, 10:03=209.325, 10:04=207.596, 10:05=206.87",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The tcp_resets_per_s metric on region-gateway spiked dramatically starting right around 09:19 UTC, matching the incident timeline. I will now check the long_flow_error_rate metric on region-gateway to see how it correlates with the resets.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "region-gateway",
+          "metric": "long_flow_error_rate",
+          "start": "2026-12-27T08:45:00Z",
+          "end": "2026-12-27T10:05:00Z"
+        },
+        "result": "region-gateway / long_flow_error_rate (ratio)\nsummary: first=0.0098, last=0.3943, min=0.0098, max=0.4073, change +4056.1% (first value -> most extreme value)\npoints: 08:45=0.0098, 08:46=0.01, 08:47=0.01, 08:48=0.0102, 08:49=0.0102, 08:50=0.0101, 08:51=0.01, 08:52=0.0101, 08:53=0.01, 08:54=0.0101, 08:55=0.0099, 08:56=0.0099, 08:57=0.0101, 08:58=0.0099, 08:59=0.01, 09:00=0.0099, 09:01=0.0102, 09:02=0.0099, 09:03=0.0101, 09:04=0.0099, 09:05=0.01, 09:06=0.0099, 09:07=0.01, 09:08=0.0102, 09:09=0.0099, 09:10=0.01, 09:11=0.0102, 09:12=0.0099, 09:13=0.01, 09:14=0.0099, 09:15=0.0101, 09:16=0.0101, 09:17=0.01, 09:18=0.01, 09:19=0.0098, 09:20=0.0875, 09:21=0.1692, 09:22=0.2466, 09:23=0.318, 09:24=0.3986, 09:25=0.4043, 09:26=0.3949, 09:27=0.4048, 09:28=0.401, 09:29=0.3954, 09:30=0.4062, 09:31=0.3946, 09:32=0.3969, 09:33=0.4069, 09:34=0.4004, 09:35=0.395, 09:36=0.3958, 09:37=0.4004, 09:38=0.4028, 09:39=0.4073, 09:40=0.406, 09:41=0.3969, 09:42=0.3953, 09:43=0.3979, 09:44=0.4015, 09:45=0.3929, 09:46=0.4002, 09:47=0.3969, 09:48=0.3981, 09:49=0.3972, 09:50=0.4001, 09:51=0.3975, 09:52=0.4032, 09:53=0.4037, 09:54=0.3927, 09:55=0.4003, 09:56=0.4058, 09:57=0.3929, 09:58=0.3979, 09:59=0.3989, 10:00=0.4064, 10:01=0.4048, 10:02=0.3942, 10:03=0.3954, 10:04=0.4062, 10:05=0.3943",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "Both region-gateway TCP resets and long flow error rates spiked significantly at 09:19 UTC following the network firewall failover. I will now search the runbook library to see if there is specific troubleshooting guidance for firewall-related TCP resets and long-lived flow failures.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "firewall tcp reset long flow"
+        },
+        "result": "5 runbook section(s):\n\n[1] connection-pool-exhaustion.md > Mitigation (score 0.393)\nRelieve the downstream slowdown or cut the offending traffic. Then isolate pools\nper dependency, size them for peak concurrency, add acquisition timeouts, and fix\nany code path that fails to release a connection.\n\n[2] retry-storm-amplification.md > Mitigation (score 0.3725)\nReduce or disable the retry budget to break the storm, then restore capacity.\nFix the client to use exponential backoff with jitter, a bounded retry budget,\nand a circuit breaker. Ensure only one layer retries.\n\n[3] retry-storm-amplification.md > Likely causes (score 0.3533)\n- Client retries with no backoff, no jitter, and no retry budget. Every slow call\n  becomes several calls, multiplying load by the retry count.\n- Retries stacked at multiple layers (library, service mesh, gateway) so the\n  amplification compounds.\n- Timeouts set longer than the caller's own deadline, so retries pile up while the\n  original request is still waiting.\n\n[4] connection-pool-exhaustion.md > Symptoms (score 0.343)\nErrors or log lines stating that a connection pool is exhausted, that all\nconnections are in use, or that acquisition timed out with many waiters queued.\nPool wait time rises sharply. Throughput collapses while CPU and memory may look\nnormal, because requests are blocked waiting for a connection rather than doing\nwork.\n\n[5] connection-pool-exhaustion.md > How to confirm (score 0.3317)\n- Check pool metrics: active connections at the ceiling, waiters greater than\n  zero, rising acquisition wait time.\n- Correlate with downstream latency and with the caller's outbound request rate.\n- If downstream latency is normal, suspect a leak; look for steadily falling idle\n  connections over time.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 3,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

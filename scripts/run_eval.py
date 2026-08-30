@@ -52,7 +52,13 @@ def main() -> int:
 
     variant = VARIANTS[args.variant]
     print(f"evaluating variant '{variant.tag}' (repeats={args.repeats}) ...")
-    ev = evaluate_variant(variant, repeats=args.repeats, force=args.force, calibrate_judge=True)
+    # Calibration compares judge vs hand labels, which exist only for dev-baseline runs.
+    ev = evaluate_variant(
+        variant,
+        repeats=args.repeats,
+        force=args.force,
+        calibrate_judge=(variant.tag == "dev-baseline"),
+    )
     print_summary(ev.summary)
     out = REPO_ROOT / "data" / "eval" / f"summary__{variant.tag}.json"
     print(f"\nwritten: {out.relative_to(REPO_ROOT)}")
