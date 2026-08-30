@@ -25,8 +25,8 @@
   ],
   "metrics": [
     { "name": "error_rate", "unit": "ratio", "service": "notifications-api", "baseline": 0.004, "spike": 0.045, "spike_at_offset_s": 0, "ramp_s": 300 },
-    { "name": "p95_latency_ms", "unit": "milliseconds", "service": "notifications-api", "baseline": 140.0, "spike": 205.0, "spike_at_offset_s": 0, "ramp_s": 600 },
-    { "name": "heap_used_mb", "unit": "megabytes", "service": "notifications-api", "baseline": 512.0, "spike": 558.0, "spike_at_offset_s": 0, "ramp_s": 900 }
+    { "name": "p95_latency_ms", "unit": "milliseconds", "service": "notifications-api", "baseline": 140.0, "spike": 150.0, "spike_at_offset_s": 0, "ramp_s": 600 },
+    { "name": "heap_used_mb", "unit": "megabytes", "service": "notifications-api", "baseline": 512.0, "spike": 512.0, "spike_at_offset_s": 0, "ramp_s": 900 }
   ],
   "deploys": [],
   "ground_truth": {

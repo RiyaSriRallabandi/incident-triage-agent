@@ -14,6 +14,8 @@ from __future__ import annotations
 from typing import Literal
 
 from langchain_core.language_models import BaseChatModel
+from langchain_core.runnables import Runnable
+from pydantic import BaseModel
 
 from triage.config import Settings, get_settings
 
@@ -91,3 +93,19 @@ def get_chat_model(
 def get_judge_model(settings: Settings | None = None) -> BaseChatModel:
     """Return the larger Groq model used for LLM-as-judge scoring."""
     return get_chat_model("groq", model=GROQ_LARGE_MODEL, temperature=0.0, settings=settings)
+
+
+def with_structured_output[Schema: BaseModel](
+    model: BaseChatModel,
+    schema: type[Schema],
+    *,
+    provider: Provider = "groq",
+) -> Runnable[object, Schema]:
+    """Bind a Pydantic output schema to a chat model.
+
+    Groq's OSS models are unreliable at tool-calling for this; their native
+    JSON-schema mode is not. Gemini uses the default method.
+    """
+    if provider == "groq":
+        return model.with_structured_output(schema, method="json_schema")
+    return model.with_structured_output(schema)

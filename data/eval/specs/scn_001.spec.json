@@ -18,10 +18,10 @@
   ],
   "signal_lines": [
     { "offset_s": 20, "service": "edge-proxy", "level": "WARN", "msg": "cpu usage 78% and rising on all workers" },
+    { "offset_s": 45, "service": "waf-engine", "level": "ERROR", "msg": "regex evaluation exceeded 40ms budget on managed rule 100417 (pattern contains nested quantifiers: (?:.*.*=.*))" },
     { "offset_s": 60, "service": "edge-proxy", "level": "ERROR", "msg": "worker CPU saturated; request queue growing (depth=4100)" },
     { "offset_s": 95, "service": "edge-proxy", "level": "ERROR", "msg": "returning 502: no worker capacity to accept connection" },
     { "offset_s": 130, "service": "edge-proxy", "level": "CRITICAL", "msg": "global 5xx rate 62%; CPU pinned at 100%" },
-    { "offset_s": 150, "service": "waf-engine", "level": "ERROR", "msg": "regex evaluation exceeded 40ms budget on managed rule 100417 (pattern contains nested quantifiers: (?:.*.*=.*))" },
     { "offset_s": 600, "service": "edge-proxy", "level": "INFO", "msg": "operator initiated rollback to previous WAF ruleset" },
     { "offset_s": 760, "service": "edge-proxy", "level": "INFO", "msg": "cpu usage 24%; 5xx rate falling back toward baseline" }
   ],
@@ -37,7 +37,7 @@
     "evidence_path": [
       "deploy 7f3a9c1 to edge-proxy at 13:42 rolls out a new WAF managed ruleset",
       "edge-proxy CPU climbs from ~35% to 100% beginning ~13:42:20, immediately after the deploy",
-      "waf-engine ERROR at 13:44:30: regex evaluation exceeded its time budget on managed rule 100417 (nested quantifiers)",
+      "waf-engine ERROR at 13:42:45: regex evaluation exceeded its time budget on managed rule 100417 (nested quantifiers)",
       "edge-proxy 5xx rate rises to ~62% as workers saturate and the request queue grows",
       "CPU and 5xx rate recover after the WAF ruleset is rolled back at ~13:52"
     ],

@@ -72,6 +72,10 @@ _DISTRACTORS_PER_DIFFICULTY: dict[Difficulty, int] = {
     Difficulty.HARD: 50,
 }
 
+# Fraction of random noise applied to every metric sample. Kept small so a flat
+# series (baseline == incident value) reads as flat rather than as a trend.
+METRIC_NOISE = 0.02
+
 
 class SignalLine(BaseModel):
     """A real, load-bearing log line — part of the ground-truth evidence path."""
@@ -204,7 +208,7 @@ def _metric_series(spec: ScenarioSpec, m: MetricSpec, rng: random.Random) -> Met
             value = m.baseline + frac * (m.spike - m.baseline)
         else:
             value = m.spike
-        jitter = rng.uniform(-0.04, 0.04) * (abs(value) or 1.0)
+        jitter = rng.uniform(-METRIC_NOISE, METRIC_NOISE) * (abs(value) or 1.0)
         points.append((t, round(value + jitter, 4)))
         t += step
     return MetricSeries(name=m.name, unit=m.unit, service=m.service, points=points)

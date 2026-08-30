@@ -30,6 +30,18 @@ per scenario in `source_note`.
 uv run python scripts/generate_evidence.py --all
 ```
 
+## Automated review
+
+```bash
+uv run python scripts/review_scenarios.py            # needs GROQ_API_KEY
+```
+
+Runs each spec through an eight-check SRE rubric (report realism, signal→cause,
+deploy presence, metric/narrative consistency, root-cause correctness, evidence
+support, fix, escalation flag) using the Groq judge model. It flags; a human
+confirms. The same rubric seeds the Task 8 LLM-judge.
+
+
 ## Current set (starter — expands in a later task)
 
 | id | category | difficulty | escalate? | modeled on |
