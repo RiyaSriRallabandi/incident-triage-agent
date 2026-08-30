@@ -25,7 +25,7 @@ Provider = Literal["groq", "gemini"]
 # LLM-judge and ablation comparisons.
 DEFAULT_MODELS: dict[Provider, str] = {
     "groq": "openai/gpt-oss-20b",
-    "gemini": "gemini-3.6-flash",
+    "gemini": "gemini-3.5-flash-lite",  # generous free-tier request quota
 }
 
 GROQ_LARGE_MODEL = "openai/gpt-oss-120b"
@@ -131,9 +131,17 @@ def rate_limit_exceptions() -> tuple[type[Exception], ...]:
         groq.APITimeoutError,
     ]
     try:
+        from langchain_google_genai.chat_models import (
+            GoogleRateLimitError,  # type: ignore[attr-defined]
+        )
+
+        exc.append(GoogleRateLimitError)
+    except ImportError:
+        pass
+    try:
         import google.genai.errors as gerr
 
-        exc += [gerr.ServerError, gerr.ClientError]  # ClientError covers 429
+        exc.append(gerr.ServerError)
     except ImportError:
         pass
     return tuple(exc)
