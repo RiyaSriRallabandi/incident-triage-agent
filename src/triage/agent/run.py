@@ -21,6 +21,7 @@ from triage.llm import get_chat_model, with_structured_output
 from triage.rag.index import INDEX_DIR
 from triage.schema import Scenario
 from triage.tools.toolset import build_toolset
+from triage.tracing import configure_tracing, trace_config
 
 DEFAULT_BUDGET = 6
 
@@ -108,6 +109,7 @@ def investigate(
     ``planner`` / ``concluder`` default to Groq-backed LLM callables; tests pass
     scripted ones.
     """
+    configure_tracing()
     tools = {t.name: t for t in build_toolset(scenario, runbook_index_dir=runbook_index_dir)}
     planner = planner or _llm_planner()
     concluder = concluder or _llm_concluder()
@@ -125,5 +127,6 @@ def investigate(
         "pending_plan": None,
         "result": None,
     }
-    final = graph.invoke(initial, {"recursion_limit": budget * 2 + 5})
+    config = {"recursion_limit": budget * 2 + 5, **trace_config(scenario, budget)}
+    final = graph.invoke(initial, config)
     return _to_result(scenario.id, final)

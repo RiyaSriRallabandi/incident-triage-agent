@@ -57,6 +57,14 @@ result = investigate(scenarios["scn_001"])
 print(result.outcome, result.diagnosis or result.escalation)
 ```
 
+## Tracing
+
+Set `LANGCHAIN_API_KEY` (from [smith.langchain.com](https://smith.langchain.com),
+free Developer tier) and `LANGCHAIN_TRACING_V2=true` in `.env`. Every agent run is
+then captured to the `incident-triage-agent` LangSmith project, tagged with the
+scenario id, category, and difficulty so runs are filterable. Without a key,
+tracing is a silent no-op.
+
 ## Data
 
 All incident data is synthetic or derived from public postmortems. No production
