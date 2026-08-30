@@ -1,0 +1,99 @@
+{
+  "tag": "baseline",
+  "n_runs": 12,
+  "n_crashed": 0,
+  "root_cause_accuracy": 0.778,
+  "root_cause_partial_rate": 0.222,
+  "escalation_decision_accuracy": 1.0,
+  "false_confident_wrong_rate": 0.0,
+  "mean_tool_calls": 5.0,
+  "budget_cap_rate": 0.417,
+  "mean_error_steps": 0.0,
+  "citation_grounding_rate": 0.543,
+  "fabricated_citation_rate": 0.457,
+  "failure_stages": {},
+  "per_scenario": [
+    {
+      "scenario_id": "scn_001",
+      "n_runs": 3,
+      "root_cause_grades": {
+        "correct": 3
+      },
+      "escalation_calls": {
+        "correct": 3
+      },
+      "mean_tool_calls": 5.33,
+      "grounded_citation_rate": 0.583
+    },
+    {
+      "scenario_id": "scn_002",
+      "n_runs": 3,
+      "root_cause_grades": {
+        "partial": 1,
+        "correct": 2
+      },
+      "escalation_calls": {
+        "correct": 3
+      },
+      "mean_tool_calls": 5.33,
+      "grounded_citation_rate": 0.385
+    },
+    {
+      "scenario_id": "scn_003",
+      "n_runs": 3,
+      "root_cause_grades": {
+        "correct": 2,
+        "partial": 1
+      },
+      "escalation_calls": {
+        "correct": 3
+      },
+      "mean_tool_calls": 3.33,
+      "grounded_citation_rate": 0.7
+    },
+    {
+      "scenario_id": "scn_004",
+      "n_runs": 3,
+      "root_cause_grades": {
+        "n/a": 3
+      },
+      "escalation_calls": {
+        "correct": 3
+      },
+      "mean_tool_calls": 6.0,
+      "grounded_citation_rate": null
+    }
+  ],
+  "calibration": {
+    "n": 12,
+    "raw_agreement": 0.5833333333333334,
+    "cohen_kappa": 0.2499999999999999,
+    "disagreements": [
+      [
+        "scn_001__run2",
+        "partial",
+        "correct"
+      ],
+      [
+        "scn_001__run3",
+        "partial",
+        "correct"
+      ],
+      [
+        "scn_002__run2",
+        "partial",
+        "correct"
+      ],
+      [
+        "scn_002__run3",
+        "partial",
+        "correct"
+      ],
+      [
+        "scn_003__run1",
+        "partial",
+        "correct"
+      ]
+    ]
+  }
+}

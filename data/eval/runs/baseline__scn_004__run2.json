@@ -1,0 +1,103 @@
+{
+  "tag": "baseline",
+  "scenario_id": "scn_004",
+  "run_index": 2,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_004",
+    "outcome": "escalate",
+    "diagnosis": null,
+    "escalation": {
+      "reason": "The tool-call budget was exhausted before the investigation could confirm the exact root cause of the context deadlines exceeded in the notifications-api send path.",
+      "evidence_gathered": [],
+      "suggested_next_steps": [
+        "Investigate network path or external upstream/downstream provider integrations outside the immediately checked services.",
+        "Inspect application-level timeout configurations for the notifications-api send path."
+      ]
+    },
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The notifications-api is experiencing elevated error rates. I need to check its error rate metric and logs to understand the pattern and timing of the errors.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "notifications-api",
+          "metric": "error_rate",
+          "start": "2026-08-08T01:50:00Z",
+          "end": "2026-08-08T03:15:00Z"
+        },
+        "result": "notifications-api / error_rate (ratio)\nsummary: first=0.004, last=0.0455, min=0.0039, max=0.0458, change +1045.0% (first value -> most extreme value)\npoints: 01:50=0.004, 01:51=0.004, 01:52=0.004, 01:53=0.004, 01:54=0.004, 01:55=0.004, 01:56=0.004, 01:57=0.0041, 01:58=0.004, 01:59=0.0041, 02:00=0.004, 02:01=0.004, 02:02=0.0041, 02:03=0.004, 02:04=0.004, 02:05=0.0039, 02:06=0.004, 02:07=0.004, 02:08=0.004, 02:09=0.004, 02:10=0.004, 02:11=0.0041, 02:12=0.0041, 02:13=0.0041, 02:14=0.004, 02:15=0.004, 02:16=0.004, 02:17=0.0041, 02:18=0.0041, 02:19=0.0041, 02:20=0.004, 02:21=0.0041, 02:22=0.004, 02:23=0.0039, 02:24=0.004, 02:25=0.004, 02:26=0.0041, 02:27=0.004, 02:28=0.0039, 02:29=0.0039, 02:30=0.0039, 02:31=0.0121, 02:32=0.02, 02:33=0.0283, 02:34=0.0363, 02:35=0.0444, 02:36=0.045, 02:37=0.0453, 02:38=0.0457, 02:39=0.0455, 02:40=0.045, 02:41=0.0452, 02:42=0.0457, 02:43=0.0458, 02:44=0.0446, 02:45=0.0451, 02:46=0.0447, 02:47=0.0444, 02:48=0.045, 02:49=0.0451, 02:50=0.0457, 02:51=0.0453, 02:52=0.0452, 02:53=0.045, 02:54=0.0457, 02:55=0.0449, 02:56=0.0458, 02:57=0.0457, 02:58=0.0441, 02:59=0.0458, 03:00=0.0444, 03:01=0.045, 03:02=0.0458, 03:03=0.0449, 03:04=0.045, 03:05=0.0444, 03:06=0.0451, 03:07=0.0448, 03:08=0.0453, 03:09=0.0441, 03:10=0.0443, 03:11=0.0449, 03:12=0.0444, 03:13=0.0446, 03:14=0.0447, 03:15=0.0455",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We know the notifications-api error rate started rising around 02:30 UTC. I need to search the logs for notifications-api around that time to identify the specific errors causing the elevation.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "notifications-api",
+          "start": "2026-08-08T02:25:00Z",
+          "end": "2026-08-08T02:45:00Z"
+        },
+        "result": "3 of 3 matching log lines:\n2026-08-08T02:30:00Z  notifications-api  WARN  error rate 3.1% over last 5m (baseline ~0.4%)\n2026-08-08T02:35:00Z  notifications-api  ERROR  unhandled exception in send path: context deadline exceeded (host n-api-7)\n2026-08-08T02:40:00Z  notifications-api  WARN  error rate 4.6%; failures observed on 9 of 12 hosts, no single host dominates",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The notifications-api logs show unhandled exceptions with 'context deadline exceeded' during the send path, pointing to a timeout communicating with a downstream service or database. I will search the logs for timeout or connection errors across other involved services to locate the root cause.",
+        "tool": "search_logs",
+        "args": {
+          "query": "timeout",
+          "service": "notifications-api",
+          "start": "2026-08-08T02:25:00Z",
+          "end": "2026-08-08T02:45:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "We see 'context deadline exceeded' in the notifications-api logs during the send path, but no deploys occurred. I need to check the other services involved, such as user-prefs-db or email-provider-proxy, to see if they are experiencing issues or high latencies.",
+        "tool": "search_logs",
+        "args": {
+          "query": "timeout",
+          "service": "user-prefs-db",
+          "start": "2026-08-08T02:25:00Z",
+          "end": "2026-08-08T02:45:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "We see 'context deadline exceeded' in the notifications-api send path, but user-prefs-db logs show no timeouts. I should check heap usage and latency on notifications-api to see if resource exhaustion or slow downstream dependencies are contributing to the timeouts.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "notifications-api",
+          "metric": "p95_latency_ms",
+          "start": "2026-08-08T01:50:00Z",
+          "end": "2026-08-08T03:15:00Z"
+        },
+        "result": "notifications-api / p95_latency_ms (milliseconds)\nsummary: first=140.174, last=149.763, min=137.2388, max=152.6381, change +8.9% (first value -> most extreme value)\npoints: 01:50=140.174, 01:51=138.804, 01:52=140.74, 01:53=137.813, 01:54=139.421, 01:55=142.744, 01:56=142.727, 01:57=139.25, 01:58=139.349, 01:59=141.748, 02:00=139.836, 02:01=137.407, 02:02=140.544, 02:03=138.948, 02:04=140.083, 02:05=141.186, 02:06=139.522, 02:07=138.111, 02:08=138.17, 02:09=140.61, 02:10=137.239, 02:11=140.81, 02:12=141.286, 02:13=142.382, 02:14=137.271, 02:15=142.749, 02:16=141.289, 02:17=141.999, 02:18=139.194, 02:19=142.311, 02:20=140.329, 02:21=140.636, 02:22=139.777, 02:23=140.945, 02:24=138.011, 02:25=140.046, 02:26=137.356, 02:27=142.513, 02:28=138.972, 02:29=138.746, 02:30=141.847, 02:31=143.594, 02:32=143.761, 02:33=142.776, 02:34=143.815, 02:35=145.006, 02:36=148.139, 02:37=145.552, 02:38=149.611, 02:39=149.125, 02:40=150.794, 02:41=150.354, 02:42=151.301, 02:43=149.32, 02:44=148.053, 02:45=150.104, 02:46=147.401, 02:47=151.178, 02:48=149.649, 02:49=150.568, 02:50=152.266, 02:51=150.029, 02:52=147.275, 02:53=149.123, 02:54=152.638, 02:55=150.474, 02:56=148.406, 02:57=149.662, 02:58=149.947, 02:59=152.401, 03:00=147.183, 03:01=150.201, 03:02=151.679, 03:03=150.174, 03:04=149.16, 03:05=151.37, 03:06=152.503, 03:07=147.779, 03:08=151.574, 03:09=150.918, 03:10=151.224, 03:11=148.27, 03:12=149.368, 03:13=149.962, 03:14=147.876, 03:15=149.763",
+        "error": false
+      },
+      {
+        "step": 6,
+        "plan_reasoning": "We have 1 tool call remaining, and notifications-api shows 'context deadline exceeded' errors in the send path around 02:30 UTC. I will query the remaining metric, heap_used_mb, to see if memory pressure contributed to the timeouts.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "notifications-api",
+          "metric": "heap_used_mb",
+          "start": "2026-08-08T01:50:00Z",
+          "end": "2026-08-08T03:15:00Z"
+        },
+        "result": "notifications-api / heap_used_mb (megabytes)\nsummary: first=515.5421, last=514.4176, min=501.9153, max=521.7463, change -2.6% (first value -> most extreme value)\npoints: 01:50=515.542, 01:51=512.691, 01:52=505.816, 01:53=517.869, 01:54=520.807, 01:55=518.292, 01:56=517.354, 01:57=511.707, 01:58=504.724, 01:59=514.506, 02:00=504.254, 02:01=514.775, 02:02=516.658, 02:03=505.843, 02:04=506.25, 02:05=505.519, 02:06=509.392, 02:07=506.397, 02:08=513.316, 02:09=515.023, 02:10=502.506, 02:11=520.499, 02:12=516.139, 02:13=513.715, 02:14=521.746, 02:15=502.407, 02:16=513.774, 02:17=507.817, 02:18=516.134, 02:19=516.292, 02:20=507.275, 02:21=509.794, 02:22=516.254, 02:23=511.557, 02:24=510.064, 02:25=504.221, 02:26=501.915, 02:27=518.71, 02:28=503.805, 02:29=514.858, 02:30=510.93, 02:31=511.666, 02:32=510.801, 02:33=506.79, 02:34=513.5, 02:35=521.538, 02:36=518.524, 02:37=518.934, 02:38=504.5, 02:39=505.975, 02:40=520.14, 02:41=516.546, 02:42=520.491, 02:43=511.498, 02:44=521.037, 02:45=518.033, 02:46=520.133, 02:47=510.721, 02:48=502.537, 02:49=502.963, 02:50=503.252, 02:51=520.288, 02:52=514.746, 02:53=505.745, 02:54=508.44, 02:55=516.606, 02:56=509.119, 02:57=513.585, 02:58=509.306, 02:59=509.704, 03:00=519.551, 03:01=512.175, 03:02=508.899, 03:03=516.707, 03:04=506.312, 03:05=503.509, 03:06=517.803, 03:07=503.333, 03:08=521.381, 03:09=516, 03:10=502.613, 03:11=507.819, 03:12=515.807, 03:13=521.262, 03:14=512.433, 03:15=514.418",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 6,
+    "hit_budget_cap": true
+  },
+  "error": null
+}

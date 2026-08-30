@@ -1,0 +1,122 @@
+[
+  {
+    "scenario_id": "scn_001",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identified the problematic WAF managed rule 100417 with a nested\u2011quantifier regex that exceeded its time budget, causing edge\u2011proxy CPU saturation and the surge in 5xx errors, which matches the ground\u2011truth cause."
+  },
+  {
+    "scenario_id": "scn_001",
+    "run_index": 2,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that the newly deployed WAF managed ruleset caused CPU exhaustion on edge-proxy hosts, leading to the 502 errors, which matches the ground\u2011truth cause and mechanism despite omitting the specific rule details."
+  },
+  {
+    "scenario_id": "scn_001",
+    "run_index": 3,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that a newly rolled\u2011out WAF managed ruleset caused CPU saturation on the edge\u2011proxy, leading to the 502 surge; while it cites a different ruleset identifier and omits the specific regex rule, the core cause and mechanism match the ground truth."
+  },
+  {
+    "scenario_id": "scn_002",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "partial",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies the payments\u2011api latency and the resulting exhaustion of checkout\u2011api\u2019s DB connection and thread pools, but it omits the critical retry\u2011amplification mechanism (no backoff/no retry budget) that actually drove the overload, so the explanation is incomplete."
+  },
+  {
+    "scenario_id": "scn_002",
+    "run_index": 2,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identified that the payments\u2011api latency spike caused the checkout\u2011api database connection pool exhaustion leading to 503 errors, matching the ground\u2011truth cause; the omitted retry\u2011amplification detail is a minor omission."
+  },
+  {
+    "scenario_id": "scn_002",
+    "run_index": 3,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that latency in payments\u2011api downstream caused checkout\u2011api threads to block, exhausting the database connection pool and resulting in 503 errors, matching the ground\u2011truth cause despite omitting the retry\u2011amplification detail."
+  },
+  {
+    "scenario_id": "scn_003",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly attributes the media\u2011api failures to an object\u2011store availability outage caused by the earlier storage maintenance, matching the ground\u2011truth cause, even though it omits the specific operator error of removing too many nodes."
+  },
+  {
+    "scenario_id": "scn_003",
+    "run_index": 2,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "partial",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that an object-store availability drop after storage maintenance caused the media\u2011api failures, but it omits the crucial detail that an operator\u2019s erroneous capacity\u2011removal command removed 48 nodes, causing the index subsystem to lose quorum."
+  },
+  {
+    "scenario_id": "scn_003",
+    "run_index": 3,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identified that the object-store index subsystem dropping below quorum and entering recovery caused the media\u2011api failures, matching the ground\u2011truth cause despite omitting the operator error detail."
+  },
+  {
+    "scenario_id": "scn_004",
+    "run_index": 1,
+    "agent_outcome": "escalate",
+    "root_cause_grade": "n/a",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "correctly escalated an under-determined incident"
+  },
+  {
+    "scenario_id": "scn_004",
+    "run_index": 2,
+    "agent_outcome": "escalate",
+    "root_cause_grade": "n/a",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "correctly escalated an under-determined incident"
+  },
+  {
+    "scenario_id": "scn_004",
+    "run_index": 3,
+    "agent_outcome": "escalate",
+    "root_cause_grade": "n/a",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "correctly escalated an under-determined incident"
+  }
+]

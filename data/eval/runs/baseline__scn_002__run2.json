@@ -1,0 +1,103 @@
+{
+  "tag": "baseline",
+  "scenario_id": "scn_002",
+  "run_index": 2,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_002",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "payments-api latency spike led to downstream database connection pool exhaustion in checkout-api, causing 503 errors and high wait times",
+      "confidence": 0.9,
+      "evidence": [
+        "payments-api / p95_latency_ms spiked at 09:16 UTC",
+        "checkout-api / db_pool_wait_ms spiked starting at 09:20 UTC",
+        "checkout-api / error_rate spiked starting at 09:22 UTC",
+        "connection-pool-exhaustion.md > Likely causes: A slow downstream (database, cache, or another service) holding connections longer, so the fixed-size pool drains and cannot refill fast enough."
+      ],
+      "recommended_fix": "Investigate why payments-api latency increased around 09:16 UTC, check downstream database performance and connection usage, and consider increasing the database connection pool size or implementing stricter timeouts."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "We know checkout-api is returning 503s and error rates are elevated. We should check the metrics for checkout-api to understand its internal state and error patterns.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "checkout-api",
+          "metric": "error_rate",
+          "start": "2026-06-03T08:45:00Z",
+          "end": "2026-06-03T09:43:00Z"
+        },
+        "result": "checkout-api / error_rate (ratio)\nsummary: first=0.001, last=0.3352, min=0.001, max=0.3459, change +34490.0% (first value -> most extreme value)\npoints: 08:45=0.001, 08:46=0.001, 08:47=0.001, 08:48=0.001, 08:49=0.001, 08:50=0.001, 08:51=0.001, 08:52=0.001, 08:53=0.001, 08:54=0.001, 08:55=0.001, 08:56=0.001, 08:57=0.001, 08:58=0.001, 08:59=0.001, 09:00=0.001, 09:01=0.001, 09:02=0.001, 09:03=0.001, 09:04=0.001, 09:05=0.001, 09:06=0.001, 09:07=0.001, 09:08=0.001, 09:09=0.001, 09:10=0.001, 09:11=0.001, 09:12=0.001, 09:13=0.001, 09:14=0.001, 09:15=0.001, 09:16=0.001, 09:17=0.001, 09:18=0.001, 09:19=0.001, 09:20=0.001, 09:21=0.001, 09:22=0.1724, 09:23=0.3404, 09:24=0.3353, 09:25=0.3459, 09:26=0.3447, 09:27=0.3433, 09:28=0.3378, 09:29=0.3441, 09:30=0.3388, 09:31=0.3368, 09:32=0.34, 09:33=0.3452, 09:34=0.3339, 09:35=0.3437, 09:36=0.3368, 09:37=0.3351, 09:38=0.3351, 09:39=0.3392, 09:40=0.3356, 09:41=0.3458, 09:42=0.3376, 09:43=0.3352",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed checkout-api error rates spiked starting at 09:22 UTC. Next, we should query checkout-api's db_pool_wait_ms metric to see if database connection pooling or resource exhaustion is causing the 503s.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "checkout-api",
+          "metric": "db_pool_wait_ms",
+          "start": "2026-06-03T08:45:00Z",
+          "end": "2026-06-03T09:43:00Z"
+        },
+        "result": "checkout-api / db_pool_wait_ms (milliseconds)\nsummary: first=1.9861, last=5110.5504, min=1.9633, max=5299.1939, change +266714.1% (first value -> most extreme value)\npoints: 08:45=1.9861, 08:46=1.989, 08:47=1.9633, 08:48=2.0354, 08:49=2.0277, 08:50=1.9654, 08:51=1.97, 08:52=2.0226, 08:53=2.0249, 08:54=2.0348, 08:55=1.9946, 08:56=2.0058, 08:57=2.0232, 08:58=1.9682, 08:59=2.0058, 09:00=1.9976, 09:01=1.9819, 09:02=1.9934, 09:03=2.0172, 09:04=1.9858, 09:05=1.9794, 09:06=1.9737, 09:07=2.0032, 09:08=1.9927, 09:09=2.0249, 09:10=2.0162, 09:11=2.0145, 09:12=1.9647, 09:13=1.9723, 09:14=2.0131, 09:15=2.0129, 09:16=2.027, 09:17=1.9693, 09:18=2.037, 09:19=2.0193, 09:20=1744.15, 09:21=3510.95, 09:22=5165.53, 09:23=5295.39, 09:24=5140.32, 09:25=5102.13, 09:26=5195.7, 09:27=5201.09, 09:28=5118.51, 09:29=5141.53, 09:30=5268.83, 09:31=5217.41, 09:32=5216.84, 09:33=5160.14, 09:34=5206.97, 09:35=5109.52, 09:36=5204.35, 09:37=5109.44, 09:38=5299.19, 09:39=5207.76, 09:40=5123.97, 09:41=5107.14, 09:42=5200.47, 09:43=5110.55",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "We see a severe spike in checkout-api db_pool_wait_ms starting at 09:20 UTC, indicating database connection pool exhaustion. Let's check payments-api p95_latency_ms to see if slow payment processing is holding up database connections or requests from checkout-api.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "payments-api",
+          "metric": "p95_latency_ms",
+          "start": "2026-06-03T08:45:00Z",
+          "end": "2026-06-03T09:43:00Z"
+        },
+        "result": "payments-api / p95_latency_ms (milliseconds)\nsummary: first=89.2556, last=405.923, min=88.2451, max=418.1213, change +368.5% (first value -> most extreme value)\npoints: 08:45=89.2556, 08:46=90.9026, 08:47=90.3204, 08:48=88.4604, 08:49=89.9239, 08:50=89.2247, 08:51=89.0196, 08:52=90.4211, 08:53=90.7825, 08:54=90.4947, 08:55=88.7334, 08:56=89.9741, 08:57=88.7225, 08:58=91.6017, 08:59=89.2237, 09:00=91.7246, 09:01=88.3247, 09:02=88.9036, 09:03=88.6057, 09:04=88.6897, 09:05=88.4263, 09:06=89.2696, 09:07=91.1119, 09:08=89.249, 09:09=90.4792, 09:10=91.6518, 09:11=88.273, 09:12=90.5497, 09:13=88.2451, 09:14=89.1278, 09:15=90.7711, 09:16=248.157, 09:17=408.764, 09:18=417.185, 09:19=416.156, 09:20=407.105, 09:21=411.659, 09:22=415.16, 09:23=416.36, 09:24=404.721, 09:25=401.908, 09:26=410.259, 09:27=413.287, 09:28=412.013, 09:29=414.225, 09:30=418.063, 09:31=408.507, 09:32=418.121, 09:33=414.405, 09:34=406.434, 09:35=404.056, 09:36=407.726, 09:37=411.252, 09:38=414.525, 09:39=407.699, 09:40=405.676, 09:41=405.664, 09:42=409.184, 09:43=405.923",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "We see payments-api latency spiked at 09:16 UTC, just before checkout-api's connection pool wait time and error rate spiked at 09:20 UTC. Let's search payments-api logs around 09:15 to 09:20 UTC to see what caused the latency increase.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "payments-api",
+          "start": "2026-06-03T09:12:00Z",
+          "end": "2026-06-03T09:22:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "Payments-api latency spiked around 09:16 UTC, but searching logs for 'error' returned nothing. Let's search payments-api logs without a keyword constraint or for connection/timeout terms around that timeframe to see why it slowed down.",
+        "tool": "search_logs",
+        "args": {
+          "query": "timeout",
+          "service": "payments-api",
+          "start": "2026-06-03T09:12:00Z",
+          "end": "2026-06-03T09:22:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 6,
+        "plan_reasoning": "We have identified that payments-api latency spiked at 09:16 UTC and checkout-api experienced database connection pool exhaustion starting at 09:20 UTC, leading to 503 errors. Let's retrieve the runbook for database pool wait or high latency to confirm standard troubleshooting steps.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "db_pool_wait_ms"
+        },
+        "result": "5 runbook section(s):\n\n[1] connection-pool-exhaustion.md > Symptoms (score 0.4716)\nErrors or log lines stating that a connection pool is exhausted, that all\nconnections are in use, or that acquisition timed out with many waiters queued.\nPool wait time rises sharply. Throughput collapses while CPU and memory may look\nnormal, because requests are blocked waiting for a connection rather than doing\nwork.\n\n[2] connection-pool-exhaustion.md > Likely causes (score 0.4495)\n- A slow downstream (database, cache, or another service) holding connections\n  longer, so the fixed-size pool drains and cannot refill fast enough.\n- Retry amplification increasing concurrent outbound calls beyond the pool size.\n- A connection leak: connections checked out and never returned due to a missing\n  release in an error path.\n- Pool sized too small for current traffic, or a single pool shared between fast\n  local work and slow remote calls.\n\n[3] connection-pool-exhaustion.md > How to confirm (score 0.4289)\n- Check pool metrics: active connections at the ceiling, waiters greater than\n  zero, rising acquisition wait time.\n- Correlate with downstream latency and with the caller's outbound request rate.\n- If downstream latency is normal, suspect a leak; look for steadily falling idle\n  connections over time.\n\n[4] thread-pool-exhaustion.md > Symptoms (score 0.4159)\nThe service stops accepting new work: log lines about a full worker pool, a\nrejected-execution error, or a saturated event loop. Inbound requests are queued\nor dropped with 503 responses. Already-running requests may still complete slowly.\n\n[5] connection-pool-exhaustion.md > References (score 0.4151)\n- AWS Builders' Library, \"Using load shedding to avoid overload\":\n  https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 6,
+    "hit_budget_cap": true
+  },
+  "error": null
+}

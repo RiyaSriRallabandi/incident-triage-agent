@@ -1,0 +1,103 @@
+{
+  "tag": "baseline",
+  "scenario_id": "scn_004",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_004",
+    "outcome": "escalate",
+    "diagnosis": null,
+    "escalation": {
+      "reason": "The tool-call budget was exhausted before the investigation could fully localize the downstream dependency or root cause of the context deadline exceeded errors in the send path.",
+      "evidence_gathered": [],
+      "suggested_next_steps": [
+        "Check downstream provider and database latencies during the 02:30 UTC window",
+        "Analyze network traces or connection pools for the 12 hosts of notifications-api"
+      ]
+    },
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The notifications-api is experiencing elevated error rates. I need to check its error rate metrics to understand the timing and severity of the anomaly during the incident window.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "notifications-api",
+          "metric": "error_rate",
+          "start": "2026-08-08T01:50:00Z",
+          "end": "2026-08-08T03:15:00Z"
+        },
+        "result": "notifications-api / error_rate (ratio)\nsummary: first=0.004, last=0.0455, min=0.0039, max=0.0458, change +1045.0% (first value -> most extreme value)\npoints: 01:50=0.004, 01:51=0.004, 01:52=0.004, 01:53=0.004, 01:54=0.004, 01:55=0.004, 01:56=0.004, 01:57=0.0041, 01:58=0.004, 01:59=0.0041, 02:00=0.004, 02:01=0.004, 02:02=0.0041, 02:03=0.004, 02:04=0.004, 02:05=0.0039, 02:06=0.004, 02:07=0.004, 02:08=0.004, 02:09=0.004, 02:10=0.004, 02:11=0.0041, 02:12=0.0041, 02:13=0.0041, 02:14=0.004, 02:15=0.004, 02:16=0.004, 02:17=0.0041, 02:18=0.0041, 02:19=0.0041, 02:20=0.004, 02:21=0.0041, 02:22=0.004, 02:23=0.0039, 02:24=0.004, 02:25=0.004, 02:26=0.0041, 02:27=0.004, 02:28=0.0039, 02:29=0.0039, 02:30=0.0039, 02:31=0.0121, 02:32=0.02, 02:33=0.0283, 02:34=0.0363, 02:35=0.0444, 02:36=0.045, 02:37=0.0453, 02:38=0.0457, 02:39=0.0455, 02:40=0.045, 02:41=0.0452, 02:42=0.0457, 02:43=0.0458, 02:44=0.0446, 02:45=0.0451, 02:46=0.0447, 02:47=0.0444, 02:48=0.045, 02:49=0.0451, 02:50=0.0457, 02:51=0.0453, 02:52=0.0452, 02:53=0.045, 02:54=0.0457, 02:55=0.0449, 02:56=0.0458, 02:57=0.0457, 02:58=0.0441, 02:59=0.0458, 03:00=0.0444, 03:01=0.045, 03:02=0.0458, 03:03=0.0449, 03:04=0.045, 03:05=0.0444, 03:06=0.0451, 03:07=0.0448, 03:08=0.0453, 03:09=0.0441, 03:10=0.0443, 03:11=0.0449, 03:12=0.0444, 03:13=0.0446, 03:14=0.0447, 03:15=0.0455",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The error rate metric confirms the elevation started sharply at 02:31 UTC. I need to search the logs of notifications-api during the onset of the error increase to identify the specific error messages and root cause.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "notifications-api",
+          "start": "2026-08-08T02:25:00Z",
+          "end": "2026-08-08T02:40:00Z"
+        },
+        "result": "3 of 3 matching log lines:\n2026-08-08T02:30:00Z  notifications-api  WARN  error rate 3.1% over last 5m (baseline ~0.4%)\n2026-08-08T02:35:00Z  notifications-api  ERROR  unhandled exception in send path: context deadline exceeded (host n-api-7)\n2026-08-08T02:40:00Z  notifications-api  WARN  error rate 4.6%; failures observed on 9 of 12 hosts, no single host dominates",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The logs indicate context deadline exceeded errors in the send path of notifications-api, suggesting a timeout when communicating with a downstream provider or database. I will search the notifications-api logs around the onset time for timeout or connection-related terms to identify the failing dependency.",
+        "tool": "search_logs",
+        "args": {
+          "query": "timeout",
+          "service": "notifications-api",
+          "start": "2026-08-08T02:25:00Z",
+          "end": "2026-08-08T02:40:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "The logs showed a context deadline exceeded error during the send path of notifications-api. I need to search the logs for dependency calls or connection attempts around that time to see which downstream service caused the timeout.",
+        "tool": "search_logs",
+        "args": {
+          "query": "send",
+          "service": "notifications-api",
+          "start": "2026-08-08T02:30:00Z",
+          "end": "2026-08-08T02:40:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-08-08T02:35:00Z  notifications-api  ERROR  unhandled exception in send path: context deadline exceeded (host n-api-7)",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "The notifications-api experienced context deadline exceeded errors in the send path, pointing towards a timeout interacting with a downstream dependency. I should search the logs for database or provider connection issues during the incident onset to identify which specific dependency timed out.",
+        "tool": "search_logs",
+        "args": {
+          "query": "database",
+          "service": "notifications-api",
+          "start": "2026-08-08T02:30:00Z",
+          "end": "2026-08-08T02:40:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 6,
+        "plan_reasoning": "I have identified context deadline exceeded errors in notifications-api send path. I should query metrics for user-prefs-db or check other dependencies to find the source of latency.",
+        "tool": "search_logs",
+        "args": {
+          "query": "deadline",
+          "service": "notifications-api",
+          "start": "2026-08-08T02:30:00Z",
+          "end": "2026-08-08T02:45:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-08-08T02:35:00Z  notifications-api  ERROR  unhandled exception in send path: context deadline exceeded (host n-api-7)",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 6,
+    "hit_budget_cap": true
+  },
+  "error": null
+}

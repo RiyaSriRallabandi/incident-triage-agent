@@ -1,0 +1,93 @@
+{
+  "tag": "baseline",
+  "scenario_id": "scn_002",
+  "run_index": 3,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_002",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "Downstream latency in payments-api caused checkout-api threads/connections to block waiting on outbound payment calls, leading to database connection pool exhaustion and subsequent 503 errors.",
+      "confidence": 0.95,
+      "evidence": [
+        "payments-api p95 latency increased starting at 09:16 UTC",
+        "checkout-api log at 09:17:00Z showed downstream payments-api call slow",
+        "checkout-api database pool wait times spiked starting at 09:20 UTC",
+        "checkout-api error rate spiked starting at 09:22 UTC"
+      ],
+      "recommended_fix": "Mitigate the payments-api slowness to reduce downstream latency, and implement stricter timeouts and circuit breakers on checkout-api outbound calls to protect its connection pool from exhaustion."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "Checkout-api is returning 503s and has elevated error rates, so I will query its error rate and database pool wait time to understand the behavior during the incident window.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "checkout-api",
+          "metric": "error_rate",
+          "start": "2026-06-03T08:45:00Z",
+          "end": "2026-06-03T09:43:00Z"
+        },
+        "result": "checkout-api / error_rate (ratio)\nsummary: first=0.001, last=0.3352, min=0.001, max=0.3459, change +34490.0% (first value -> most extreme value)\npoints: 08:45=0.001, 08:46=0.001, 08:47=0.001, 08:48=0.001, 08:49=0.001, 08:50=0.001, 08:51=0.001, 08:52=0.001, 08:53=0.001, 08:54=0.001, 08:55=0.001, 08:56=0.001, 08:57=0.001, 08:58=0.001, 08:59=0.001, 09:00=0.001, 09:01=0.001, 09:02=0.001, 09:03=0.001, 09:04=0.001, 09:05=0.001, 09:06=0.001, 09:07=0.001, 09:08=0.001, 09:09=0.001, 09:10=0.001, 09:11=0.001, 09:12=0.001, 09:13=0.001, 09:14=0.001, 09:15=0.001, 09:16=0.001, 09:17=0.001, 09:18=0.001, 09:19=0.001, 09:20=0.001, 09:21=0.001, 09:22=0.1724, 09:23=0.3404, 09:24=0.3353, 09:25=0.3459, 09:26=0.3447, 09:27=0.3433, 09:28=0.3378, 09:29=0.3441, 09:30=0.3388, 09:31=0.3368, 09:32=0.34, 09:33=0.3452, 09:34=0.3339, 09:35=0.3437, 09:36=0.3368, 09:37=0.3351, 09:38=0.3351, 09:39=0.3392, 09:40=0.3356, 09:41=0.3458, 09:42=0.3376, 09:43=0.3352",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed checkout-api error rates spiked around 09:22 UTC. Next, I will query the database pool wait time on checkout-api to see if resource exhaustion is contributing to the failures.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "checkout-api",
+          "metric": "db_pool_wait_ms",
+          "start": "2026-06-03T08:45:00Z",
+          "end": "2026-06-03T09:43:00Z"
+        },
+        "result": "checkout-api / db_pool_wait_ms (milliseconds)\nsummary: first=1.9861, last=5110.5504, min=1.9633, max=5299.1939, change +266714.1% (first value -> most extreme value)\npoints: 08:45=1.9861, 08:46=1.989, 08:47=1.9633, 08:48=2.0354, 08:49=2.0277, 08:50=1.9654, 08:51=1.97, 08:52=2.0226, 08:53=2.0249, 08:54=2.0348, 08:55=1.9946, 08:56=2.0058, 08:57=2.0232, 08:58=1.9682, 08:59=2.0058, 09:00=1.9976, 09:01=1.9819, 09:02=1.9934, 09:03=2.0172, 09:04=1.9858, 09:05=1.9794, 09:06=1.9737, 09:07=2.0032, 09:08=1.9927, 09:09=2.0249, 09:10=2.0162, 09:11=2.0145, 09:12=1.9647, 09:13=1.9723, 09:14=2.0131, 09:15=2.0129, 09:16=2.027, 09:17=1.9693, 09:18=2.037, 09:19=2.0193, 09:20=1744.15, 09:21=3510.95, 09:22=5165.53, 09:23=5295.39, 09:24=5140.32, 09:25=5102.13, 09:26=5195.7, 09:27=5201.09, 09:28=5118.51, 09:29=5141.53, 09:30=5268.83, 09:31=5217.41, 09:32=5216.84, 09:33=5160.14, 09:34=5206.97, 09:35=5109.52, 09:36=5204.35, 09:37=5109.44, 09:38=5299.19, 09:39=5207.76, 09:40=5123.97, 09:41=5107.14, 09:42=5200.47, 09:43=5110.55",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "Database pool wait times spiked dramatically right around the start of the error rate increase on checkout-api. Now I will query the payments-api p95 latency metric to see if downstream payment processing latency is causing the connection pool exhaustion.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "payments-api",
+          "metric": "p95_latency_ms",
+          "start": "2026-06-03T08:45:00Z",
+          "end": "2026-06-03T09:43:00Z"
+        },
+        "result": "payments-api / p95_latency_ms (milliseconds)\nsummary: first=89.2556, last=405.923, min=88.2451, max=418.1213, change +368.5% (first value -> most extreme value)\npoints: 08:45=89.2556, 08:46=90.9026, 08:47=90.3204, 08:48=88.4604, 08:49=89.9239, 08:50=89.2247, 08:51=89.0196, 08:52=90.4211, 08:53=90.7825, 08:54=90.4947, 08:55=88.7334, 08:56=89.9741, 08:57=88.7225, 08:58=91.6017, 08:59=89.2237, 09:00=91.7246, 09:01=88.3247, 09:02=88.9036, 09:03=88.6057, 09:04=88.6897, 09:05=88.4263, 09:06=89.2696, 09:07=91.1119, 09:08=89.249, 09:09=90.4792, 09:10=91.6518, 09:11=88.273, 09:12=90.5497, 09:13=88.2451, 09:14=89.1278, 09:15=90.7711, 09:16=248.157, 09:17=408.764, 09:18=417.185, 09:19=416.156, 09:20=407.105, 09:21=411.659, 09:22=415.16, 09:23=416.36, 09:24=404.721, 09:25=401.908, 09:26=410.259, 09:27=413.287, 09:28=412.013, 09:29=414.225, 09:30=418.063, 09:31=408.507, 09:32=418.121, 09:33=414.405, 09:34=406.434, 09:35=404.056, 09:36=407.726, 09:37=411.252, 09:38=414.525, 09:39=407.699, 09:40=405.676, 09:41=405.664, 09:42=409.184, 09:43=405.923",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "Payments-api latency increased slightly starting at 09:16 UTC, right before checkout-api database pool wait times spiked at 09:20 UTC. I will search checkout-api logs to see if slow database queries or outbound payment requests are blocking connections.",
+        "tool": "search_logs",
+        "args": {
+          "query": "timeout",
+          "service": "checkout-api",
+          "start": "2026-06-03T09:15:00Z",
+          "end": "2026-06-03T09:25:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-06-03T09:17:00Z  checkout-api  WARN  downstream payments-api call slow: 1180ms (timeout 2000ms)",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "We see payments-api latency rising and checkout-api connection pool wait times spiking. I will search checkout-api logs for database or connection errors to confirm if the primary bottleneck is database saturation caused by waiting on payment calls.",
+        "tool": "search_logs",
+        "args": {
+          "query": "database",
+          "service": "checkout-api",
+          "start": "2026-06-03T09:15:00Z",
+          "end": "2026-06-03T09:25:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 5,
+    "hit_budget_cap": false
+  },
+  "error": null
+}
