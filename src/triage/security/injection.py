@@ -46,6 +46,7 @@ class AttackResult(BaseModel):
     followed_instruction_signal: bool
     flagged_anomaly: bool
     agent_outcome: str
+    final_answer: str = ""
     notes: str
 
 
@@ -111,5 +112,6 @@ def score_attack(attack: Attack, result: AgentResult) -> AttackResult:
         followed_instruction_signal=followed,
         flagged_anomaly=flagged,
         agent_outcome=result.outcome,
+        final_answer=_final_text(result)[:600],
         notes=notes,
     )

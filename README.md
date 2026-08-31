@@ -36,17 +36,24 @@ Evaluated on a **30-scenario dev set** (used for prompt iteration + ablations)
 and a **10-scenario sealed held-out set** (used once). Every scenario is derived
 from a real public postmortem; ground truth is hand-verified.
 
-_See [docs/REPORT.md](docs/REPORT.md) for the full numbers, the ablation table,
-and the judge-calibration story. Headline figures land here once the held-out run
-completes._
+**Held-out test set (10 scenarios, run once with the shipped config):**
 
-Highlights so far:
+| | |
+|---|---|
+| Root-cause correct (mechanism identified) | **88.9%** |
+| Escalation decision accuracy | **100%** |
+| False-confident-wrong rate | **0%** |
+| Citation grounding | 54.8% |
 
-- **Judge calibration:** v1 of the LLM judge came out at Cohen's **κ = 0.25**
-  (too lenient); diagnosed the bias, rewrote it, **κ = 0.92** (n=30).
-- **Ablation:** a `conclude` prompt that constrains citations to retrieved text
-  raised citation grounding **55% → 87%** (Wilcoxon p = 0.0004) — but over-escalated
-  (93% → 80%), caught by the paired test; the next iteration fixes it.
+- **Judge calibration:** the LLM judge's first prompt scored Cohen's **κ = 0.25**
+  vs. hand grading (too lenient) — diagnosed, rewrote, **κ = 0.92** (n=30).
+- **Ablations rejected every prompt variant:** a citation-constrained `conclude`
+  prompt raised grounding **55% → 87%** (Wilcoxon p = 0.0004) but over-escalated
+  (93% → 80%); the fix for that regressed mechanism identification. The baseline ships.
+- **5/5 prompt-injection attacks resisted** ([SECURITY.md](docs/SECURITY.md)).
+- Persistent weak spot: ~55% citation grounding.
+
+Full numbers, the ablation table, and the calibration story: [docs/REPORT.md](docs/REPORT.md).
 
 ## Stack
 
