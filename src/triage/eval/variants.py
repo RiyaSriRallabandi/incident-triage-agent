@@ -29,6 +29,7 @@ VARIANTS: dict[str, Variant] = {
         BASELINE,
         Variant(tag="conclude-v2", conclude_prompt="conclude_v2"),
         Variant(tag="conclude-v3", conclude_prompt="conclude_v3"),
+        Variant(tag="conclude-v4", conclude_prompt="conclude_v4"),
         Variant(tag="plan-v2", plan_prompt="plan_v2"),
         Variant(tag="budget-10", budget=10),
         Variant(
