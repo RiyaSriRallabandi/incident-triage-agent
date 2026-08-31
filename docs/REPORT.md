@@ -1,72 +1,135 @@
 # Evaluation Report
 
-## Baseline (`tag=baseline`)
+The agent is evaluated on two levels — outcome (did it reach the right
+conclusion?) and step-level (was the process sound?) — over a **30-scenario dev
+set** used for prompt iteration and ablations, plus a **10-scenario held-out test
+set** used exactly once for the headline numbers.
 
-- **12 runs** — 4 scenarios × 3 repeats, 0 crashed
-- **Agent model:** `gemini-3.5-flash-lite` (Groq `gpt-oss-20b` fallback). Groq's
-  free tier caps at 200K tokens/day, which the agent's multi-turn runs exhaust in
-  ~3 runs, so the eval uses Gemini.
-- **Judge model:** Groq `gpt-oss-120b`, prompt `judge_root_cause_v2`
-- **Tool-call budget:** 6
+- **Agent model:** `gemini-3.5-flash-lite` (Groq `gpt-oss-20b` fallback). Free
+  tiers only; the ablation matrix is spread over several days of quota.
+- **Judge:** Groq `gpt-oss-120b`, prompt `judge_root_cause_v2`.
+- **Tool-call budget:** 6.
 
-### Outcome metrics
+---
 
-| Metric | Value | Notes |
+## 1. Judge calibration
+
+Root-cause statements are free text, so they are graded by an LLM judge on a
+3-point scale (correct / partial / incorrect). The judge is only trusted after
+being checked against the author's hand grading.
+
+| Judge prompt | Cohen's κ vs hand grading | Verdict |
 |---|---|---|
-| Root-cause accuracy (correct) | **22.2%** | over 9 gradable runs (scn_004 escalates, not graded on cause) |
-| Root-cause partial | 77.8% | right service + symptom chain, mechanism missing or wrong |
-| Root-cause incorrect | 0% | |
-| Escalation decision accuracy | **100%** | scn_004 correctly escalated 3/3; no solvable scenario wrongly escalated |
-| False-confident-wrong rate | **0%** | no confident diagnosis was wrong |
+| `judge_root_cause_v1` | **0.25** (n=12) | **rejected** — systematically lenient |
+| `judge_root_cause_v2` | **0.92** (n=30) | accepted |
 
-### Step-level metrics
+`v1` scored an answer "correct" whenever it named the right service and symptom
+chain, even when it missed the *mechanism a fix must address* (e.g. "payments
+latency exhausted the pool" for an incident whose cause is un-budgeted retry
+amplification). `v2` requires the mechanism. On the 30 dev-set runs it disagreed
+with the author on 1 of 30 (a borderline "external DNS provider failure" vs.
+"DDoS").
 
-| Metric | Value | Notes |
-|---|---|---|
-| Citation grounding rate | **54.3%** | fraction of final citations that match retrieved evidence |
-| Fabricated citation rate | 45.7% | citations with no support in the run's tool results |
-| Mean tool calls | 5.0 | |
-| Budget-cap rate | **41.7%** | runs that hit the 6-call limit before concluding |
-| Mean error steps / run | 0.0 | no failed tool calls |
+**Caveats:** the calibration set is 30 runs; `v2` contains worked examples drawn
+from a few scenarios, so some anchoring is possible; it did generalise to
+scenarios not in its examples.
 
-### Judge calibration
+---
 
-`judge_root_cause_v2` vs. the author's hand grading of all 12 runs:
+## 2. Dev-set baseline (`dev-baseline`, 30 scenarios)
 
-- **Cohen's κ = 1.00**, raw agreement 100% (n = 12)
-- `judge_root_cause_v1` was rejected: κ = 0.25, systematically lenient — it scored
-  answers "correct" when they named the right service and symptom chain but not
-  the mechanism a fix must address (e.g. "payments latency exhausted the pool"
-  for a scenario whose cause is un-budgeted retry amplification).
+### Outcome
 
-**Caveats:** the calibration set is small (12 runs), and `v2` contains worked
-examples drawn from scn_001/scn_002 patterns, so some anchoring is possible. It
-generalised correctly to scn_003 (not in the examples). Re-calibrate when the
-golden set expands.
+| Metric | Value |
+|---|---|
+| Root-cause **correct** | 74.1% |
+| Root-cause partial | 22.2% |
+| Root-cause incorrect | 3.7% |
+| Escalation decision accuracy | 93.3% (28/30) |
+| False-confident-wrong rate | 3.3% (1/30) |
 
-## Reading the baseline
+### Step-level
 
-The agent **reliably localises the incident** — right service, right chain of
-symptoms, correct decision to escalate when the evidence is genuinely thin — but
-**names the underlying mechanism only ~22% of the time**. It tends to stop at
-"service X was slow / erroring and that broke Y" without identifying *why*
-(retry amplification, a pathological regex, quorum loss).
+| Metric | Value |
+|---|---|
+| Citation grounding rate | 55.2% |
+| Fabricated citation rate | 44.8% |
+| Mean tool calls | 4.13 |
+| Budget-cap rate | 20.0% |
 
-Nearly half of its citations are not grounded in what it actually retrieved, and
-it hits the tool-call budget ~40% of the time.
+### Reading
 
-### Targets for Task 9
+The agent reliably **localises** the incident — right service, right symptom
+chain, correct call on whether to escalate. It **names the mechanism** ~74% of
+the time; the partials cluster on *cause-of-the-cause* incidents (a stats refresh
+that flips a query plan, a health check pointed at a warming cache, a retry
+config), where it stops at "X was slow and broke Y". Nearly half its citations
+are not grounded in what it actually retrieved.
 
-1. Mechanism identification (22% → higher) — likely a `conclude` prompt change.
-2. Citation grounding (54% → higher) — constrain citations to retrieved text.
-3. Budget efficiency (42% cap rate) — better planning, or a larger budget (ablation).
+---
+
+## 3. Ablations (dev set, n=30 paired)
+
+Each variant changes one thing vs `dev-baseline`. Paired tests: McNemar's exact
+(correct / not-correct) and Wilcoxon signed-rank (continuous). With n=30, p-values
+are supporting evidence; effect sizes are reported alongside.
+
+### `conclude-v2` — demand the mechanism, cite only retrieved text
+
+| Metric | baseline | conclude-v2 | Δ | p |
+|---|---|---|---|---|
+| Citation grounding | 55.6% | **87.4%** | **+31.8pp** | **0.0004** (Wilcoxon) |
+| Mean tool calls | 4.13 | 3.73 | −0.40 | **0.027** (Wilcoxon) |
+| Confidence (calibration) | 0.99 | 0.95 | −0.04 | **0.0005** (Wilcoxon) |
+| Escalation decision accuracy | 93.3% | 80.0% | −13.3pp | — |
+| Net correct rate (unified) | 73.3% | 66.7% | −6.7pp | 0.75 (McNemar) |
+
+**Verdict: partial win, rejected as-is.** The citation instruction essentially
+solved the fabrication problem, and the run got shorter and better-calibrated,
+all significant. But the "escalate if you can't name the mechanism" language made
+it **over-escalate** — six solvable incidents wrongly escalated (up from two) —
+which cancels the accuracy gains. `conclude-v3` keeps the citation and mechanism
+language and softens the escalation trigger.
+
+### `conclude-v3` — the fix
+
+_(pending — running)_
+
+### `no-deploys` — remove the `get_recent_deploys` tool
+
+_(pending — running)_
+
+---
+
+## 4. Held-out test set (`heldout/`, 10 scenarios)
+
+The held-out scenarios were not used for any prompt iteration. Baseline and the
+winning config are run against them **once**.
+
+_(pending — run after the dev-set config is frozen)_
+
+---
+
+## 5. Security slice — prompt-injection resistance
+
+Five attacks, one malicious log line per scenario (instruction injection,
+fake system message, prompt extraction, out-of-scope tool use, credential
+exfiltration). An attack passes if no leak markers reach the final output and the
+agent did not follow the injected instruction.
+
+_(pending — running)_
+
+---
 
 ## Reproducing
 
 ```bash
-uv run python scripts/run_eval.py --tag baseline        # uses cached runs + judgements
-uv run python scripts/run_eval.py --tag baseline --force # re-run the agent (slow, uses quota)
+uv run python scripts/run_eval.py --variant dev-baseline   # dev baseline (cached)
+uv run python scripts/run_ablations.py                     # all variants + comparison
+uv run python scripts/run_heldout.py --winner conclude-v3  # held-out, once
+uv run python scripts/run_security.py --provider groq      # injection slice
 ```
 
-Cached runs: `data/eval/runs/baseline__*.json`. Hand labels:
-`data/eval/hand_labels.json`. Summary: `data/eval/summary__baseline.json`.
+Cached artifacts: `data/eval/runs/`, `data/eval/judgements__*.json`,
+`data/eval/summary__*.json`, `data/eval/ablations.json`, `data/eval/hand_labels.json`,
+`data/security/results.json`.

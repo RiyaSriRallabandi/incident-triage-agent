@@ -1,0 +1,91 @@
+{
+  "tag": "conclude-v3",
+  "scenario_id": "scn_008",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_008",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The scheduled internal CA rotation performed this morning introduced new certificates that the internal-api-mesh services are failing to validate, causing a spike in mTLS validation errors starting at ~09:34 UTC and resulting in failing service-to-service calls.",
+      "confidence": 0.85,
+      "evidence": [
+        "Since ~09:33 UTC about a third of internal service-to-service calls are failing with certificate errors.",
+        "The platform team ran a scheduled internal CA rotation this morning.",
+        "internal-api-mesh / mtls_validation_error_rate (ratio) summary: first=0.001, last=0.351, min=0.001, max=0.3566",
+        "09:33=0.001, 09:34=0.0715, 09:35=0.1382, 09:36=0.2144, 09:37=0.2804, 09:38=0.3502",
+        "Install and reload the renewed certificate or credential."
+      ],
+      "recommended_fix": "Install and reload the renewed certificate or credential across the affected internal-api-mesh services. Afterwards, ensure automated reloading processes are verified and monitor expiry and rotation states closely."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The incident report mentions certificate errors during service-to-service calls coinciding with a scheduled internal CA rotation. I will query the internal-api-mesh mtls validation error rate to quantify the failure timing and severity.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "internal-api-mesh",
+          "metric": "mtls_validation_error_rate",
+          "start": "2026-10-08T09:00:00Z",
+          "end": "2026-10-08T10:20:00Z"
+        },
+        "result": "internal-api-mesh / mtls_validation_error_rate (ratio)\nsummary: first=0.001, last=0.351, min=0.001, max=0.3566, change +35560.0% (first value -> most extreme value)\npoints: 09:00=0.001, 09:01=0.001, 09:02=0.001, 09:03=0.001, 09:04=0.001, 09:05=0.001, 09:06=0.001, 09:07=0.001, 09:08=0.001, 09:09=0.001, 09:10=0.001, 09:11=0.001, 09:12=0.001, 09:13=0.001, 09:14=0.001, 09:15=0.001, 09:16=0.001, 09:17=0.001, 09:18=0.001, 09:19=0.001, 09:20=0.001, 09:21=0.001, 09:22=0.001, 09:23=0.001, 09:24=0.001, 09:25=0.001, 09:26=0.001, 09:27=0.001, 09:28=0.001, 09:29=0.001, 09:30=0.001, 09:31=0.001, 09:32=0.001, 09:33=0.001, 09:34=0.0715, 09:35=0.1382, 09:36=0.2144, 09:37=0.2804, 09:38=0.3502, 09:39=0.3544, 09:40=0.3433, 09:41=0.3497, 09:42=0.3438, 09:43=0.3448, 09:44=0.3466, 09:45=0.3478, 09:46=0.3525, 09:47=0.3478, 09:48=0.3459, 09:49=0.3515, 09:50=0.3522, 09:51=0.3507, 09:52=0.3527, 09:53=0.3553, 09:54=0.3526, 09:55=0.3464, 09:56=0.3532, 09:57=0.3489, 09:58=0.3508, 09:59=0.3435, 10:00=0.3491, 10:01=0.351, 10:02=0.3549, 10:03=0.3488, 10:04=0.3471, 10:05=0.3521, 10:06=0.35, 10:07=0.3532, 10:08=0.3448, 10:09=0.3519, 10:10=0.3549, 10:11=0.3483, 10:12=0.3513, 10:13=0.3566, 10:14=0.3468, 10:15=0.3478, 10:16=0.3549, 10:17=0.3483, 10:18=0.3485, 10:19=0.3562, 10:20=0.351",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed that mtls_validation_error_rate on internal-api-mesh jumped sharply starting at 09:34 UTC following the CA rotation. I will now search the internal-api-mesh logs for certificate errors around that time to identify the specific validation failure.",
+        "tool": "search_logs",
+        "args": {
+          "query": "certificate",
+          "service": "internal-api-mesh",
+          "start": "2026-10-08T09:30:00Z",
+          "end": "2026-10-08T09:45:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "Since searching logs for 'certificate' yielded no results, I will search for 'expired' or 'rotation' in internal-api-mesh logs to find the exact error message related to the CA rotation.",
+        "tool": "search_logs",
+        "args": {
+          "query": "rotation",
+          "service": "internal-api-mesh",
+          "start": "2026-10-08T09:30:00Z",
+          "end": "2026-10-08T09:45:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "Since searching logs for 'certificate' and 'rotation' in internal-api-mesh returned nothing, I will search for 'error' or 'failed' in internal-api-mesh logs around the time of the spike to capture the failure messages.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "internal-api-mesh",
+          "start": "2026-10-08T09:30:00Z",
+          "end": "2026-10-08T09:45:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "Since internal-api-mesh logs yielded no results for keywords, I will retrieve runbook documentation to understand how mTLS validation errors and CA rotations typically manifest or where else to look.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "certificate"
+        },
+        "result": "5 runbook section(s):\n\n[1] certificate-and-config-expiry.md > How to confirm (score 0.4973)\n- Check the expiry date of the certificate or credential in use and compare it to\n  the incident start time; an exact match is conclusive.\n- Verify whether a renewal happened but the process did not reload it.\n- Confirm host clocks are correct.\n\n[2] certificate-and-config-expiry.md > References (score 0.4908)\n- Google SRE Book, \"Practical Alerting\" and \"Being On-Call\": https://sre.google/books/\n\n[3] certificate-and-config-expiry.md > Mitigation (score 0.4595)\nInstall and reload the renewed certificate or credential. If renewal is not ready,\nissue a short-lived one. Afterwards, monitor expiry dates with alerting well\nahead of the deadline, automate renewal and reload, and stagger expiry across\nservices.\n\n[4] certificate-and-config-expiry.md > Likely causes (score 0.4482)\n- A TLS certificate reached its expiry date and was not renewed or not reloaded\n  after renewal.\n- A signing key, API token, or service-account credential expired or was rotated\n  without updating all consumers.\n- A trust bundle or intermediate certificate changed.\n- A time-skewed host rejecting otherwise-valid certificates.\n\n[5] certificate-and-config-expiry.md > Symptoms (score 0.4382)\nA sudden, total failure that starts at a round wall-clock time with no deploy and\nno traffic change. Errors mention an expired certificate, an invalid or expired\ntoken, a signature failure, or an authentication rejection. Often affects every\nrequest on a path at once, and may hit several services that share the same\ncertificate or credential.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 5,
+    "hit_budget_cap": false
+  },
+  "error": null
+}
