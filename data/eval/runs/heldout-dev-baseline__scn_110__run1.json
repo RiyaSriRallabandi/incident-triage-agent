@@ -1,0 +1,86 @@
+{
+  "tag": "heldout-dev-baseline",
+  "scenario_id": "scn_110",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_110",
+    "outcome": "escalate",
+    "diagnosis": null,
+    "escalation": {
+      "reason": "The evidence is insufficient to definitively blame either the checkout-api deploy at 16:05 or the payments provider degradation notice for 16:15-16:40. Logs explicitly state that the error mix is a combination of payment timeouts and generic 500s which does not clearly point to either cause.",
+      "evidence_gathered": [],
+      "suggested_next_steps": [
+        "Check payments provider status and API logs to see if external failures correlate with the checkout-api timeouts.",
+        "Evaluate rolling back the checkout-api deploy from 16:05 to isolate whether the dependency updates and logging change introduced the generic 500s."
+      ]
+    },
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "First, confirm the error rate trend for checkout‑api during the incident window to see if it spikes around the deploy or the payments degradation notice.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "checkout-api",
+          "metric": "error_rate",
+          "start": "2027-04-07T15:20:00Z",
+          "end": "2027-04-07T17:00:00Z"
+        },
+        "result": "checkout-api / error_rate (ratio)\nsummary: first=0.0051, last=0.0304, min=0.0049, max=0.0316, change +519.6% (first value -> most extreme value)\npoints: 15:20=0.0051, 15:21=0.005, 15:22=0.005, 15:23=0.0051, 15:24=0.0051, 15:25=0.005, 15:26=0.005, 15:27=0.0051, 15:28=0.005, 15:29=0.0051, 15:30=0.005, 15:31=0.0049, 15:32=0.005, 15:33=0.005, 15:34=0.005, 15:35=0.0051, 15:36=0.0051, 15:37=0.0049, 15:38=0.0049, 15:39=0.0049, 15:40=0.0049, 15:41=0.0049, 15:42=0.005, 15:43=0.005, 15:44=0.005, 15:45=0.005, 15:46=0.005, 15:47=0.005, 15:48=0.005, 15:49=0.0051, 15:50=0.0049, 15:51=0.0051, 15:52=0.0049, 15:53=0.0049, 15:54=0.005, 15:55=0.0051, 15:56=0.0049, 15:57=0.005, 15:58=0.0051, 15:59=0.005, 16:00=0.005, 16:01=0.0051, 16:02=0.005, 16:03=0.005, 16:04=0.005, 16:05=0.005, 16:06=0.0051, 16:07=0.0051, 16:08=0.0049, 16:09=0.005, 16:10=0.0051, 16:11=0.005, 16:12=0.0049, 16:13=0.0049, 16:14=0.0049, 16:15=0.0049, 16:16=0.005, 16:17=0.005, 16:18=0.0049, 16:19=0.005, 16:20=0.0051, 16:21=0.01, 16:22=0.0151, 16:23=0.0204, 16:24=0.0257, 16:25=0.0307, 16:26=0.0307, 16:27=0.0314, 16:28=0.0316, 16:29=0.0309, 16:30=0.0311, 16:31=0.031, 16:32=0.0312, 16:33=0.0308, 16:34=0.0313, 16:35=0.0311, 16:36=0.031, 16:37=0.0305, 16:38=0.0306, 16:39=0.0311, 16:40=0.0312, 16:41=0.031, 16:42=0.0313, 16:43=0.0316, 16:44=0.0307, 16:45=0.0308, 16:46=0.0306, 16:47=0.0313, 16:48=0.0309, 16:49=0.0304, 16:50=0.0313, 16:51=0.0308, 16:52=0.0315, 16:53=0.0305, 16:54=0.0304, 16:55=0.0311, 16:56=0.0314, 16:57=0.0315, 16:58=0.0308, 16:59=0.0309, 17:00=0.0304",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed that checkout-api error rate rises significantly around 16:20. Next, we should check recent deploys for checkout-api to see what changed around 16:05.",
+        "tool": "get_recent_deploys",
+        "args": {
+          "service": "checkout-api",
+          "start": "2027-04-07T15:20:00Z",
+          "end": "2027-04-07T17:00:00Z"
+        },
+        "result": "1 deploy(s):\n2027-04-07T16:05:00Z  checkout-api  7h8i9j0  dependency updates and a logging change",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "We see a deploy at 16:05 and an error rate spike beginning around 16:20. Next, we should search checkout-api logs around the time the error rate rose to identify the specific errors or dependency failures occurring.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "checkout-api",
+          "start": "2027-04-07T16:15:00Z",
+          "end": "2027-04-07T16:30:00Z"
+        },
+        "result": "2 of 2 matching log lines:\n2027-04-07T16:20:00Z  checkout-api  WARN  error rate 3.1% (baseline ~0.5%); errors are a mix of payment timeouts and generic 500s, spread across all hosts\n2027-04-07T16:30:00Z  checkout-api  INFO  the deploy (16:05) and the provider degradation (16:15) both fall just before onset; error mix does not clearly point to either; no rollback or provider recovery has been tried",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "We see both a recent deploy and a payments provider degradation mentioned in the logs and incident report. Let's check the runbook library for troubleshooting guidance on payment timeouts or mixed errors to determine how to isolate the root cause.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "payment timeouts"
+        },
+        "result": "5 runbook section(s):\n\n[1] connection-pool-exhaustion.md > Symptoms (score 0.4599)\nErrors or log lines stating that a connection pool is exhausted, that all\nconnections are in use, or that acquisition timed out with many waiters queued.\nPool wait time rises sharply. Throughput collapses while CPU and memory may look\nnormal, because requests are blocked waiting for a connection rather than doing\nwork.\n\n[2] thread-pool-exhaustion.md > Symptoms (score 0.4019)\nThe service stops accepting new work: log lines about a full worker pool, a\nrejected-execution error, or a saturated event loop. Inbound requests are queued\nor dropped with 503 responses. Already-running requests may still complete slowly.\n\n[3] dns-and-network-failures.md > Symptoms (score 0.3992)\nIntermittent or total failure to reach a dependency, with errors about name\nresolution, no route to host, connection timeouts, or TLS handshake failures.\nThe dependency itself is healthy when reached by other clients. Failures may\ncluster by client region, availability zone, or resolver.\n\n[4] connection-pool-exhaustion.md > How to confirm (score 0.3937)\n- Check pool metrics: active connections at the ceiling, waiters greater than\n  zero, rising acquisition wait time.\n- Correlate with downstream latency and with the caller's outbound request rate.\n- If downstream latency is normal, suspect a leak; look for steadily falling idle\n  connections over time.\n\n[5] retry-storm-amplification.md > References (score 0.3927)\n- AWS Builders' Library, \"Timeouts, retries, and backoff with jitter\":\n  https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "We have identified payment timeouts and mixed errors following a deploy and a provider degradation notice. Let's search for log lines specifically mentioning payments or timeouts during the onset window to see if the errors originate from the payments provider or internal connection/timeout issues.",
+        "tool": "search_logs",
+        "args": {
+          "query": "timeout",
+          "service": "checkout-api",
+          "start": "2027-04-07T16:15:00Z",
+          "end": "2027-04-07T16:30:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2027-04-07T16:20:00Z  checkout-api  WARN  error rate 3.1% (baseline ~0.5%); errors are a mix of payment timeouts and generic 500s, spread across all hosts",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 5,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

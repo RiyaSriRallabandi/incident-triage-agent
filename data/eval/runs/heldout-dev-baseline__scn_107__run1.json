@@ -1,0 +1,91 @@
+{
+  "tag": "heldout-dev-baseline",
+  "scenario_id": "scn_107",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_107",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "Stale DNS resolution caching in internal services following the migration of billing-api to new hosts overnight, causing a subset of callers to attempt connections to decommissioned IP addresses.",
+      "confidence": 0.85,
+      "evidence": [
+        "billing-api was migrated to new hosts overnight",
+        "orders-api / billing_api_connect_error_rate metric showed a sharp increase starting around 08:15 UTC",
+        "platform-net / stale_resolution_share metric spiked concurrently around 08:15 UTC"
+      ],
+      "recommended_fix": "Force flush DNS caches or reduce TTL for internal services communicating with billing-api, and follow up by updating client-side connection pooling and DNS refresh mechanisms."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The incident report mentions that billing-api was migrated to new hosts overnight and some internal services get connection refused or timeouts while others work. I will check recent deployments for billing-api to see the exact time and details of the migration.",
+        "tool": "get_recent_deploys",
+        "args": {
+          "service": "billing-api",
+          "start": "2027-03-17T07:00:00Z",
+          "end": "2027-03-17T08:35:00Z"
+        },
+        "result": "No deploys found in the given scope.",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "Since billing-api had no direct deploys in the window, I will check the orders-api error rate metric to understand the timing and pattern of connection errors reaching billing-api.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "orders-api",
+          "metric": "billing_api_connect_error_rate",
+          "start": "2027-03-17T07:00:00Z",
+          "end": "2027-03-17T08:35:00Z"
+        },
+        "result": "orders-api / billing_api_connect_error_rate (ratio)\nsummary: first=0.002, last=0.2525, min=0.002, max=0.2549, change +12645.0% (first value -> most extreme value)\npoints: 07:00=0.002, 07:01=0.002, 07:02=0.002, 07:03=0.002, 07:04=0.002, 07:05=0.002, 07:06=0.002, 07:07=0.002, 07:08=0.002, 07:09=0.002, 07:10=0.002, 07:11=0.002, 07:12=0.002, 07:13=0.002, 07:14=0.002, 07:15=0.002, 07:16=0.002, 07:17=0.002, 07:18=0.002, 07:19=0.002, 07:20=0.002, 07:21=0.002, 07:22=0.002, 07:23=0.002, 07:24=0.002, 07:25=0.002, 07:26=0.002, 07:27=0.002, 07:28=0.002, 07:29=0.002, 07:30=0.002, 07:31=0.002, 07:32=0.002, 07:33=0.002, 07:34=0.002, 07:35=0.002, 07:36=0.002, 07:37=0.002, 07:38=0.002, 07:39=0.002, 07:40=0.002, 07:41=0.002, 07:42=0.002, 07:43=0.002, 07:44=0.002, 07:45=0.002, 07:46=0.002, 07:47=0.002, 07:48=0.002, 07:49=0.002, 07:50=0.002, 07:51=0.002, 07:52=0.002, 07:53=0.002, 07:54=0.002, 07:55=0.002, 07:56=0.002, 07:57=0.002, 07:58=0.002, 07:59=0.002, 08:00=0.002, 08:01=0.002, 08:02=0.1265, 08:03=0.2462, 08:04=0.253, 08:05=0.2476, 08:06=0.2518, 08:07=0.2544, 08:08=0.2483, 08:09=0.2488, 08:10=0.2515, 08:11=0.2532, 08:12=0.2546, 08:13=0.2533, 08:14=0.2505, 08:15=0.2543, 08:16=0.2536, 08:17=0.2452, 08:18=0.2506, 08:19=0.2508, 08:20=0.2489, 08:21=0.2528, 08:22=0.2549, 08:23=0.2534, 08:24=0.2482, 08:25=0.2467, 08:26=0.2473, 08:27=0.2501, 08:28=0.2485, 08:29=0.2519, 08:30=0.2467, 08:31=0.2484, 08:32=0.2476, 08:33=0.245, 08:34=0.2538, 08:35=0.2525",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The orders-api metric confirms an error rate spike beginning around 08:15 UTC. I will now query the platform-net metric 'stale_resolution_share' to investigate whether DNS or networking stale records are causing the connection failures to the migrated billing-api hosts.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "platform-net",
+          "metric": "stale_resolution_share",
+          "start": "2027-03-17T07:00:00Z",
+          "end": "2027-03-17T08:35:00Z"
+        },
+        "result": "platform-net / stale_resolution_share (ratio)\nsummary: first=0.012, last=0.2484, min=-0.0192, max=0.2547, change +2022.5% (first value -> most extreme value)\npoints: 07:00=0.012, 07:01=0.0043, 07:02=-0.0064, 07:03=-0.0043, 07:04=0.0024, 07:05=0.0061, 07:06=0.0163, 07:07=-0.009, 07:08=-0.0178, 07:09=-0.01, 07:10=-0.0071, 07:11=0.0175, 07:12=0.011, 07:13=0.015, 07:14=0.0064, 07:15=-0.0126, 07:16=0.0056, 07:17=-0.0106, 07:18=0.0098, 07:19=0.019, 07:20=0.0183, 07:21=0.0164, 07:22=0.0129, 07:23=-0.0158, 07:24=0.0009, 07:25=-0.0068, 07:26=-0.0186, 07:27=0.0057, 07:28=0.0105, 07:29=-0.0045, 07:30=-0.0075, 07:31=0.0164, 07:32=0.0096, 07:33=0.006, 07:34=-0.0192, 07:35=-0.0181, 07:36=-0.0182, 07:37=-0.0103, 07:38=0.0117, 07:39=-0.007, 07:40=0.0011, 07:41=0.0165, 07:42=0.0179, 07:43=0.0006, 07:44=0.0152, 07:45=-0.0053, 07:46=-0.0021, 07:47=0.003, 07:48=0.0062, 07:49=-0.0047, 07:50=0.0194, 07:51=-0.0186, 07:52=-0.0178, 07:53=0.0192, 07:54=0.0111, 07:55=0.0196, 07:56=0.02, 07:57=-0.0076, 07:58=0.0106, 07:59=0.0022, 08:00=0.0064, 08:01=-0.0072, 08:02=0.2477, 08:03=0.2473, 08:04=0.2506, 08:05=0.2499, 08:06=0.2501, 08:07=0.2518, 08:08=0.2505, 08:09=0.2518, 08:10=0.2484, 08:11=0.2531, 08:12=0.2547, 08:13=0.2481, 08:14=0.2476, 08:15=0.2501, 08:16=0.249, 08:17=0.2536, 08:18=0.2542, 08:19=0.2514, 08:20=0.2506, 08:21=0.2491, 08:22=0.2496, 08:23=0.2488, 08:24=0.2454, 08:25=0.252, 08:26=0.2535, 08:27=0.2476, 08:28=0.2531, 08:29=0.2543, 08:30=0.254, 08:31=0.2453, 08:32=0.2473, 08:33=0.2547, 08:34=0.2521, 08:35=0.2484",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "The platform-net stale_resolution_share metric shows a spike around 08:15 UTC. I will search platform-net logs for any DNS or resolution errors during this incident window to confirm stale DNS records causing connection failures to the migrated billing-api hosts.",
+        "tool": "search_logs",
+        "args": {
+          "query": "stale",
+          "service": "platform-net",
+          "start": "2027-03-17T07:00:00Z",
+          "end": "2027-03-17T08:35:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "I have identified that orders-api experiences connection errors to billing-api starting at ~08:15 UTC, coinciding with a spike in stale DNS resolution share in platform-net following the overnight migration of billing-api to new hosts. I will search orders-api logs around 08:15 UTC to confirm the exact connection refused or DNS resolution errors targeting the old billing-api IPs.",
+        "tool": "search_logs",
+        "args": {
+          "query": "billing-api",
+          "service": "orders-api",
+          "start": "2027-03-17T08:10:00Z",
+          "end": "2027-03-17T08:25:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 5,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

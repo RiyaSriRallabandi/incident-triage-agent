@@ -1,0 +1,67 @@
+{
+  "tag": "heldout-dev-baseline",
+  "scenario_id": "scn_104",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_104",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "Ephemeral port range exhaustion (32768-60999) caused by a massive spike in TIME_WAIT sockets due to high overnight batch window traffic, leading to ~20% of outbound calls failing to get a source port.",
+      "confidence": 1.0,
+      "evidence": [
+        "outbound_call_error_rate jumped to ~20% starting at 04:31 UTC",
+        "time_wait_sockets metric spiked significantly starting around 04:21 UTC, reaching up to ~28,521",
+        "sync-service log: ephemeral port range (32768-60999) exhausted; ~20% of outbound calls failing to get a source port",
+        "sync-service log: upstream-api latency and error rate normal from other clients; issue is local socket exhaustion"
+      ],
+      "recommended_fix": "Mitigate the port exhaustion by tuning TCP settings such as enabling tcp_tw_reuse or decreasing tcp_fin_timeout. For follow-up, optimize the sync-service connection pooling to reuse persistent connections rather than opening and closing ephemeral ports aggressively during high-volume batch windows."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The sync-service is experiencing outbound call errors to the upstream API despite the upstream being healthy. I need to check the sync-service metrics to understand the nature of the outbound errors and time_wait_sockets.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "sync-service",
+          "metric": "outbound_call_error_rate",
+          "start": "2027-02-24T03:50:00Z",
+          "end": "2027-02-24T05:00:00Z"
+        },
+        "result": "sync-service / outbound_call_error_rate (ratio)\nsummary: first=0.003, last=0.1997, min=0.0029, max=0.2037, change +6690.0% (first value -> most extreme value)\npoints: 03:50=0.003, 03:51=0.003, 03:52=0.0029, 03:53=0.003, 03:54=0.003, 03:55=0.003, 03:56=0.003, 03:57=0.003, 03:58=0.003, 03:59=0.003, 04:00=0.003, 04:01=0.0029, 04:02=0.003, 04:03=0.003, 04:04=0.003, 04:05=0.003, 04:06=0.003, 04:07=0.003, 04:08=0.003, 04:09=0.0031, 04:10=0.003, 04:11=0.003, 04:12=0.0029, 04:13=0.003, 04:14=0.003, 04:15=0.003, 04:16=0.003, 04:17=0.003, 04:18=0.003, 04:19=0.003, 04:20=0.003, 04:21=0.003, 04:22=0.003, 04:23=0.003, 04:24=0.003, 04:25=0.003, 04:26=0.003, 04:27=0.003, 04:28=0.003, 04:29=0.003, 04:30=0.003, 04:31=0.068, 04:32=0.1329, 04:33=0.1981, 04:34=0.1993, 04:35=0.197, 04:36=0.1977, 04:37=0.2012, 04:38=0.2022, 04:39=0.201, 04:40=0.1996, 04:41=0.2037, 04:42=0.2037, 04:43=0.2021, 04:44=0.1984, 04:45=0.1962, 04:46=0.1993, 04:47=0.1991, 04:48=0.1994, 04:49=0.203, 04:50=0.2004, 04:51=0.1997, 04:52=0.1967, 04:53=0.1971, 04:54=0.1978, 04:55=0.2018, 04:56=0.1963, 04:57=0.1981, 04:58=0.1967, 04:59=0.2015, 05:00=0.1997",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed that outbound_call_error_rate jumps to ~20% starting at 04:31 UTC. Next, I should check the time_wait_sockets metric for sync-service to see if socket exhaustion is contributing to these intermittent connection failures.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "sync-service",
+          "metric": "time_wait_sockets",
+          "start": "2027-02-24T03:50:00Z",
+          "end": "2027-02-24T05:00:00Z"
+        },
+        "result": "sync-service / time_wait_sockets (count)\nsummary: first=3037.3843, last=27700.5158, min=2941.4031, max=28521.0329, change +839.0% (first value -> most extreme value)\npoints: 03:50=3037.38, 03:51=3019.3, 03:52=2951.41, 03:53=3042.64, 03:54=3044.11, 03:55=3059.16, 03:56=3008.57, 03:57=3033.07, 03:58=2963.22, 03:59=2961.14, 04:00=2953.92, 04:01=3023.86, 04:02=3050.83, 04:03=2974.82, 04:04=3015.68, 04:05=3012.17, 04:06=3006.47, 04:07=2942.99, 04:08=2968.67, 04:09=3032.67, 04:10=3053.88, 04:11=2982.51, 04:12=2966.68, 04:13=3017.4, 04:14=3009.81, 04:15=2948.96, 04:16=3027.78, 04:17=3048.63, 04:18=2941.4, 04:19=2945.06, 04:20=2988.9, 04:21=6025.55, 04:22=9405.71, 04:23=12274.3, 04:24=15217.5, 04:25=18403.6, 04:26=21731.1, 04:27=25161.5, 04:28=27456.7, 04:29=28472.5, 04:30=28284, 04:31=28354.8, 04:32=27463.1, 04:33=27602.9, 04:34=27904.1, 04:35=27510.2, 04:36=28463, 04:37=28335.7, 04:38=28273.2, 04:39=28521, 04:40=27555.7, 04:41=27543.1, 04:42=27929.4, 04:43=28221.9, 04:44=28213.7, 04:45=28255.5, 04:46=28029.4, 04:47=28477.2, 04:48=27770.8, 04:49=28425.1, 04:50=27930.3, 04:51=27517.1, 04:52=28366.4, 04:53=28187.5, 04:54=27508, 04:55=27613.1, 04:56=28186.4, 04:57=27978.1, 04:58=27442.4, 04:59=28379.6, 05:00=27700.5",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "We see a massive spike in time_wait_sockets starting around 04:21 UTC, followed by outbound errors at 04:31 UTC. I should now search the sync-service logs to see what error messages are logged during this timeframe.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "sync-service",
+          "start": "2027-02-24T04:20:00Z",
+          "end": "2027-02-24T04:40:00Z"
+        },
+        "result": "2 of 2 matching log lines:\n2027-02-24T04:30:00Z  sync-service  ERROR  ephemeral port range (32768-60999) exhausted; ~20% of outbound calls failing to get a source port\n2027-02-24T04:32:00Z  sync-service  INFO  upstream-api latency and error rate normal from other clients; issue is local socket exhaustion",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 3,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

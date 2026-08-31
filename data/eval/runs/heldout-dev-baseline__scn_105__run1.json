@@ -1,0 +1,63 @@
+{
+  "tag": "heldout-dev-baseline",
+  "scenario_id": "scn_105",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_105",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "Deserialization failure caused by an unexpected field 'legacy_promo' in messages at partition 3 offset 88214102, stalling the events-consumer service and causing a massive consumer group lag.",
+      "confidence": 0.95,
+      "evidence": [
+        "events-consumer / consumer_group_lag spiked starting at 12:58 UTC from ~490 to over 198,000",
+        "2027-03-03T12:55:00Z events-consumer ERROR failed to deserialize message at partition 3 offset 88214102: unexpected field 'legacy_promo'; retrying",
+        "2027-03-03T13:05:00Z events-consumer ERROR consumer group lag on 'order-events' now 190000 and rising; partition 3 not advancing"
+      ],
+      "recommended_fix": "Mitigation: Skip or poison-pill the malformed message at partition 3 offset 88214102, or deploy a schema update to the events-consumer service to handle the unexpected 'legacy_promo' field. Follow-up: Identify the producer that introduced the unexpected field and establish robust schema validation contracts."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The incident report states that order confirmation emails and fulfillment handoffs have stopped while orders continue to be placed, and the events pipeline seems stuck. Since events-consumer has consumer_group_lag and downstream_events_per_s metrics available, querying consumer_group_lag will help determine if the event stream is blocked.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "events-consumer",
+          "metric": "consumer_group_lag",
+          "start": "2027-03-03T12:25:00Z",
+          "end": "2027-03-03T13:35:00Z"
+        },
+        "result": "events-consumer / consumer_group_lag (count)\nsummary: first=490.109, last=198703.7243, min=490.109, max=198703.7243, change +40442.8% (first value -> most extreme value)\npoints: 12:25=490.109, 12:26=509.091, 12:27=497.599, 12:28=508.232, 12:29=501.508, 12:30=499.968, 12:31=493.663, 12:32=504.44, 12:33=495.774, 12:34=507.302, 12:35=494.149, 12:36=490.784, 12:37=499.909, 12:38=496.44, 12:39=491.931, 12:40=500.869, 12:41=495.272, 12:42=493.532, 12:43=490.131, 12:44=498.886, 12:45=509.899, 12:46=502.986, 12:47=505.827, 12:48=498.255, 12:49=494.815, 12:50=494.9, 12:51=498.986, 12:52=504.802, 12:53=492.357, 12:54=493.72, 12:55=498.042, 12:56=498.841, 12:57=508.293, 12:58=19758.5, 12:59=38921.1, 13:00=57722.6, 13:01=77655.1, 13:02=99097.2, 13:03=115402, 13:04=133956, 13:05=159163, 13:06=177491, 13:07=191653, 13:08=194050, 13:09=198330, 13:10=196428, 13:11=193713, 13:12=194869, 13:13=196524, 13:14=192053, 13:15=196921, 13:16=197483, 13:17=197556, 13:18=195352, 13:19=195091, 13:20=195866, 13:21=191717, 13:22=196210, 13:23=197463, 13:24=194036, 13:25=194559, 13:26=194306, 13:27=197722, 13:28=197468, 13:29=195569, 13:30=193836, 13:31=194385, 13:32=196687, 13:33=196921, 13:34=198571, 13:35=198704",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The consumer group lag metric for events-consumer starts spiking rapidly right around 12:58 UTC, indicating a blockage in event processing. We should now search the logs of the events-consumer service around that time to identify the specific errors or issues causing the consumer to stall.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "events-consumer",
+          "start": "2027-03-03T12:55:00Z",
+          "end": "2027-03-03T13:05:00Z"
+        },
+        "result": "2 of 2 matching log lines:\n2027-03-03T12:55:00Z  events-consumer  ERROR  failed to deserialize message at partition 3 offset 88214102: unexpected field 'legacy_promo'; retrying\n2027-03-03T13:05:00Z  events-consumer  ERROR  consumer group lag on 'order-events' now 190000 and rising; partition 3 not advancing",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The logs show that events-consumer is failing to deserialize messages due to an unexpected field 'legacy_promo' at partition 3 offset 88214102. Searching the runbook library for deserialization failures or unexpected fields will help confirm standard remediation steps.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "deserialize unexpected field"
+        },
+        "result": "5 runbook section(s):\n\n[1] cpu-saturation.md > Likely causes (score 0.1643)\n- A pathological code path introduced by a recent change: a catastrophically\n  backtracking regular expression, an accidental O(n^2) loop, unbounded JSON\n  parsing, or serialization of a large object on every request.\n- A cache that stopped working, forcing expensive recomputation per request.\n- A retry storm or traffic surge pushing the service past its capacity.\n- Garbage collection thrashing due to memory pressure.\n\n[2] certificate-and-config-expiry.md > Likely causes (score 0.134)\n- A TLS certificate reached its expiry date and was not renewed or not reloaded\n  after renewal.\n- A signing key, API token, or service-account credential expired or was rotated\n  without updating all consumers.\n- A trust bundle or intermediate certificate changed.\n- A time-skewed host rejecting otherwise-valid certificates.\n\n[3] operator-capacity-change-incident.md > Likely causes (score 0.1121)\n- A command run with the wrong argument, wrong target, or wrong environment: a\n  fat-finger, a copied value, or a script bug.\n- Automation acting on stale or incorrect input.\n- An operation whose blast radius was underestimated: removing more capacity than\n  the system could tolerate.\n\n[4] certificate-and-config-expiry.md > Symptoms (score 0.0871)\nA sudden, total failure that starts at a round wall-clock time with no deploy and\nno traffic change. Errors mention an expired certificate, an invalid or expired\ntoken, a signature failure, or an authentication rejection. Often affects every\nrequest on a path at once, and may hit several services that share the same\ncertificate or credential.\n\n[5] dns-and-network-failures.md > Likely causes (score 0.0842)\n- A DNS change: a record updated, deleted, or with a TTL that caused stale\n  resolution; a misconfigured split-horizon or private zone.\n- Resolver overload or a failing upstream resolver.\n- A network path change: a security-group or firewall rule, a routing update, a\n  peering or VPN failure.\n- Connection or DNS caches holding a now-invalid answer.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 3,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

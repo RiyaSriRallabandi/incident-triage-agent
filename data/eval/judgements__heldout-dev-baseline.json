@@ -1,0 +1,102 @@
+[
+  {
+    "scenario_id": "scn_101",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that the canary traffic share was mistakenly increased to 100%, routing all checkout-web traffic to the new build with a TypeError bug. This matches the ground\u2011truth mechanism of the router misparsing the canary weight, so the implied fix would be the same."
+  },
+  {
+    "scenario_id": "scn_102",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identified that the json-lib upgrade in pricing\u2011service changed price fields to strings, causing order\u2011api parsing failures and order rejections, which matches the ground\u2011truth mechanism."
+  },
+  {
+    "scenario_id": "scn_103",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent pinpoints that large accounts with many widgets consume a disproportionate number of dashboard\u2011api worker slots, exhausting the pool\u2014this matches the ground\u2011truth mechanism of unbounded fan\u2011out concurrency causing pool exhaustion, leading to the same remediation (capping fan\u2011out)."
+  },
+  {
+    "scenario_id": "scn_104",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identified that a surge in TIME_WAIT sockets exhausted the ephemeral port range, which is the underlying mechanism causing the outbound failures. This points to the same fix of enabling connection pooling/keep-alive as in the ground truth."
+  },
+  {
+    "scenario_id": "scn_105",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent pinpointed the unexpected 'legacy_promo' field causing a deserialization failure that stalled the events\u2011consumer and produced massive lag, which matches the ground\u2011truth mechanism of a poison message being retried indefinitely."
+  },
+  {
+    "scenario_id": "scn_106",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that traffic growth caused the recommendations-service to exceed the downstream model\u2011scoring API\u2019s per\u2011client rate\u2011limit, resulting in 429 errors; this matches the ground\u2011truth mechanism and leads to the same remediation (reduce outbound rate or increase quota)."
+  },
+  {
+    "scenario_id": "scn_107",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent pinpointed stale DNS resolution caching after the billing\u2011api host migration, which matches the ground\u2011truth mechanism of cached old IPs causing connection refusals and leads to the same remediation (flushing caches or re\u2011pointing IPs)."
+  },
+  {
+    "scenario_id": "scn_108",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identified that the expired intermediate CA ('Acme Intermediate G2') caused strict\u2011validation clients to fail TLS handshakes, matching the ground\u2011truth mechanism and required fix."
+  },
+  {
+    "scenario_id": "scn_109",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "partial",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent points to the q_feed_recent query and high I/O as the cause, which matches the symptom chain, but it attributes the problem to an \"unoptimized\" query rather than the data\u2011growth\u2011driven cache\u2011miss mechanism described in the ground truth. This would lead to a different fix than adding a partial index and trimming old rows."
+  },
+  {
+    "scenario_id": "scn_110",
+    "run_index": 1,
+    "agent_outcome": "escalate",
+    "root_cause_grade": "n/a",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "correctly escalated an under-determined incident"
+  }
+]

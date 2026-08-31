@@ -140,10 +140,33 @@ hand-checks, and *don't ship* the ones the data doesn't support.
 
 ## 4. Held-out test set (`heldout/`, 10 scenarios)
 
-The held-out scenarios were not used for any prompt iteration. Baseline and the
-winning config are run against them **once**.
+The held-out scenarios were never used for prompt iteration or ablations. The
+shipped config (`dev-baseline`) is run against them **exactly once**. These are
+the honest headline numbers.
 
-_(pending — run after the dev-set config is frozen)_
+| Metric | held-out (10) | dev set (30) |
+|---|---|---|
+| Root-cause **correct** | **88.9%** (8/9 gradable) | 74.1% |
+| Root-cause partial | 11.1% (1/9) | 22.2% |
+| Root-cause incorrect | 0% | 3.7% |
+| Escalation decision accuracy | **100%** (10/10) | 93.3% |
+| False-confident-wrong rate | **0%** | 3.3% |
+| Citation grounding rate | 54.8% | 55.2% |
+| Mean tool calls | 3.9 | 4.13 |
+| Budget-cap rate | 0% | 20% |
+
+**No evidence of dev-set overfitting.** The held-out accuracy is *higher* than
+the dev-set estimate, not lower — the dev set accreted more hard
+"cause-of-the-cause" scenarios through its iterations. At n=9 gradable the
+held-out point estimate has a wide interval, but it is consistent with (and above)
+the dev estimate. The one held-out partial (`scn_109`) is the same failure mode
+seen on the dev set: a data-growth query regression where the agent said
+"unoptimized query" instead of "the working set outgrew the buffer cache".
+Citation grounding held at ~55% — the persistent weak spot, unchanged out of
+domain.
+
+Spot-checking confirmed the judge's held-out grades match author judgement (it
+was calibrated on dev-set runs, not these).
 
 ---
 

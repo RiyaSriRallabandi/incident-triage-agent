@@ -1,0 +1,79 @@
+{
+  "tag": "heldout-dev-baseline",
+  "scenario_id": "scn_103",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_103",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "dashboard-api worker pool exhausted because large accounts with 600+ widgets hold 600 worker slots per dashboard render request",
+      "confidence": 0.99,
+      "evidence": [
+        "dashboard-api / worker_pool_utilization maxed at 1.0154 starting around 15:15 UTC",
+        "2027-02-17T15:10:00Z dashboard-api ERROR worker pool exhausted (size=512); new dashboard requests queued then timing out",
+        "2027-02-17T15:07:00Z dashboard-api WARN largest accounts now have 600+ widgets; one dashboard render holds 600 worker slots at once"
+      ],
+      "recommended_fix": "Increase the worker pool size or implement pagination/chunking for dashboard rendering for accounts with a large number of widgets to prevent a single large account request from monopolizing all worker slots. Follow up by optimizing widget fetching and setting concurrency limits per request."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The dashboard API is experiencing timeouts and high worker utilization for large accounts, so I will query the worker_pool_utilization metric for dashboard-api to understand the severity and timing.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "dashboard-api",
+          "metric": "worker_pool_utilization",
+          "start": "2027-02-17T14:35:00Z",
+          "end": "2027-02-17T15:35:00Z"
+        },
+        "result": "dashboard-api / worker_pool_utilization (ratio)\nsummary: first=0.5506, last=1.0018, min=0.5393, max=1.0154, change +84.4% (first value -> most extreme value)\npoints: 14:35=0.5506, 14:36=0.5583, 14:37=0.55, 14:38=0.5461, 14:39=0.5396, 14:40=0.5458, 14:41=0.5422, 14:42=0.5427, 14:43=0.5564, 14:44=0.5468, 14:45=0.5455, 14:46=0.5454, 14:47=0.5498, 14:48=0.5431, 14:49=0.5442, 14:50=0.5547, 14:51=0.5578, 14:52=0.5409, 14:53=0.5598, 14:54=0.5396, 14:55=0.5464, 14:56=0.5448, 14:57=0.5393, 14:58=0.5405, 14:59=0.5419, 15:00=0.5609, 15:01=0.553, 15:02=0.5464, 15:03=0.5541, 15:04=0.5511, 15:05=0.5424, 15:06=0.6651, 15:07=0.7757, 15:08=0.8758, 15:09=0.9804, 15:10=0.9964, 15:11=0.9871, 15:12=0.9896, 15:13=0.9935, 15:14=0.9916, 15:15=1.0041, 15:16=0.9986, 15:17=0.9865, 15:18=1.0129, 15:19=0.9876, 15:20=0.9896, 15:21=1.0096, 15:22=1.0066, 15:23=1.0128, 15:24=0.9859, 15:25=0.9957, 15:26=1.0099, 15:27=0.9851, 15:28=0.9843, 15:29=0.9894, 15:30=1.0044, 15:31=1, 15:32=0.9919, 15:33=1.0154, 15:34=1.0038, 15:35=1.0018",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "Worker pool utilization started spiking around 15:06 and reached 100% by 15:15. I should now search the dashboard-api logs for errors or slow operations coinciding with this spike.",
+        "tool": "search_logs",
+        "args": {
+          "query": "timeout",
+          "service": "dashboard-api",
+          "start": "2027-02-17T15:05:00Z",
+          "end": "2027-02-17T15:35:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "Since searching logs for 'timeout' yielded no results, I should search dashboard-api logs for errors or large accounts around the time the utilization spike began to identify what requests are causing the overload.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "dashboard-api",
+          "start": "2027-02-17T15:05:00Z",
+          "end": "2027-02-17T15:35:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2027-02-17T15:10:00Z  dashboard-api  ERROR  worker pool exhausted (size=512); new dashboard requests queued then timing out",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "We know the dashboard-api worker pool was exhausted starting around 15:10 UTC. I should now search the dashboard-api logs around the same time window for any mentions of slow downstream services or specific operations related to large accounts.",
+        "tool": "search_logs",
+        "args": {
+          "query": "account",
+          "service": "dashboard-api",
+          "start": "2027-02-17T15:05:00Z",
+          "end": "2027-02-17T15:35:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2027-02-17T15:07:00Z  dashboard-api  WARN  largest accounts now have 600+ widgets; one dashboard render holds 600 worker slots at once",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 4,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

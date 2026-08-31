@@ -1,0 +1,65 @@
+{
+  "tag": "heldout-dev-baseline",
+  "scenario_id": "scn_101",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_101",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The canary traffic share for checkout-web unexpectedly scaled up from 1% to 100% immediately following the 11:18 UTC deployment (5c6d7e8), exposing all users to a rendering path bug that resulted in an unhandled TypeError on null cart total.",
+      "confidence": 1.0,
+      "evidence": [
+        "2027-02-03T11:18:00Z checkout-web 5c6d7e8 checkout render refactor, released as 1% canary",
+        "traffic-router / canary_traffic_share jumped from 0.0155 at 11:19 to 0.9977 at 11:20",
+        "2027-02-03T11:20:00Z checkout-web ERROR unhandled exception in 5c6d7e8 render path: TypeError on null cart total; 500 rate 71%"
+      ],
+      "recommended_fix": "Roll back the checkout-web 5c6d7e8 deploy immediately to restore service for all users. Follow up by investigating the traffic router bug that caused the canary share to scale to 100% and fixing the TypeError handling for null cart totals in the render path."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The checkout-web service is throwing 500 errors starting around 11:20 UTC, closely following a canary release at 11:18 UTC. I need to check recent deploys to confirm what version shipped and verify if the canary traffic share unexpectedly increased.",
+        "tool": "get_recent_deploys",
+        "args": {
+          "service": "checkout-web",
+          "start": "2027-02-03T10:48:00Z",
+          "end": "2027-02-03T11:40:00Z"
+        },
+        "result": "1 deploy(s):\n2027-02-03T11:18:00Z  checkout-web  5c6d7e8  checkout render refactor, released as 1% canary",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed that checkout-web had a 1% canary deploy at 11:18 UTC, and the incident report states a canary was released. I need to check the traffic-router metric to verify if the canary traffic share actually remained at 1% or if it incorrectly scaled up to 100%.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "traffic-router",
+          "metric": "canary_traffic_share",
+          "start": "2027-02-03T10:48:00Z",
+          "end": "2027-02-03T11:40:00Z"
+        },
+        "result": "traffic-router / canary_traffic_share (ratio)\nsummary: first=-0.0096, last=1.0162, min=-0.0193, max=1.0181, change +10705.2% (first value -> most extreme value)\npoints: 10:48=-0.0096, 10:49=-0.007, 10:50=-0.01, 10:51=0.0004, 10:52=-0.0193, 10:53=-0.0163, 10:54=-0.0026, 10:55=-0.0027, 10:56=-0.0033, 10:57=-0.004, 10:58=0.0065, 10:59=0.0185, 11:00=0.0037, 11:01=-0.0184, 11:02=-0.0024, 11:03=-0.0174, 11:04=0.0139, 11:05=-0.0091, 11:06=0.0125, 11:07=-0.011, 11:08=-0.0159, 11:09=0.0147, 11:10=-0.0128, 11:11=0.0071, 11:12=-0.0105, 11:13=0.0038, 11:14=-0.0046, 11:15=0.0166, 11:16=-0.0021, 11:17=0.0081, 11:18=0.0082, 11:19=0.0155, 11:20=0.9977, 11:21=1.0145, 11:22=1.0061, 11:23=1.0017, 11:24=1.0034, 11:25=0.9815, 11:26=0.9955, 11:27=0.9802, 11:28=1.0173, 11:29=1.0042, 11:30=1.0037, 11:31=1.0181, 11:32=1.0084, 11:33=0.9847, 11:34=0.9847, 11:35=0.9886, 11:36=1.0004, 11:37=0.9869, 11:38=0.987, 11:39=1.0134, 11:40=1.0162",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The traffic router metric shows that the canary traffic share jumped from ~1% to 100% right after the 11:18 deployment, causing checkout-web to throw 500 errors for all users. I will now search the checkout-web logs to identify the exact error message and finalize the root cause.",
+        "tool": "search_logs",
+        "args": {
+          "query": "500",
+          "service": "checkout-web",
+          "start": "2027-02-03T11:18:00Z",
+          "end": "2027-02-03T11:25:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2027-02-03T11:20:00Z  checkout-web  ERROR  unhandled exception in 5c6d7e8 render path: TypeError on null cart total; 500 rate 71%",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 3,
+    "hit_budget_cap": false
+  },
+  "error": null
+}
