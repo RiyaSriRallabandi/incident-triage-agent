@@ -1,0 +1,90 @@
+{
+  "tag": "no-deploys",
+  "scenario_id": "scn_009",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_009",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "A migration deploy to users-service triggered heavy database locking (db_lock_wait_sessions spiking from ~1 to over 55) which caused signups and profile updates to fail with write errors and timeouts.",
+      "confidence": 0.95,
+      "evidence": [
+        "A migration deploy went out to users-service just before the incident started at ~20:11 UTC.",
+        "users-service write_error_rate spiked from 0.001 to 0.6089 starting at 20:14 UTC.",
+        "users-db db_lock_wait_sessions spiked from ~1 to over 55 starting at 20:12 UTC.",
+        "database-degradation.md runbook suggests killing or pausing the offending query/transaction or rolling back/adjusting the migration."
+      ],
+      "recommended_fix": "Roll back the offending migration deploy on users-service or identify and kill the blocking transaction/query on users-db causing the lock wait sessions. Follow up by refactoring the migration to avoid locking active write tables during peak traffic."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "Signups and profile updates are failing with timeouts after a migration deploy to users-service, so we should search the users-service logs for database or migration errors around the incident start time.",
+        "tool": "search_logs",
+        "args": {
+          "query": "migration",
+          "service": "users-service",
+          "start": "2026-10-15T20:05:00Z",
+          "end": "2026-10-15T20:20:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "Since the specific migration log search returned nothing, we should check the error rate metrics for users-service and the database lock wait sessions for users-db to see where the bottleneck is occurring during signups and profile updates.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "users-service",
+          "metric": "write_error_rate",
+          "start": "2026-10-15T20:05:00Z",
+          "end": "2026-10-15T20:20:00Z"
+        },
+        "result": "users-service / write_error_rate (ratio)\nsummary: first=0.001, last=0.589, min=0.001, max=0.6089, change +60790.0% (first value -> most extreme value)\npoints: 20:05=0.001, 20:06=0.001, 20:07=0.001, 20:08=0.001, 20:09=0.001, 20:10=0.001, 20:11=0.001, 20:12=0.001, 20:13=0.001, 20:14=0.3053, 20:15=0.6073, 20:16=0.5967, 20:17=0.5988, 20:18=0.595, 20:19=0.6089, 20:20=0.589",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "We know the write error rate on users-service spiked dramatically at 20:14 UTC following a migration deploy. Next, we should check users-db lock wait sessions to see if a database lock or migration bottleneck is causing these timeouts.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "users-db",
+          "metric": "db_lock_wait_sessions",
+          "start": "2026-10-15T20:05:00Z",
+          "end": "2026-10-15T20:20:00Z"
+        },
+        "result": "users-db / db_lock_wait_sessions (count)\nsummary: first=0.9873, last=55.7598, min=0.9873, max=55.8801, change +5559.9% (first value -> most extreme value)\npoints: 20:05=0.9873, 20:06=1.015, 20:07=0.9964, 20:08=1.0083, 20:09=0.9976, 20:10=0.9983, 20:11=1.0155, 20:12=27.8744, 20:13=54.224, 20:14=54.3224, 20:15=55.1759, 20:16=55.1482, 20:17=55.8801, 20:18=55.0646, 20:19=53.989, 20:20=55.7598",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "We observed a sharp spike in users-service write errors and users-db lock wait sessions starting around 20:11-20:14 UTC following a migration. Next, we should search the users-db or users-service logs for database lock or timeout error messages to confirm the exact nature of the blocking.",
+        "tool": "search_logs",
+        "args": {
+          "query": "lock",
+          "service": "users-service",
+          "start": "2026-10-15T20:10:00Z",
+          "end": "2026-10-15T20:20:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "We confirmed database lock wait sessions and write errors spiked concurrently after a migration deploy, so searching the runbook library for database lock or migration troubleshooting guidance will help pinpoint the failure pattern.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "lock wait timeout migration"
+        },
+        "result": "5 runbook section(s):\n\n[1] database-degradation.md > Mitigation (score 0.3536)\nKill or pause the offending query, transaction, or batch job. Add the missing\nindex or pin the plan. Route reads away from lagging replicas. Raise connection\nlimits only as a stopgap. Schedule heavy maintenance away from peak.\n\n[2] bad-deploy-correlated-regression.md > How to confirm (score 0.3477)\n- Line up the incident start against deploy history for the affected service.\n  A deploy whose timestamp precedes the first symptom by 1 to 10 minutes is a\n  strong lead.\n- Check whether hosts on the new build differ from hosts still on the old build.\n- Look for errors that name a specific new rule, flag, or code path.\n\n[3] connection-pool-exhaustion.md > Mitigation (score 0.3303)\nRelieve the downstream slowdown or cut the offending traffic. Then isolate pools\nper dependency, size them for peak concurrency, add acquisition timeouts, and fix\nany code path that fails to release a connection.\n\n[4] retry-storm-amplification.md > References (score 0.3256)\n- AWS Builders' Library, \"Timeouts, retries, and backoff with jitter\":\n  https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/\n\n[5] bad-deploy-correlated-regression.md > Mitigation (score 0.3242)\nRoll back to the previous known-good build first; diagnose afterwards. If the\nrollout is partial, halt it. Once stable, reproduce in staging and add a\nregression test or a pre-deploy check for the specific failure mode.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 5,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

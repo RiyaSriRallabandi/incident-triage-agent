@@ -1,0 +1,67 @@
+{
+  "tag": "no-deploys",
+  "scenario_id": "scn_019",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_019",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "Oversized-decode decompression bomb payload (asset a91f declaring 48000x48000 px from a 40KB file) combined with aggressive client retries (140 times) pinned the CPU on the image-resizer service and exhausted the workers.",
+      "confidence": 1.0,
+      "evidence": [
+        "image-resizer CPU utilization surged from ~39% to ~100% starting at 19:32 UTC",
+        "2026-12-01T19:32:00Z image-resizer ERROR decode job for asset a91f exceeded 60s; image declares 48000x48000 px from a 40KB file",
+        "2026-12-01T19:35:00Z image-resizer CRITICAL all workers busy on oversized-decode jobs; resize queue depth 9000; CPU pinned",
+        "2026-12-01T19:37:00Z image-resizer WARN asset a91f resubmitted 140 times (client retry)"
+      ],
+      "recommended_fix": "Keep the blocklist active for malicious or malformed assets like a91f, ensure the newly added max-decoded-dimension guard is permanently enforced across all image processing workers to reject decompression bombs early, and implement rate limiting or exponential backoff on client retries to prevent retry amplification."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The incident report states that image-resizer CPU is pinned and the resize queue is huge since 19:32 UTC. Querying cpu_utilization_pct on the image-resizer service will establish the exact timing and severity of the resource exhaustion.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "image-resizer",
+          "metric": "cpu_utilization_pct",
+          "start": "2026-12-01T19:00:00Z",
+          "end": "2026-12-01T19:55:00Z"
+        },
+        "result": "image-resizer / cpu_utilization_pct (percent)\nsummary: first=39.3285, last=99.7609, min=39.2046, max=101.9889, change +159.3% (first value -> most extreme value)\npoints: 19:00=39.3285, 19:01=39.2574, 19:02=39.9929, 19:03=39.6316, 19:04=40.0319, 19:05=39.762, 19:06=39.3442, 19:07=40.598, 19:08=40.7564, 19:09=39.4851, 19:10=40.5156, 19:11=40.1509, 19:12=39.3446, 19:13=39.7226, 19:14=40.2845, 19:15=40.5154, 19:16=40.0047, 19:17=39.5929, 19:18=40.0283, 19:19=39.7948, 19:20=40.0981, 19:21=39.8655, 19:22=40.2175, 19:23=40.2651, 19:24=40.6041, 19:25=39.8191, 19:26=39.2046, 19:27=40.4919, 19:28=39.9533, 19:29=39.337, 19:30=39.5858, 19:31=59.1687, 19:32=79.9483, 19:33=100.326, 19:34=101.051, 19:35=99.7237, 19:36=100.491, 19:37=98.1531, 19:38=101.477, 19:39=100.94, 19:40=100.89, 19:41=99.0198, 19:42=98.6698, 19:43=101.778, 19:44=100.085, 19:45=101.917, 19:46=101.982, 19:47=101.989, 19:48=100.013, 19:49=100.712, 19:50=98.4201, 19:51=100.722, 19:52=98.2176, 19:53=101.817, 19:54=99.0181, 19:55=99.7609",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed that image-resizer CPU utilization surged to 100 percent starting at 19:32 UTC. Next, we should search the logs of the image-resizer service around that time window to identify what operations or payloads triggered the resource exhaustion.",
+        "tool": "search_logs",
+        "args": {
+          "query": "resize",
+          "service": "image-resizer",
+          "start": "2026-12-01T19:30:00Z",
+          "end": "2026-12-01T19:40:00Z"
+        },
+        "result": "4 of 4 matching log lines:\n2026-12-01T19:30:00Z  image-resizer  WARN  worker CPU 80%; several resize jobs running >30s (normal <500ms)\n2026-12-01T19:32:00Z  image-resizer  ERROR  decode job for asset a91f exceeded 60s; image declares 48000x48000 px from a 40KB file\n2026-12-01T19:35:00Z  image-resizer  CRITICAL  all workers busy on oversized-decode jobs; resize queue depth 9000; CPU pinned\n2026-12-01T19:37:00Z  image-resizer  WARN  asset a91f resubmitted 140 times (client retry)",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The image-resizer logs show that an oversized-decode job for asset a91f with 48000x48000 pixels from a 40KB file is causing CPU exhaustion and filling the resize queue. We can search for other occurrences or related errors for asset a91f across the services to fully trace the impact.",
+        "tool": "search_logs",
+        "args": {
+          "query": "a91f",
+          "service": "image-resizer",
+          "start": "2026-12-01T19:30:00Z",
+          "end": "2026-12-01T19:45:00Z"
+        },
+        "result": "3 of 3 matching log lines:\n2026-12-01T19:32:00Z  image-resizer  ERROR  decode job for asset a91f exceeded 60s; image declares 48000x48000 px from a 40KB file\n2026-12-01T19:37:00Z  image-resizer  WARN  asset a91f resubmitted 140 times (client retry)\n2026-12-01T19:45:00Z  image-resizer  INFO  operator added a max-decoded-dimension guard and blocklisted asset a91f; CPU recovering",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 3,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

@@ -1,11 +1,11 @@
-"""Run baseline and the winning variant ONCE on the sealed held-out test set.
+"""Run the shipped config ONCE on the sealed held-out test set.
 
-    uv run python scripts/run_heldout.py --winner conclude-v3
+    uv run python scripts/run_heldout.py
 
-The held-out scenarios (data/eval/heldout/) were never used for prompt iteration,
-so these numbers are the honest headline. Run this only after the dev-set
-ablations have frozen the config. Results cache under data/eval/ with a
-``heldout-`` tag prefix.
+The held-out scenarios (data/eval/heldout/) were never used for prompt iteration
+or ablations, so these numbers are the honest headline. The dev-set ablations
+rejected every prompt variant (each improved one axis but regressed another), so
+the shipped config is ``dev-baseline``. Results cache with a ``heldout-`` tag.
 """
 
 from __future__ import annotations
@@ -14,8 +14,7 @@ import argparse
 
 from triage.dataset import REPO_ROOT, load_scenarios
 from triage.eval.pipeline import evaluate_variant
-from triage.eval.stats import mcnemar_correct, wilcoxon_paired
-from triage.eval.variants import BASELINE, VARIANTS
+from triage.eval.variants import VARIANTS
 
 HELDOUT_SCENARIOS_DIR = REPO_ROOT / "data" / "eval" / "heldout" / "scenarios"
 
@@ -26,37 +25,25 @@ def _pct(x: float | None) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--winner", default="conclude-v3", choices=list(VARIANTS))
+    parser.add_argument("--config", default="dev-baseline", choices=list(VARIANTS))
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
 
     by_id = {s.id: s for s in load_scenarios(HELDOUT_SCENARIOS_DIR)}
-    print(f"held-out test set: {len(by_id)} scenarios\n")
+    print(f"held-out test set: {len(by_id)} scenarios (config: {args.config})\n")
 
-    base = BASELINE.model_copy(update={"tag": "heldout-baseline"})
-    winner = VARIANTS[args.winner].model_copy(update={"tag": f"heldout-{args.winner}"})
+    variant = VARIANTS[args.config].model_copy(update={"tag": f"heldout-{args.config}"})
+    ev = evaluate_variant(variant, by_id, force=args.force, calibrate_judge=False)
+    s = ev.summary
 
-    base_ev = evaluate_variant(base, by_id, force=args.force)
-    winner_ev = evaluate_variant(winner, by_id, force=args.force)
-
-    for tag, ev in [("baseline", base_ev), (args.winner, winner_ev)]:
-        s = ev.summary
-        print(f"=== held-out: {tag} ({s.n_runs} runs) ===")
-        print(f"  root-cause accuracy      {_pct(s.root_cause_accuracy)}")
-        print(f"  escalation decision      {_pct(s.escalation_decision_accuracy)}")
-        print(f"  false-confident-wrong    {_pct(s.false_confident_wrong_rate)}")
-        print(f"  citation grounding       {_pct(s.citation_grounding_rate)}")
-        print(f"  mean tool calls          {s.mean_tool_calls}\n")
-
-    mc = mcnemar_correct(base_ev.labels(), winner_ev.labels())
-    wg = wilcoxon_paired(
-        base_ev.grounding_rate_per_run(),
-        winner_ev.grounding_rate_per_run(),
-        metric="citation_grounding_rate",
-    )
-    print("held-out: winner vs baseline")
-    print(f"  correct-rate  delta {mc.delta:+}  p(mcnemar) {mc.p_value}  ({mc.note})")
-    print(f"  grounding     delta {wg.delta:+}  p(wilcoxon) {wg.p_value}")
+    print(f"=== held-out: {args.config} ({s.n_runs} runs) ===")
+    print(f"  root-cause accuracy (correct)   {_pct(s.root_cause_accuracy)}")
+    print(f"  root-cause partial              {_pct(s.root_cause_partial_rate)}")
+    print(f"  escalation decision accuracy    {_pct(s.escalation_decision_accuracy)}")
+    print(f"  false-confident-wrong rate      {_pct(s.false_confident_wrong_rate)}")
+    print(f"  citation grounding rate         {_pct(s.citation_grounding_rate)}")
+    print(f"  mean tool calls                 {s.mean_tool_calls}")
+    print(f"  budget-cap rate                 {_pct(s.budget_cap_rate)}")
     return 0
 
 

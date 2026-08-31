@@ -1,0 +1,77 @@
+{
+  "tag": "no-deploys",
+  "scenario_id": "scn_001",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_001",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "edge-proxy worker CPU saturation and thread pool exhaustion leading to no worker capacity to accept connections",
+      "confidence": 0.95,
+      "evidence": [
+        "edge-proxy cpu_utilization_pct metric spiked from ~35% to over 100% starting at 13:43 UTC",
+        "edge-proxy log at 2026-05-12T13:42:20Z showed 'cpu usage 78% and rising on all workers'",
+        "edge-proxy log at 2026-05-12T13:43:00Z showed 'worker CPU saturated; request queue growing (depth=4100)'",
+        "edge-proxy log at 2026-05-12T13:43:35Z showed 'returning 502: no worker capacity to accept connection'"
+      ],
+      "recommended_fix": "Mitigate by scaling up the edge-proxy tier capacity or shedding excess traffic, and follow up by investigating what caused the worker CPU saturation and request queue depth surge."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The incident report states that the edge tier is serving 502s and edge hosts look CPU-bound starting around 13:42 UTC. I will query the edge-proxy cpu_utilization_pct metric to verify the severity and timing of the CPU spike.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "edge-proxy",
+          "metric": "cpu_utilization_pct",
+          "start": "2026-05-12T13:12:00Z",
+          "end": "2026-05-12T14:05:00Z"
+        },
+        "result": "edge-proxy / cpu_utilization_pct (percent)\nsummary: first=35.5025, last=98.9367, min=34.3102, max=101.8277, change +186.8% (first value -> most extreme value)\npoints: 13:12=35.5025, 13:13=35.6176, 13:14=34.3102, 13:15=34.4988, 13:16=35.068, 13:17=34.7953, 13:18=34.7467, 13:19=35.6198, 13:20=35.2051, 13:21=35.2963, 13:22=34.8912, 13:23=34.6756, 13:24=34.5099, 13:25=35.1643, 13:26=34.7581, 13:27=35.0018, 13:28=35.2314, 13:29=34.5522, 13:30=35.4487, 13:31=34.5774, 13:32=34.6368, 13:33=35.3752, 13:34=34.5049, 13:35=35.4605, 13:36=35.083, 13:37=35.2166, 13:38=35.1797, 13:39=34.6868, 13:40=34.7717, 13:41=34.4979, 13:42=34.4813, 13:43=63.2711, 13:44=98.977, 13:45=98.6996, 13:46=100.575, 13:47=98.0433, 13:48=100.868, 13:49=100.204, 13:50=100.292, 13:51=100.095, 13:52=101.828, 13:53=99.195, 13:54=101.445, 13:55=100.245, 13:56=100.663, 13:57=101.754, 13:58=100.927, 13:59=98.9491, 14:00=99.2711, 14:01=98.208, 14:02=99.7249, 14:03=98.723, 14:04=99.9754, 14:05=98.9367",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed edge-proxy CPU spikes starting at 13:43 UTC. I will now search the edge-proxy logs around that time to identify any error patterns or incoming requests causing the high CPU usage.",
+        "tool": "search_logs",
+        "args": {
+          "query": "502",
+          "service": "edge-proxy",
+          "start": "2026-05-12T13:40:00Z",
+          "end": "2026-05-12T13:50:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-05-12T13:43:35Z  edge-proxy  ERROR  returning 502: no worker capacity to accept connection",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "We see the edge-proxy is returning 502 due to 'no worker capacity to accept connection' around the time CPU spiked. I will retrieve runbook guidance on edge proxy worker capacity and 502 errors to interpret this failure pattern.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "502 worker capacity"
+        },
+        "result": "5 runbook section(s):\n\n[1] thread-pool-exhaustion.md > Symptoms (score 0.4352)\nThe service stops accepting new work: log lines about a full worker pool, a\nrejected-execution error, or a saturated event loop. Inbound requests are queued\nor dropped with 503 responses. Already-running requests may still complete slowly.\n\n[2] thread-pool-exhaustion.md > How to confirm (score 0.4167)\n- Check worker pool utilisation and queue depth: workers at the ceiling, queue\n  growing, rejections rising.\n- Determine what the busy workers are doing: a thread dump or active-span sample\n  usually shows them all blocked on the same downstream call.\n- Correlate onset with downstream latency, traffic, and deploys.\n\n[3] operator-capacity-change-incident.md > Symptoms (score 0.358)\nAn outage that begins during planned maintenance or a manual operation, not during\na deploy. Logs show an operator session and a command that changed capacity,\nscaled a group, drained nodes, or altered routing, often with a parameter larger\nthan intended. Impact appears seconds to minutes after the command.\n\n[4] thread-pool-exhaustion.md > References (score 0.3452)\n- Google SRE Book, \"Addressing Cascading Failures\": https://sre.google/books/\n\n[5] thread-pool-exhaustion.md > Likely causes (score 0.3438)\n- Downstream calls blocking worker threads for longer than usual, so all workers\n  are tied up waiting.\n- A retry storm or traffic surge exceeding the pool's capacity.\n- Long-running or unbounded work (large exports, synchronous fan-out) occupying\n  workers that are needed for normal traffic.\n- Pool sized too small, or blocking I/O on an event loop that assumes\n  non-blocking calls.",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "The edge-proxy logs indicate 'no worker capacity to accept connection', matching thread pool exhaustion. I will search edge-proxy logs around the incident onset to see if a specific downstream service or upstream traffic pattern is causing the workers to block.",
+        "tool": "search_logs",
+        "args": {
+          "query": "worker",
+          "service": "edge-proxy",
+          "start": "2026-05-12T13:40:00Z",
+          "end": "2026-05-12T13:50:00Z"
+        },
+        "result": "3 of 3 matching log lines:\n2026-05-12T13:42:20Z  edge-proxy  WARN  cpu usage 78% and rising on all workers\n2026-05-12T13:43:00Z  edge-proxy  ERROR  worker CPU saturated; request queue growing (depth=4100)\n2026-05-12T13:43:35Z  edge-proxy  ERROR  returning 502: no worker capacity to accept connection",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 4,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

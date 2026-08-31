@@ -1,0 +1,54 @@
+{
+  "tag": "no-deploys",
+  "scenario_id": "scn_014",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_014",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "A product-api refactor deployed around 10:20 caused cache-hit rates to collapse from ~94% to ~3%, driving a massive increase in read load and spiking p95 latency from ~180ms to over 3200ms.",
+      "confidence": 1.0,
+      "evidence": [
+        "Product-api refactor went out around 10:20",
+        "Database team reports product-api read load is way up",
+        "product-api p95_latency_ms spiked from 177.39ms to 3259.07ms following the deploy",
+        "product-api cache_hit_rate dropped from 0.9437 to 0.0296 starting immediately after the 10:20 deploy"
+      ],
+      "recommended_fix": "Roll back the product-api refactor deployed at 10:20 to restore caching functionality and bring read load and latency back to normal levels. Follow up by investigating the caching logic regression in the refactored code."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "Product-api read load spiked immediately after a 10:20 refactor, so we should query its latency and cache hit rate metrics between 10:15 and 10:40 to understand the impact of the change.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "product-api",
+          "metric": "p95_latency_ms",
+          "start": "2026-11-13T10:15:00Z",
+          "end": "2026-11-13T10:44:00Z"
+        },
+        "result": "product-api / p95_latency_ms (milliseconds)\nsummary: first=177.3958, last=3203.2156, min=177.3958, max=3259.0749, change +1737.2% (first value -> most extreme value)\npoints: 10:15=177.396, 10:16=179.391, 10:17=180.91, 10:18=179.887, 10:19=181.196, 10:20=178.802, 10:21=180.178, 10:22=180.349, 10:23=179.979, 10:24=1178.81, 10:25=2187.09, 10:26=3233.57, 10:27=3161.67, 10:28=3167.77, 10:29=3248.31, 10:30=3185.26, 10:31=3216.15, 10:32=3259.07, 10:33=3150.15, 10:34=3158.78, 10:35=3157.12, 10:36=3165.99, 10:37=3161.68, 10:38=3207.61, 10:39=3248.03, 10:40=3152.12, 10:41=3212.55, 10:42=3244.69, 10:43=3215.91, 10:44=3203.22",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed product-api latency spiked significantly starting at 10:24. Next, we should check product-api's cache_hit_rate metric to see if the refactor caused caching to fail.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "product-api",
+          "metric": "cache_hit_rate",
+          "start": "2026-11-13T10:15:00Z",
+          "end": "2026-11-13T10:44:00Z"
+        },
+        "result": "product-api / cache_hit_rate (ratio)\nsummary: first=0.9437, last=0.0296, min=0.0295, max=0.9576, change -96.9% (first value -> most extreme value)\npoints: 10:15=0.9437, 10:16=0.9323, 10:17=0.9576, 10:18=0.9462, 10:19=0.9275, 10:20=0.9362, 10:21=0.9226, 10:22=0.4896, 10:23=0.0301, 10:24=0.0305, 10:25=0.0304, 10:26=0.0303, 10:27=0.03, 10:28=0.0298, 10:29=0.0295, 10:30=0.0299, 10:31=0.0302, 10:32=0.0301, 10:33=0.0299, 10:34=0.0303, 10:35=0.0295, 10:36=0.0303, 10:37=0.0303, 10:38=0.0297, 10:39=0.0295, 10:40=0.0297, 10:41=0.0302, 10:42=0.0299, 10:43=0.0299, 10:44=0.0296",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 2,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

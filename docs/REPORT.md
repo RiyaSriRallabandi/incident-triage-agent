@@ -81,23 +81,60 @@ are supporting evidence; effect sizes are reported alongside.
 | Citation grounding | 55.6% | **87.4%** | **+31.8pp** | **0.0004** (Wilcoxon) |
 | Mean tool calls | 4.13 | 3.73 | −0.40 | **0.027** (Wilcoxon) |
 | Confidence (calibration) | 0.99 | 0.95 | −0.04 | **0.0005** (Wilcoxon) |
-| Escalation decision accuracy | 93.3% | 80.0% | −13.3pp | — |
+| Escalation decision accuracy | 93.3% | **80.0%** | **−13.3pp** | — |
 | Net correct rate (unified) | 73.3% | 66.7% | −6.7pp | 0.75 (McNemar) |
 
-**Verdict: partial win, rejected as-is.** The citation instruction essentially
-solved the fabrication problem, and the run got shorter and better-calibrated,
-all significant. But the "escalate if you can't name the mechanism" language made
-it **over-escalate** — six solvable incidents wrongly escalated (up from two) —
-which cancels the accuracy gains. `conclude-v3` keeps the citation and mechanism
-language and softens the escalation trigger.
+The citation instruction essentially solved the fabrication problem, and the run
+got shorter and better-calibrated (all significant). But the "escalate if you
+can't name the mechanism" language made it **over-escalate** — six solvable
+incidents wrongly escalated, up from two.
 
-### `conclude-v3` — the fix
+### `conclude-v3` — soften the escalation trigger, keep the rest
 
-_(pending — running)_
+| Metric | baseline | conclude-v3 | Δ | p |
+|---|---|---|---|---|
+| Citation grounding | 55.4% | **74.2%** | **+18.8pp** | **0.009** (Wilcoxon) |
+| Confidence (calibration) | 0.98 | 0.94 | −0.04 | **0.0002** (Wilcoxon) |
+| Escalation decision accuracy | 93.3% | **93.3%** | 0 | — (regression fixed) |
+| Root-cause correct (of diagnoses) | 74.1% | **59.3%** | **−14.8pp** | — |
+| Net correct rate (unified) | 73.3% | 60.0% | −13.3pp | 0.29 (McNemar) |
+
+`conclude-v3` **fixed the over-escalation** and kept a smaller-but-significant
+citation-grounding win. But its longer, more-hedged prompt made the agent produce
+**vaguer root-cause statements** — hand-checking the five regressed scenarios
+confirmed it: e.g. on the memory-leak incident, baseline said *"the in-memory dedup
+set holds 14M entries without eviction"* (the mechanism), `conclude-v3` said *"the
+service lacks queue-depth tracking, allowing unbounded memory accumulation"*
+(vaguer, slightly wrong). Adding "lower your confidence / escalate if unsure /
+cite only retrieved text" traded mechanism identification for caution.
 
 ### `no-deploys` — remove the `get_recent_deploys` tool
 
-_(pending — running)_
+| Metric | baseline | no-deploys | Δ |
+|---|---|---|---|
+| Root-cause correct | 74.1% | 62.5% | −11.6pp |
+| Citation grounding | 54.0% | 44.9% | −9.1pp |
+| Mean tool calls | 4.13 | 3.77 | −0.37 |
+
+Removing deploy history costs ~12pp of root-cause accuracy and the agent visibly
+struggles — the failure-stage classifier tags the new failures as
+`missing_tool_call` / `wrong_tool_args` (it searches logs for deploy-shaped
+evidence instead). The tool earns its place. (McNemar p = 0.29 at n=30 — the
+effect direction and the failure-stage evidence are consistent, the sample is
+just small.)
+
+### Verdict
+
+**Every prompt variant was rejected.** `conclude-v2` and `conclude-v3` each fixed
+a real problem (citation fabrication) but regressed another (escalation, then
+mechanism identification). At this model size the trade wasn't worth it, so
+**`dev-baseline` is the shipped config.** The obvious next experiment — a
+citation-only prompt change with none of the escalation or hedging language — is
+left as future work.
+
+This is the intended outcome of the ablation discipline: build candidate
+improvements, measure them against the baseline with paired tests and spot
+hand-checks, and *don't ship* the ones the data doesn't support.
 
 ---
 

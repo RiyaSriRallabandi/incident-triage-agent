@@ -1,0 +1,54 @@
+{
+  "tag": "no-deploys",
+  "scenario_id": "scn_020",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_020",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "taxly.io service outage causing tax calculation failures",
+      "confidence": 0.95,
+      "evidence": [
+        "metric drop in checkout-api tax_calc_success_rate from 0.98 to 0.10 around 13:16 UTC",
+        "log 2026-12-04T13:15:00Z: tax-calc provider api.taxly.io returning 503",
+        "log 2026-12-04T13:18:00Z: tax-calc calls timing out",
+        "log 2026-12-04T13:20:00Z: taxly.io status page reports a major outage"
+      ],
+      "recommended_fix": "Enable cached-rate fallback immediately, monitor taxly.io status, and plan to switch to an alternative tax provider or add redundancy; verify fallback restores 95%+ checkout success"
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The incident report states that checkouts are failing at the tax calculation step. I need to check the tax calculation success rate metric on the checkout-api service to confirm the scope of the failures.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "checkout-api",
+          "metric": "tax_calc_success_rate",
+          "start": "2026-12-04T12:45:00Z",
+          "end": "2026-12-04T13:45:00Z"
+        },
+        "result": "checkout-api / tax_calc_success_rate (ratio)\nsummary: first=0.9845, last=0.1016, min=0.0981, max=1.0142, change -90.0% (first value -> most extreme value)\npoints: 12:45=0.9845, 12:46=0.9837, 12:47=1.0098, 12:48=0.9831, 12:49=0.986, 12:50=1.0056, 12:51=0.9819, 12:52=1.0127, 12:53=1.0046, 12:54=0.9965, 12:55=0.9989, 12:56=0.9842, 12:57=1.0056, 12:58=0.9876, 12:59=0.9804, 13:00=0.9847, 13:01=1.0003, 13:02=0.9757, 13:03=0.9782, 13:04=1.0014, 13:05=0.9986, 13:06=1.0018, 13:07=1.0099, 13:08=0.9953, 13:09=0.9871, 13:10=1.0125, 13:11=1.013, 13:12=0.9794, 13:13=1.0142, 13:14=1.0048, 13:15=0.9982, 13:16=0.7033, 13:17=0.3915, 13:18=0.1017, 13:19=0.0991, 13:20=0.1004, 13:21=0.1006, 13:22=0.1009, 13:23=0.0991, 13:24=0.0999, 13:25=0.1014, 13:26=0.0989, 13:27=0.0994, 13:28=0.0992, 13:29=0.099, 13:30=0.1008, 13:31=0.101, 13:32=0.0985, 13:33=0.1011, 13:34=0.1011, 13:35=0.1017, 13:36=0.0993, 13:37=0.0984, 13:38=0.101, 13:39=0.1019, 13:40=0.1003, 13:41=0.1008, 13:42=0.1002, 13:43=0.1012, 13:44=0.0981, 13:45=0.1016",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The tax calculation success rate drops sharply around 13:16 UTC, confirming the incident timeline. I should now search the logs for checkout-api to find the specific error message during the tax calculation step.",
+        "tool": "search_logs",
+        "args": {
+          "service": "checkout-api",
+          "query": "tax",
+          "start": "2026-12-04T13:15:00Z",
+          "end": "2026-12-04T13:45:00Z"
+        },
+        "result": "5 of 5 matching log lines:\n2026-12-04T13:15:00Z  checkout-api  WARN  tax-calc provider api.taxly.io returning 503; ~12% of checkouts affected\n2026-12-04T13:18:00Z  checkout-api  ERROR  tax-calc calls timing out; ~60% of checkout attempts failing at the tax step\n2026-12-04T13:20:00Z  checkout-api  INFO  taxly.io status page reports a major outage since 13:12 UTC; ETA unknown\n2026-12-04T13:22:00Z  checkout-api  INFO  no deploys today; payments and inventory calls healthy; failure isolated to the tax-calc integration\n2026-12-04T13:35:00Z  checkout-api  INFO  enabled cached-rate fallback for tax; checkout success recovering to ~95%",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 2,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

@@ -1,0 +1,98 @@
+{
+  "tag": "no-deploys",
+  "scenario_id": "scn_012",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_012",
+    "outcome": "escalate",
+    "diagnosis": null,
+    "escalation": {
+      "reason": "The evidence is inconclusive because the tool-call budget was exhausted before the investigation could fully localize the root cause of the search-api p99 latency degradation.",
+      "evidence_gathered": [],
+      "suggested_next_steps": [
+        "Investigate the slow request path /products to determine what is causing the 223ms latency.",
+        "Check recent deploy history around 04:00 UTC to see if a rollout correlated with the latency increase.",
+        "Review downstream service dependencies for latency regressions."
+      ]
+    },
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "We need to verify the search-api latency metric time series and timing to confirm the p99 degradation pattern reported around 04:00 UTC.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "search-api",
+          "metric": "p99_latency_ms",
+          "start": "2026-11-03T22:30:00Z",
+          "end": "2026-11-04T04:50:00Z"
+        },
+        "result": "search-api / p99_latency_ms (milliseconds)\nsummary: first=299.4944, last=615.846, min=294.2416, max=631.37, change +110.8% (first value -> most extreme value)\npoints: 03:00=299.494, 03:01=302.034, 03:02=298.719, 03:03=295.853, 03:04=298.841, 03:05=294.627, 03:06=298.065, 03:07=298.293, 03:08=301.133, 03:09=296.464, 03:10=305.187, 03:11=304.322, 03:12=305.34, 03:13=300.097, 03:14=296.315, 03:15=304.205, 03:16=298.197, 03:17=301.06, 03:18=296.206, 03:19=299.117, 03:20=302.322, 03:21=301.319, 03:22=303.857, 03:23=300.199, 03:24=305.461, 03:25=300.066, 03:26=298.742, 03:27=295.045, 03:28=305.699, 03:29=298.219, 03:30=304.978, 03:31=302.346, 03:32=297.607, 03:33=295.308, 03:34=304.742, 03:35=301.939, 03:36=301.406, 03:37=301.294, 03:38=297.835, 03:39=301.29, 03:40=299.97, 03:41=296.824, 03:42=296.181, 03:43=296.238, 03:44=296.385, 03:45=300.12, 03:46=294.977, 03:47=296.736, 03:48=299.017, 03:49=305.159, 03:50=297.789, 03:51=300.728, 03:52=298.584, 03:53=295.368, 03:54=298.847, 03:55=294.605, 03:56=296.587, 03:57=305.363, 03:58=294.242, 03:59=298.019, 04:00=294.491, 04:01=337.706, 04:02=358.024, 04:03=391.198, 04:04=419.457, 04:05=454.368, 04:06=497.628, 04:07=516.787, 04:08=549.665, 04:09=595.15, 04:10=610.751, 04:11=608.989, 04:12=617.335, 04:13=625.484, 04:14=628.758, 04:15=628.532, 04:16=625.574, 04:17=622.596, 04:18=608.517, 04:19=617.616, 04:20=626.925, 04:21=615.651, 04:22=620.881, 04:23=608.491, 04:24=611.633, 04:25=614.778, 04:26=614.615, 04:27=618.006, 04:28=630.967, 04:29=630.962, 04:30=611.161, 04:31=630.145, 04:32=614.785, 04:33=618.993, 04:34=622.633, 04:35=611.188, 04:36=612.482, 04:37=622.54, 04:38=628.621, 04:39=615.444, 04:40=631.37, 04:41=625.628, 04:42=608.467, 04:43=626.131, 04:44=620.687, 04:45=617.163, 04:46=627.458, 04:47=627.974, 04:48=610.861, 04:49=625.918, 04:50=615.846",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed search-api p99 latency increases starting at 04:00 UTC. Next, we should examine search-api logs around that time window to identify any suspicious events, slow queries, or upstream/downstream interactions.",
+        "tool": "search_logs",
+        "args": {
+          "query": "latency",
+          "service": "search-api",
+          "start": "2026-11-04T03:50:00Z",
+          "end": "2026-11-04T04:15:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-11-04T04:00:00Z  search-api  WARN  p99 latency 610ms (baseline ~300ms); p50 unchanged at ~40ms",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "We observed the p99 latency spike and a warning log at 04:00 UTC, but no other log lines matched the query 'latency'. We should search search-api logs without a strict query filter around 04:00 UTC to see all events and potential errors or changes.",
+        "tool": "search_logs",
+        "args": {
+          "query": "search-api",
+          "service": "search-api",
+          "start": "2026-11-04T03:55:00Z",
+          "end": "2026-11-04T04:05:00Z"
+        },
+        "result": "6 of 6 matching log lines:\n2026-11-04T03:56:05Z  search-api  INFO  health check ok\n2026-11-04T04:00:00Z  search-api  WARN  p99 latency 610ms (baseline ~300ms); p50 unchanged at ~40ms\n2026-11-04T04:01:12Z  search-api  WARN  slow request path=/products duration_ms=223\n2026-11-04T04:04:50Z  search-api  INFO  POST /checkout 201 in 193ms\n2026-11-04T04:04:52Z  search-api  INFO  health check ok\n2026-11-04T04:05:00Z  search-api  INFO  no error rate change; no CPU, memory, or GC anomaly; thread pool healthy",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "Logs mention a slow request on path=/products around 04:01 UTC. We should search search-api logs for '/products' to see if there is a pattern or further details on this slow path.",
+        "tool": "search_logs",
+        "args": {
+          "query": "/products",
+          "service": "search-api",
+          "start": "2026-11-04T03:55:00Z",
+          "end": "2026-11-04T04:15:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-11-04T04:01:12Z  search-api  WARN  slow request path=/products duration_ms=223",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "We see a slow request on path=/products in search-api logs, but no other errors. Let's check other services or runbooks related to products or search-api to understand what affects path=/products.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "products"
+        },
+        "result": "5 runbook section(s):\n\n[1] memory-leak-and-oom.md > References (score 0.1719)\n- Google SRE Book, \"Managing Critical State\" and \"Addressing Cascading Failures\":\n  https://sre.google/books/\n\n[2] when-to-escalate-inconclusive-evidence.md > References (score 0.139)\n- Microsoft Research, \"Gray Failure: The Achilles' Heel of Cloud-Scale Systems\":\n  https://www.microsoft.com/en-us/research/publication/gray-failure-the-achilles-heel-of-cloud-scale-systems/\n- Google SRE Book, \"Effective Troubleshooting\": https://sre.google/books/\n\n[3] memory-leak-and-oom.md > Likely causes (score 0.1339)\n- A leak: objects retained in a cache, list, or map that is never bounded or\n  evicted; listeners or connections never closed.\n- An unbounded in-memory buffer or queue that grows when a consumer falls behind.\n- A recent change increasing per-request allocation, or a larger working set from\n  a data or traffic change.\n- Heap or container memory limit set too low for the real working set.\n\n[4] operator-capacity-change-incident.md > Likely causes (score 0.1306)\n- A command run with the wrong argument, wrong target, or wrong environment: a\n  fat-finger, a copied value, or a script bug.\n- Automation acting on stale or incorrect input.\n- An operation whose blast radius was underestimated: removing more capacity than\n  the system could tolerate.\n\n[5] operator-capacity-change-incident.md > References (score 0.1283)\n- Amazon S3 service disruption, US-EAST-1, February 28, 2017:\n  https://aws.amazon.com/message/41926/\n- GitLab.com database incident, January 31, 2017:\n  https://about.gitlab.com/blog/2017/02/10/postmortem-of-database-outage-of-january-31/",
+        "error": false
+      },
+      {
+        "step": 6,
+        "plan_reasoning": "We have identified a slow request path (/products) in search-api logs starting around 04:00 UTC, but we have one remaining tool call. Let's retrieve any runbooks specifically for search-api latency or slow paths to see if there is a known troubleshooting pattern.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "latency"
+        },
+        "result": "5 runbook section(s):\n\n[1] bad-deploy-correlated-regression.md > Symptoms (score 0.5397)\nA step change in latency, error rate, or resource use that begins within minutes\nof a code or configuration rollout. The change is often sharp rather than gradual,\nand it may be limited to the service that was deployed or to a subset of hosts if\nthe rollout is still in progress.\n\n[2] bad-deploy-correlated-regression.md > How to confirm (score 0.4548)\n- Line up the incident start against deploy history for the affected service.\n  A deploy whose timestamp precedes the first symptom by 1 to 10 minutes is a\n  strong lead.\n- Check whether hosts on the new build differ from hosts still on the old build.\n- Look for errors that name a specific new rule, flag, or code path.\n\n[3] when-to-escalate-inconclusive-evidence.md > Escalate when (score 0.449)\n- The error or latency change is modest and intermittent, spread across most\n  hosts, with no single host or shard dominating.\n- No deploy, config change, or operator action correlates with the onset.\n- Downstream dependencies and shared infrastructure all report healthy.\n- Resource signals are flat: CPU, memory, connection pools, and queues are within\n  normal range.\n- The incident partially self-recovers without any action taken.\n- Two or more plausible causes fit the evidence equally well and cannot be\n  distinguished without data you do not have.\n\n[4] bad-deploy-correlated-regression.md > References (score 0.4465)\n- Google SRE Book, \"Postmortem Culture\" and \"Release Engineering\" chapters:\n  https://sre.google/books/\n\n[5] connection-pool-exhaustion.md > How to confirm (score 0.4154)\n- Check pool metrics: active connections at the ceiling, waiters greater than\n  zero, rising acquisition wait time.\n- Correlate with downstream latency and with the caller's outbound request rate.\n- If downstream latency is normal, suspect a leak; look for steadily falling idle\n  connections over time.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 6,
+    "hit_budget_cap": true
+  },
+  "error": null
+}

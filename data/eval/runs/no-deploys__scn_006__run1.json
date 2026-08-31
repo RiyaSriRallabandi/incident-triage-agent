@@ -1,0 +1,78 @@
+{
+  "tag": "no-deploys",
+  "scenario_id": "scn_006",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_006",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The cloud infrastructure team's security-group change caused a network partition or blocked outbound connectivity from the payments-gateway service, leading to upstream connect timeouts and failing payment authorizations.",
+      "confidence": 0.95,
+      "evidence": [
+        "INCIDENT REPORT: Cloud infra team pushed a security-group change this morning.",
+        "[1] payments-gateway / payment_auth_success_rate dropped from ~0.99 to near 0 starting at 11:08 UTC.",
+        "[2] payments-gateway / outbound_connect_errors_per_s spiked significantly starting at 11:08 UTC.",
+        "[3] 2026-09-22T11:10:00Z payments-gateway ERROR 100% of payment authorizations failing: upstream connect timeout",
+        "[4] downstream-dependency-failure.md > Likely causes: A network partition or DNS failure between the caller and the dependency."
+      ],
+      "recommended_fix": "Roll back the security-group change pushed by the cloud infrastructure team this morning to restore outbound connectivity from the payments-gateway service to its payment processor dependencies."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "Card payments are failing at checkout, pointing to payments-gateway or its connectivity. I will check the payment_auth_success_rate and outbound_connect_errors_per_s metrics for payments-gateway to understand the nature of the failure.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "payments-gateway",
+          "metric": "payment_auth_success_rate",
+          "start": "2026-09-22T10:35:00Z",
+          "end": "2026-09-22T11:35:00Z"
+        },
+        "result": "payments-gateway / payment_auth_success_rate (ratio)\nsummary: first=0.9936, last=0.0123, min=-0.0199, max=1.0044, change -102.0% (first value -> most extreme value)\npoints: 10:35=0.9936, 10:36=0.971, 10:37=0.9813, 10:38=0.9775, 10:39=0.9738, 10:40=0.9846, 10:41=1.0044, 10:42=0.9813, 10:43=0.9734, 10:44=1.0028, 10:45=0.9842, 10:46=0.9987, 10:47=0.9749, 10:48=1.0011, 10:49=0.9874, 10:50=0.9983, 10:51=0.9777, 10:52=0.9827, 10:53=0.987, 10:54=0.9884, 10:55=0.9812, 10:56=0.9769, 10:57=0.9882, 10:58=0.9719, 10:59=0.9896, 11:00=0.9884, 11:01=0.987, 11:02=0.9742, 11:03=0.9738, 11:04=0.9921, 11:05=0.976, 11:06=1.0026, 11:07=0.9976, 11:08=0.7399, 11:09=0.4856, 11:10=0.2489, 11:11=0.0168, 11:12=-0.0046, 11:13=0.0169, 11:14=-0.0015, 11:15=0.0177, 11:16=0.0114, 11:17=-0.0186, 11:18=-0.0097, 11:19=0.007, 11:20=0.0176, 11:21=0.0034, 11:22=-0.0199, 11:23=0.0113, 11:24=0.0193, 11:25=-0.0116, 11:26=0.0192, 11:27=-0.0093, 11:28=-0.006, 11:29=0.0005, 11:30=0.0071, 11:31=0.0019, 11:32=-0.0105, 11:33=0.0092, 11:34=0.0056, 11:35=0.0123",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The payment_auth_success_rate metric shows a sharp drop starting at 11:08 UTC. I will now query the outbound_connect_errors_per_s metric for payments-gateway to check for connectivity issues mentioned in the incident report.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "payments-gateway",
+          "metric": "outbound_connect_errors_per_s",
+          "start": "2026-09-22T10:35:00Z",
+          "end": "2026-09-22T11:35:00Z"
+        },
+        "result": "payments-gateway / outbound_connect_errors_per_s (count_per_second)\nsummary: first=0.2003, last=45.0704, min=0.1965, max=45.8063, change +22768.8% (first value -> most extreme value)\npoints: 10:35=0.2003, 10:36=0.2021, 10:37=0.2007, 10:38=0.1972, 10:39=0.2027, 10:40=0.2032, 10:41=0.2008, 10:42=0.2036, 10:43=0.1969, 10:44=0.1969, 10:45=0.1994, 10:46=0.1965, 10:47=0.1971, 10:48=0.197, 10:49=0.1973, 10:50=0.2026, 10:51=0.1969, 10:52=0.2027, 10:53=0.1977, 10:54=0.1997, 10:55=0.203, 10:56=0.2004, 10:57=0.2023, 10:58=0.1981, 10:59=0.1984, 11:00=0.2038, 11:01=0.2012, 11:02=0.1967, 11:03=0.2, 11:04=0.1976, 11:05=0.1993, 11:06=0.2009, 11:07=0.1996, 11:08=15.3613, 11:09=30.5022, 11:10=44.7676, 11:11=44.3829, 11:12=45.08, 11:13=44.5062, 11:14=44.382, 11:15=45.8063, 11:16=44.238, 11:17=44.9881, 11:18=45.8046, 11:19=44.5101, 11:20=45.4866, 11:21=45.2416, 11:22=45.5447, 11:23=44.9591, 11:24=45.5393, 11:25=45.654, 11:26=45.2111, 11:27=44.4878, 11:28=44.1676, 11:29=45.493, 11:30=44.5057, 11:31=45.4847, 11:32=45.6534, 11:33=44.8392, 11:34=45.1319, 11:35=45.0704",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The outbound connection errors spike significantly at 11:08 UTC, coinciding with the drop in payment success rate. I will now search the logs of payments-gateway to examine the connection error details and identify the destination or underlying error type.",
+        "tool": "search_logs",
+        "args": {
+          "query": "connect error",
+          "service": "payments-gateway",
+          "start": "2026-09-22T11:05:00Z",
+          "end": "2026-09-22T11:15:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-09-22T11:10:00Z  payments-gateway  ERROR  100% of payment authorizations failing: upstream connect timeout",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "The metrics and logs point to outbound connection failures from payments-gateway, likely caused by the recent security‑group change. Retrieving the runbook for an upstream connect timeout will confirm the root cause and outline the next steps.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "upstream connect timeout"
+        },
+        "result": "5 runbook section(s):\n\n[1] downstream-dependency-failure.md > Symptoms (score 0.5666)\nA service returns errors on the operations that call a particular dependency,\nwhile operations that do not touch that dependency stay healthy. Error messages\npoint outward: upstream unavailable, connection refused, timeouts, or 5xx from a\nnamed backend. Multiple unrelated services degrade at once if they share the\ndependency.\n\n[2] retry-storm-amplification.md > References (score 0.472)\n- AWS Builders' Library, \"Timeouts, retries, and backoff with jitter\":\n  https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/\n\n[3] downstream-dependency-failure.md > Likely causes (score 0.445)\n- The dependency itself is down or degraded (its own deploy, resource exhaustion,\n  data-store failure, or capacity change).\n- A network partition or DNS failure between the caller and the dependency.\n- The dependency is rate-limiting or shedding load and returning errors by design.\n- Credentials or certificates for the dependency expired.\n\n[4] retry-storm-amplification.md > Likely causes (score 0.4363)\n- Client retries with no backoff, no jitter, and no retry budget. Every slow call\n  becomes several calls, multiplying load by the retry count.\n- Retries stacked at multiple layers (library, service mesh, gateway) so the\n  amplification compounds.\n- Timeouts set longer than the caller's own deadline, so retries pile up while the\n  original request is still waiting.\n\n[5] retry-storm-amplification.md > Symptoms (score 0.4235)\nA small latency increase in a downstream dependency is followed by a\ndisproportionately large spike in traffic to that dependency and in resource use\non the caller. Outbound request rate from the caller rises well above its inbound\nrequest rate. The caller degrades or fails even though the downstream problem was\nminor.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 4,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

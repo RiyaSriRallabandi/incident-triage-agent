@@ -1,0 +1,52 @@
+{
+  "tag": "no-deploys",
+  "scenario_id": "scn_007",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_007",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "auth-service TLS certificate expired at 00:00:00Z causing client handshake failures and a zero login success rate",
+      "confidence": 1.0,
+      "evidence": [
+        "auth-service / tls_handshake_errors_per_s spiked from ~0.1 to ~384 at 00:01 UTC",
+        "auth-service logs showed: 2026-10-01T00:00:00Z auth-service ERROR TLS handshake failures from clients: certificate expired (notAfter=2026-10-01T00:00:00Z)"
+      ],
+      "recommended_fix": "Immediately rotate and deploy a valid TLS certificate for the auth-service to restore client connections, and implement a proactive certificate expiration monitoring and automated rotation mechanism as a follow-up."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The incident report mentions TLS errors for clients connecting to the login service starting at 00:00 UTC. I will query the tls_handshake_errors_per_s metric on the auth-service to confirm the timeline and magnitude of the TLS failures.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "auth-service",
+          "metric": "tls_handshake_errors_per_s",
+          "start": "2026-09-30T23:30:00Z",
+          "end": "2026-10-01T00:34:00Z"
+        },
+        "result": "auth-service / tls_handshake_errors_per_s (count_per_second)\nsummary: first=0.1001, last=384.0633, min=0.098, max=386.7992, change +386312.8% (first value -> most extreme value)\npoints: 23:30=0.1001, 23:31=0.099, 23:32=0.0997, 23:33=0.0995, 23:34=0.1003, 23:35=0.0982, 23:36=0.0989, 23:37=0.1003, 23:38=0.1001, 23:39=0.0994, 23:40=0.1011, 23:41=0.0992, 23:42=0.0996, 23:43=0.0994, 23:44=0.1002, 23:45=0.0989, 23:46=0.0984, 23:47=0.1006, 23:48=0.1009, 23:49=0.0999, 23:50=0.0994, 23:51=0.1015, 23:52=0.0986, 23:53=0.0996, 23:54=0.1014, 23:55=0.1002, 23:56=0.098, 23:57=0.0985, 23:58=0.0997, 23:59=0.0995, 00:00=0.0985, 00:01=384.195, 00:02=386.156, 00:03=376.106, 00:04=376.558, 00:05=386.09, 00:06=378.699, 00:07=379.358, 00:08=376.861, 00:09=386.799, 00:10=373.361, 00:11=380.235, 00:12=382.459, 00:13=380.072, 00:14=385.264, 00:15=377.757, 00:16=378.308, 00:17=381.051, 00:18=384.684, 00:19=383.207, 00:20=374.957, 00:21=382.568, 00:22=377.01, 00:23=378.925, 00:24=372.632, 00:25=381.979, 00:26=373.877, 00:27=374.425, 00:28=381.226, 00:29=377.427, 00:30=381, 00:31=386.396, 00:32=377.454, 00:33=379.397, 00:34=384.063",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "TLS handshake errors spiked dramatically on auth-service at 00:00 UTC, pointing toward an expired or invalid certificate or configuration. I will search auth-service logs around 00:00 UTC to identify the exact error message and root cause of the TLS handshake failures.",
+        "tool": "search_logs",
+        "args": {
+          "query": "TLS",
+          "service": "auth-service",
+          "start": "2026-09-30T23:55:00Z",
+          "end": "2026-10-01T00:05:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-10-01T00:00:00Z  auth-service  ERROR  TLS handshake failures from clients: certificate expired (notAfter=2026-10-01T00:00:00Z)",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 2,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

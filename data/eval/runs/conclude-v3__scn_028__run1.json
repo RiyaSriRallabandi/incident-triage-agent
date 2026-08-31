@@ -1,0 +1,80 @@
+{
+  "tag": "conclude-v3",
+  "scenario_id": "scn_028",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_028",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "A scheduled secret rotation performed by the identity team at 14:00 invalidated client credentials for a subset of pods, causing token requests to return 401 invalid_client and driving up partner API gateway authentication failure rates.",
+      "confidence": 0.9,
+      "evidence": [
+        "The identity team did a scheduled secret rotation at 14:00.",
+        "partner-api-gateway / auth_failure_rate spiked from 0.002 to ~0.30 starting at 14:03 UTC.",
+        "identity-provider / token_requests_401_per_s spiked from ~0.1 to ~22.3 per second starting at 14:03 UTC.",
+        "2027-01-09T14:02:00Z partner-api-gateway ERROR token request to identity-provider returning 401 invalid_client on some pods"
+      ],
+      "recommended_fix": "Roll back or synchronize the secret rotation across all identity-provider and partner-api-gateway pods to ensure valid credentials are consistently recognized, and follow up with the identity team to verify secret propagation mechanisms."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The incident report states that 30% of partner API calls are failing authentication starting around 14:02 UTC, coinciding with a secret rotation by the identity team. We should check the auth failure metrics on the partner-api-gateway service to confirm the exact timeline and pattern of failures.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "partner-api-gateway",
+          "metric": "auth_failure_rate",
+          "start": "2027-01-09T13:20:00Z",
+          "end": "2027-01-09T14:37:00Z"
+        },
+        "result": "partner-api-gateway / auth_failure_rate (ratio)\nsummary: first=0.002, last=0.2946, min=0.002, max=0.3041, change +15105.0% (first value -> most extreme value)\npoints: 13:20=0.002, 13:21=0.002, 13:22=0.002, 13:23=0.002, 13:24=0.002, 13:25=0.002, 13:26=0.002, 13:27=0.002, 13:28=0.002, 13:29=0.002, 13:30=0.002, 13:31=0.002, 13:32=0.002, 13:33=0.002, 13:34=0.002, 13:35=0.002, 13:36=0.002, 13:37=0.002, 13:38=0.002, 13:39=0.002, 13:40=0.002, 13:41=0.002, 13:42=0.002, 13:43=0.002, 13:44=0.002, 13:45=0.002, 13:46=0.002, 13:47=0.002, 13:48=0.002, 13:49=0.002, 13:50=0.002, 13:51=0.002, 13:52=0.002, 13:53=0.002, 13:54=0.002, 13:55=0.002, 13:56=0.002, 13:57=0.002, 13:58=0.002, 13:59=0.002, 14:00=0.002, 14:01=0.002, 14:02=0.002, 14:03=0.1013, 14:04=0.2033, 14:05=0.2992, 14:06=0.2982, 14:07=0.2941, 14:08=0.3004, 14:09=0.2994, 14:10=0.297, 14:11=0.2948, 14:12=0.3041, 14:13=0.2998, 14:14=0.2968, 14:15=0.3027, 14:16=0.2982, 14:17=0.2966, 14:18=0.301, 14:19=0.3012, 14:20=0.3037, 14:21=0.2945, 14:22=0.3041, 14:23=0.2976, 14:24=0.2994, 14:25=0.2966, 14:26=0.3027, 14:27=0.3008, 14:28=0.3008, 14:29=0.2993, 14:30=0.3003, 14:31=0.2973, 14:32=0.3001, 14:33=0.3029, 14:34=0.3028, 14:35=0.2944, 14:36=0.2996, 14:37=0.2946",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed that partner-api-gateway auth failure rates spiked to ~30% starting around 14:03 UTC, matching the incident report. Since the identity team performed a scheduled secret rotation at 14:00, we should check token requests returning 401 on the identity-provider service to see how it correlates.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "identity-provider",
+          "metric": "token_requests_401_per_s",
+          "start": "2027-01-09T13:20:00Z",
+          "end": "2027-01-09T14:37:00Z"
+        },
+        "result": "identity-provider / token_requests_401_per_s (count_per_second)\nsummary: first=0.1007, last=22.3018, min=0.098, max=22.4046, change +22148.9% (first value -> most extreme value)\npoints: 13:20=0.1007, 13:21=0.1009, 13:22=0.0989, 13:23=0.1016, 13:24=0.1015, 13:25=0.0998, 13:26=0.1001, 13:27=0.1012, 13:28=0.1007, 13:29=0.0981, 13:30=0.1006, 13:31=0.0982, 13:32=0.1016, 13:33=0.0982, 13:34=0.1002, 13:35=0.0985, 13:36=0.1001, 13:37=0.0987, 13:38=0.1016, 13:39=0.1002, 13:40=0.1006, 13:41=0.1008, 13:42=0.1006, 13:43=0.0991, 13:44=0.1004, 13:45=0.1002, 13:46=0.0995, 13:47=0.098, 13:48=0.1008, 13:49=0.1004, 13:50=0.1019, 13:51=0.0985, 13:52=0.0999, 13:53=0.1017, 13:54=0.1012, 13:55=0.1014, 13:56=0.0988, 13:57=0.0985, 13:58=0.0988, 13:59=0.1006, 14:00=0.1001, 14:01=0.0984, 14:02=0.0985, 14:03=10.886, 14:04=21.606, 14:05=22.3113, 14:06=22.1106, 14:07=22.0187, 14:08=22.1608, 14:09=21.8239, 14:10=22.2398, 14:11=21.9835, 14:12=21.906, 14:13=21.6306, 14:14=22.2075, 14:15=21.914, 14:16=21.635, 14:17=22.3432, 14:18=21.6596, 14:19=21.8393, 14:20=21.8199, 14:21=21.6866, 14:22=21.6999, 14:23=22.26, 14:24=22.3693, 14:25=21.8116, 14:26=22.1271, 14:27=22.4046, 14:28=21.9755, 14:29=21.8207, 14:30=21.6459, 14:31=22.1256, 14:32=22.2717, 14:33=22.1902, 14:34=21.7726, 14:35=21.9179, 14:36=22.3897, 14:37=22.3018",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "Both partner-api-gateway auth failure rates and identity-provider 401 token requests spiked dramatically at 14:03 UTC, closely following the 14:00 secret rotation. We should search logs on the identity-provider service around 14:00 to 14:05 UTC to determine the specific error messages or reasons for the authentication rejections.",
+        "tool": "search_logs",
+        "args": {
+          "query": "401",
+          "service": "identity-provider",
+          "start": "2027-01-09T14:00:00Z",
+          "end": "2027-01-09T14:05:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "We received no logs when searching for '401', so let's search for 'error' or 'failed' in the partner-api-gateway logs to see what error details are being returned to the clients.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "partner-api-gateway",
+          "start": "2027-01-09T14:00:00Z",
+          "end": "2027-01-09T14:05:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2027-01-09T14:02:00Z  partner-api-gateway  ERROR  token request to identity-provider returning 401 invalid_client on some pods",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 4,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

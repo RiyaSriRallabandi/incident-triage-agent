@@ -1,0 +1,66 @@
+{
+  "tag": "no-deploys",
+  "scenario_id": "scn_015",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_015",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The billing-api deployment introduced a database migration and code mismatch where old instances failed due to a missing invoices.amount column, causing schema errors and a ~50% write failure rate during the rollout.",
+      "confidence": 1.0,
+      "evidence": [
+        "billing-api / invoice_write_error_rate jumped from 0.001 to ~0.50 after the 22:00 deploy",
+        "billing-api / schema_errors_per_s surged from ~0 to ~30 starting at 22:02",
+        "Log line: 2026-11-17T22:01:00Z billing-api ERROR old instances: column invoices.amount does not exist (SQLSTATE 42703); invoice writes failing"
+      ],
+      "recommended_fix": "Roll back the billing-api deployment immediately or complete the rollout so that all instances are running the new code version that matches the updated database schema. Follow up by reviewing database migration sequencing and backward-compatibility practices for rolling deployments."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "Since invoice-creation requests are failing and a billing-api deploy with a database migration started at 22:00, I should check the write error rate metric for billing-api to see the exact pattern and timing of the failures.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "billing-api",
+          "metric": "invoice_write_error_rate",
+          "start": "2026-11-17T21:30:00Z",
+          "end": "2026-11-17T22:22:00Z"
+        },
+        "result": "billing-api / invoice_write_error_rate (ratio)\nsummary: first=0.001, last=0.4925, min=0.001, max=0.5088, change +50780.0% (first value -> most extreme value)\npoints: 21:30=0.001, 21:31=0.001, 21:32=0.001, 21:33=0.001, 21:34=0.001, 21:35=0.001, 21:36=0.001, 21:37=0.001, 21:38=0.001, 21:39=0.001, 21:40=0.001, 21:41=0.001, 21:42=0.001, 21:43=0.001, 21:44=0.001, 21:45=0.001, 21:46=0.001, 21:47=0.001, 21:48=0.001, 21:49=0.001, 21:50=0.001, 21:51=0.001, 21:52=0.001, 21:53=0.001, 21:54=0.001, 21:55=0.001, 21:56=0.001, 21:57=0.001, 21:58=0.001, 21:59=0.001, 22:00=0.001, 22:01=0.001, 22:02=0.4915, 22:03=0.507, 22:04=0.4906, 22:05=0.4928, 22:06=0.4921, 22:07=0.4959, 22:08=0.5023, 22:09=0.4944, 22:10=0.5046, 22:11=0.5004, 22:12=0.5071, 22:13=0.4973, 22:14=0.5026, 22:15=0.5088, 22:16=0.508, 22:17=0.5012, 22:18=0.5049, 22:19=0.5073, 22:20=0.4951, 22:21=0.4971, 22:22=0.4925",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The invoice_write_error_rate for billing-api clearly jumps to ~50% right after the 22:00 deploy, matching the incident report. I should check the schema_errors_per_s metric for billing-api to see if the database migration introduced schema compatibility issues causing half the requests to fail.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "billing-api",
+          "metric": "schema_errors_per_s",
+          "start": "2026-11-17T21:30:00Z",
+          "end": "2026-11-17T22:22:00Z"
+        },
+        "result": "billing-api / schema_errors_per_s (count_per_second)\nsummary: first=0.0088, last=29.7692, min=-0.0164, max=30.5773, change +347369.3% (first value -> most extreme value)\npoints: 21:30=0.0088, 21:31=0.0153, 21:32=-0.0132, 21:33=0.0094, 21:34=0.0004, 21:35=0.0034, 21:36=-0.0029, 21:37=0.003, 21:38=0.0004, 21:39=-0.0071, 21:40=0.0075, 21:41=-0.0002, 21:42=-0.0033, 21:43=-0.0028, 21:44=-0.0137, 21:45=-0.011, 21:46=-0.0164, 21:47=-0.0084, 21:48=-0.0013, 21:49=0.0013, 21:50=-0.0095, 21:51=0.0179, 21:52=0.0114, 21:53=-0.0157, 21:54=0.0177, 21:55=-0.0118, 21:56=0.0145, 21:57=0.0021, 21:58=-0.0005, 21:59=0.0195, 22:00=-0.0149, 22:01=-0.0022, 22:02=29.8435, 22:03=29.6908, 22:04=30.2122, 22:05=29.8002, 22:06=30.1786, 22:07=29.6421, 22:08=30.2569, 22:09=30.5597, 22:10=29.5948, 22:11=30.5127, 22:12=30.116, 22:13=30.3201, 22:14=29.8953, 22:15=30.5773, 22:16=30.5207, 22:17=29.713, 22:18=29.9314, 22:19=29.9111, 22:20=30.0038, 22:21=29.6733, 22:22=29.7692",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "We confirmed that billing-api schema errors and write error rates spiked immediately after the 22:00 deployment. Now I will search billing-api logs around that time to identify the specific error messages or failing queries causing the half-rate failure.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "billing-api",
+          "start": "2026-11-17T22:00:00Z",
+          "end": "2026-11-17T22:05:00Z"
+        },
+        "result": "2 of 2 matching log lines:\n2026-11-17T22:01:00Z  billing-api  ERROR  old instances: column invoices.amount does not exist (SQLSTATE 42703); invoice writes failing\n2026-11-17T22:02:00Z  billing-api  ERROR  ~50% of invoice creation requests failing during the rollout",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 3,
+    "hit_budget_cap": false
+  },
+  "error": null
+}
