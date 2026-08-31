@@ -28,10 +28,23 @@ def _judgements_path(tag: str):
 def load_or_judge(
     runs: list[CachedRun], by_id: dict[str, Scenario], tag: str, *, force: bool = False
 ) -> list[Judgement]:
+    """Judge each run, caching per key. Only un-judged (or newly re-run) keys hit the LLM."""
     path = _judgements_path(tag)
+    cached: dict[str, Judgement] = {}
     if path.exists() and not force:
-        return [Judgement.model_validate(j) for j in json.loads(path.read_text())]
-    judgements = [judge_run(r, by_id[r.scenario_id]) for r in runs]
+        cached = {
+            j["scenario_id"] + f"__run{j['run_index']}": Judgement.model_validate(j)
+            for j in json.loads(path.read_text())
+        }
+
+    judgements: list[Judgement] = []
+    for r in runs:
+        j = cached.get(r.key)
+        # re-judge if missing, or if a crashed run has since succeeded
+        if j is None or (j.agent_outcome == "crashed" and r.result is not None):
+            j = judge_run(r, by_id[r.scenario_id])
+        judgements.append(j)
+
     path.write_text(json.dumps([j.model_dump() for j in judgements], indent=2) + "\n")
     return judgements
 

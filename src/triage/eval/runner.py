@@ -49,9 +49,15 @@ def produce_runs(
     runbook_index_dir: Path = INDEX_DIR,
     runs_dir: Path = RUNS_DIR,
     force: bool = False,
+    retry_errors: bool = True,
     pause_s: float = 4.0,
 ) -> list[CachedRun]:
-    """Run every scenario ``repeats`` times for ``variant``, caching each result."""
+    """Run every scenario ``repeats`` times for ``variant``, caching each result.
+
+    A cached run whose ``error`` is set is re-attempted (unless ``retry_errors``
+    is False), so a scheduled resume naturally picks up runs that failed on a
+    transient rate limit.
+    """
     scenarios = scenarios or load_scenarios()
     runs_dir.mkdir(parents=True, exist_ok=True)
     out: list[CachedRun] = []
@@ -61,8 +67,10 @@ def produce_runs(
         for i in range(1, repeats + 1):
             path = run_path(variant.tag, scenario.id, i, runs_dir)
             if path.exists() and not force:
-                out.append(CachedRun.model_validate_json(path.read_text()))
-                continue
+                prev = CachedRun.model_validate_json(path.read_text())
+                if prev.error is None or not retry_errors:
+                    out.append(prev)
+                    continue
 
             if ran_any and pause_s:
                 time.sleep(pause_s)  # stay under per-minute free-tier limits

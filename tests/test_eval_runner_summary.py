@@ -25,9 +25,34 @@ def test_produce_runs_uses_cache_without_calling_investigate(tmp_path, monkeypat
 
     monkeypatch.setattr(runner_mod, "investigate", _boom)
 
-    runs = produce_runs([scenario], variant=variant, repeats=1, runs_dir=tmp_path)
+    runs = produce_runs(
+        [scenario], variant=variant, repeats=1, runs_dir=tmp_path, retry_errors=False
+    )
     assert len(runs) == 1 and runs[0].error == "stub"
     assert len(load_runs("v-test", tmp_path)) == 1
+
+
+def test_produce_runs_retries_a_cached_error(tmp_path, monkeypatch):
+    from triage.agent.state import AgentResult, Escalation
+
+    scenario = SC["scn_004"]
+    variant = Variant(tag="v-retry")
+    crashed = CachedRun(tag="v-retry", scenario_id="scn_004", run_index=1, budget=6, error="429")
+    run_path("v-retry", "scn_004", 1, tmp_path).write_text(crashed.model_dump_json())
+
+    def _ok(*a, **k):
+        return AgentResult(
+            scenario_id="scn_004",
+            outcome="escalate",
+            escalation=Escalation(reason="x", evidence_gathered=[], suggested_next_steps=[]),
+            evidence=[],
+            tool_calls_used=0,
+            hit_budget_cap=False,
+        )
+
+    monkeypatch.setattr(runner_mod, "investigate", _ok)
+    runs = produce_runs([scenario], variant=variant, repeats=1, runs_dir=tmp_path, pause_s=0)
+    assert runs[0].error is None and runs[0].result is not None
 
 
 def test_variants_registry_covers_the_ablation_dimensions():
