@@ -57,6 +57,32 @@ result = investigate(scenarios["scn_001"])
 print(result.outcome, result.diagnosis or result.escalation)
 ```
 
+## MCP server
+
+The four evidence tools are also exposed as an [MCP](https://modelcontextprotocol.io)
+server, so any MCP client can explore the incident dataset directly:
+
+```bash
+uv run triage-mcp        # stdio transport
+```
+
+Tools: `list_scenarios`, `search_logs`, `query_metrics`, `get_recent_deploys`,
+`retrieve_runbook`. The scenario-scoped tools take a `scenario_id` from
+`list_scenarios`.
+
+To use it from Claude Desktop, add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "incident-triage": {
+      "command": "uv",
+      "args": ["run", "--project", "/path/to/incident-triage-agent", "triage-mcp"]
+    }
+  }
+}
+```
+
 ## Tracing
 
 Set `LANGCHAIN_API_KEY` (from [smith.langchain.com](https://smith.langchain.com),
