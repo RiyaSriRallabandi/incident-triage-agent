@@ -40,3 +40,6 @@ data/runbook_index/
 .DS_Store
 .idea/
 .vscode/
+
+# personal notes, not part of the repo
+docs/RESUME.md
