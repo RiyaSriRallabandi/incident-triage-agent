@@ -1,0 +1,841 @@
+{
+  "id": "scn_102",
+  "category": "bad_deploy",
+  "difficulty": "hard",
+  "title": "Library upgrade in a deploy changes JSON number serialization, breaking downstream parsers",
+  "source_url": "https://danluu.com/postmortem-lessons/",
+  "source_note": "Failure pattern (a dependency version bump inside a routine deploy silently changes an output format, so downstream consumers that parse it start failing) is a recurring class in the danluu/post-mortems collection. All services, versions, commit hashes, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~09:47 UTC the mobile apps are showing wrong prices and some orders are being rejected. Backend error rates on order-api look normal. A pricing-service deploy went out at 09:45. No infra changes.",
+  "synthetic_logs": [
+    {
+      "ts": "2027-02-10T09:17:42.374379Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 29ms"
+    },
+    {
+      "ts": "2027-02-10T09:18:13.697801Z",
+      "service": "inventory-worker",
+      "level": "INFO",
+      "msg": "queue depth=671"
+    },
+    {
+      "ts": "2027-02-10T09:19:28.509063Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-10T09:19:38.753622Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "POST /products 201 in 62ms"
+    },
+    {
+      "ts": "2027-02-10T09:21:26.036389Z",
+      "service": "inventory-worker",
+      "level": "INFO",
+      "msg": "processed batch size=369"
+    },
+    {
+      "ts": "2027-02-10T09:21:45.173204Z",
+      "service": "rate-cache",
+      "level": "INFO",
+      "msg": "GET key=user:99 hit"
+    },
+    {
+      "ts": "2027-02-10T09:22:34.586916Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-10T09:23:32.421416Z",
+      "service": "rate-cache",
+      "level": "INFO",
+      "msg": "evicted 43 keys (lru)"
+    },
+    {
+      "ts": "2027-02-10T09:24:02.568747Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-10T09:24:56.374088Z",
+      "service": "order-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=214"
+    },
+    {
+      "ts": "2027-02-10T09:24:57.632836Z",
+      "service": "rate-cache",
+      "level": "INFO",
+      "msg": "GET key=user:399 hit"
+    },
+    {
+      "ts": "2027-02-10T09:25:24.137173Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2027-02-10T09:25:44.293320Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-10T09:25:52.464778Z",
+      "service": "rate-cache",
+      "level": "WARN",
+      "msg": "GET key=user:121 miss"
+    },
+    {
+      "ts": "2027-02-10T09:27:49.713342Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-10T09:29:58.634624Z",
+      "service": "rate-cache",
+      "level": "INFO",
+      "msg": "GET key=user:567 hit"
+    },
+    {
+      "ts": "2027-02-10T09:30:01.464688Z",
+      "service": "rate-cache",
+      "level": "INFO",
+      "msg": "GET key=user:115 hit"
+    },
+    {
+      "ts": "2027-02-10T09:31:55.098114Z",
+      "service": "rate-cache",
+      "level": "WARN",
+      "msg": "GET key=user:487 miss"
+    },
+    {
+      "ts": "2027-02-10T09:32:35.714246Z",
+      "service": "rate-cache",
+      "level": "INFO",
+      "msg": "SET key=session:75 ttl=3600"
+    },
+    {
+      "ts": "2027-02-10T09:35:31.502847Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2027-02-10T09:37:00.713852Z",
+      "service": "inventory-worker",
+      "level": "INFO",
+      "msg": "processed batch size=619"
+    },
+    {
+      "ts": "2027-02-10T09:38:27.341438Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 202ms"
+    },
+    {
+      "ts": "2027-02-10T09:38:53.029753Z",
+      "service": "order-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=158"
+    },
+    {
+      "ts": "2027-02-10T09:39:50.206301Z",
+      "service": "inventory-worker",
+      "level": "WARN",
+      "msg": "job email.send retried attempt=1"
+    },
+    {
+      "ts": "2027-02-10T09:40:02.004428Z",
+      "service": "order-api",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=49"
+    },
+    {
+      "ts": "2027-02-10T09:40:34.226203Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 197ms"
+    },
+    {
+      "ts": "2027-02-10T09:41:02.725357Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-10T09:41:15.194379Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 209ms"
+    },
+    {
+      "ts": "2027-02-10T09:42:53.445642Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2027-02-10T09:43:21.256801Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-10T09:45:00Z",
+      "service": "deploy-system",
+      "level": "INFO",
+      "msg": "pricing-service 3f4g5h6 deployed (bumps json-lib 2.8 -> 3.0)"
+    },
+    {
+      "ts": "2027-02-10T09:46:00Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "json-lib 3.0 now serializes decimals as strings by default (was numbers)"
+    },
+    {
+      "ts": "2027-02-10T09:47:00Z",
+      "service": "order-api",
+      "level": "ERROR",
+      "msg": "parsing pricing-service response: expected number for field 'unit_price', got string \"12.99\"; falling back to 0"
+    },
+    {
+      "ts": "2027-02-10T09:47:21.361807Z",
+      "service": "rate-cache",
+      "level": "INFO",
+      "msg": "GET key=user:184 hit"
+    },
+    {
+      "ts": "2027-02-10T09:47:29.064041Z",
+      "service": "rate-cache",
+      "level": "INFO",
+      "msg": "SET key=session:778 ttl=3600"
+    },
+    {
+      "ts": "2027-02-10T09:48:53.837013Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "POST /search 201 in 213ms"
+    },
+    {
+      "ts": "2027-02-10T09:49:00Z",
+      "service": "order-api",
+      "level": "ERROR",
+      "msg": "orders rejected: computed total 0.00 fails validation; ~30% of orders affected"
+    },
+    {
+      "ts": "2027-02-10T09:49:00.510336Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2027-02-10T09:49:50.010727Z",
+      "service": "inventory-worker",
+      "level": "INFO",
+      "msg": "queue depth=268"
+    },
+    {
+      "ts": "2027-02-10T09:51:26.922150Z",
+      "service": "pricing-service",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=106"
+    },
+    {
+      "ts": "2027-02-10T09:52:29.762790Z",
+      "service": "rate-cache",
+      "level": "INFO",
+      "msg": "SET key=session:656 ttl=3600"
+    },
+    {
+      "ts": "2027-02-10T09:53:49.996968Z",
+      "service": "rate-cache",
+      "level": "WARN",
+      "msg": "GET key=user:185 miss"
+    },
+    {
+      "ts": "2027-02-10T09:53:58.679370Z",
+      "service": "inventory-worker",
+      "level": "INFO",
+      "msg": "queue depth=855"
+    },
+    {
+      "ts": "2027-02-10T09:54:59.272846Z",
+      "service": "rate-cache",
+      "level": "WARN",
+      "msg": "GET key=user:706 miss"
+    },
+    {
+      "ts": "2027-02-10T09:56:06.642897Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 19ms"
+    },
+    {
+      "ts": "2027-02-10T09:59:06.854739Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 31ms"
+    },
+    {
+      "ts": "2027-02-10T09:59:46.597499Z",
+      "service": "rate-cache",
+      "level": "INFO",
+      "msg": "GET key=user:372 hit"
+    },
+    {
+      "ts": "2027-02-10T10:00:00Z",
+      "service": "deploy-system",
+      "level": "INFO",
+      "msg": "pricing-service rolled back to the previous build; downstream parsing recovered"
+    },
+    {
+      "ts": "2027-02-10T10:01:56.131023Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2027-02-10T10:02:05.536352Z",
+      "service": "rate-cache",
+      "level": "INFO",
+      "msg": "evicted 319 keys (lru)"
+    },
+    {
+      "ts": "2027-02-10T10:03:21.111710Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 47ms"
+    },
+    {
+      "ts": "2027-02-10T10:04:46.263590Z",
+      "service": "inventory-worker",
+      "level": "INFO",
+      "msg": "processed batch size=717"
+    },
+    {
+      "ts": "2027-02-10T10:05:20.855211Z",
+      "service": "rate-cache",
+      "level": "WARN",
+      "msg": "GET key=user:465 miss"
+    },
+    {
+      "ts": "2027-02-10T10:07:57.115787Z",
+      "service": "rate-cache",
+      "level": "INFO",
+      "msg": "GET key=user:72 hit"
+    },
+    {
+      "ts": "2027-02-10T10:10:18.235637Z",
+      "service": "pricing-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "price_parse_error_rate",
+      "unit": "ratio",
+      "service": "order-api",
+      "points": [
+        [
+          "2027-02-10T09:15:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:16:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:17:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:18:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:19:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:20:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:21:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:22:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:23:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:24:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:25:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:26:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:27:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:28:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:29:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:30:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:31:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:32:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:33:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:34:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:35:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:36:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:37:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:38:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:39:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:40:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:41:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:42:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:43:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:44:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:45:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:46:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:47:00Z",
+          0.001
+        ],
+        [
+          "2027-02-10T09:48:00Z",
+          0.2108
+        ],
+        [
+          "2027-02-10T09:49:00Z",
+          0.3257
+        ],
+        [
+          "2027-02-10T09:50:00Z",
+          0.3229
+        ],
+        [
+          "2027-02-10T09:51:00Z",
+          0.3161
+        ],
+        [
+          "2027-02-10T09:52:00Z",
+          0.3195
+        ],
+        [
+          "2027-02-10T09:53:00Z",
+          0.3158
+        ],
+        [
+          "2027-02-10T09:54:00Z",
+          0.3164
+        ],
+        [
+          "2027-02-10T09:55:00Z",
+          0.3235
+        ],
+        [
+          "2027-02-10T09:56:00Z",
+          0.3247
+        ],
+        [
+          "2027-02-10T09:57:00Z",
+          0.3231
+        ],
+        [
+          "2027-02-10T09:58:00Z",
+          0.3179
+        ],
+        [
+          "2027-02-10T09:59:00Z",
+          0.3244
+        ],
+        [
+          "2027-02-10T10:00:00Z",
+          0.3148
+        ],
+        [
+          "2027-02-10T10:01:00Z",
+          0.3227
+        ],
+        [
+          "2027-02-10T10:02:00Z",
+          0.3186
+        ],
+        [
+          "2027-02-10T10:03:00Z",
+          0.3207
+        ],
+        [
+          "2027-02-10T10:04:00Z",
+          0.3159
+        ],
+        [
+          "2027-02-10T10:05:00Z",
+          0.3147
+        ],
+        [
+          "2027-02-10T10:06:00Z",
+          0.323
+        ],
+        [
+          "2027-02-10T10:07:00Z",
+          0.3237
+        ],
+        [
+          "2027-02-10T10:08:00Z",
+          0.3196
+        ],
+        [
+          "2027-02-10T10:09:00Z",
+          0.3255
+        ],
+        [
+          "2027-02-10T10:10:00Z",
+          0.3157
+        ],
+        [
+          "2027-02-10T10:11:00Z",
+          0.3149
+        ],
+        [
+          "2027-02-10T10:12:00Z",
+          0.3247
+        ]
+      ]
+    },
+    {
+      "name": "order_rejection_rate",
+      "unit": "ratio",
+      "service": "order-api",
+      "points": [
+        [
+          "2027-02-10T09:15:00Z",
+          0.0198
+        ],
+        [
+          "2027-02-10T09:16:00Z",
+          0.0197
+        ],
+        [
+          "2027-02-10T09:17:00Z",
+          0.02
+        ],
+        [
+          "2027-02-10T09:18:00Z",
+          0.02
+        ],
+        [
+          "2027-02-10T09:19:00Z",
+          0.02
+        ],
+        [
+          "2027-02-10T09:20:00Z",
+          0.0197
+        ],
+        [
+          "2027-02-10T09:21:00Z",
+          0.0202
+        ],
+        [
+          "2027-02-10T09:22:00Z",
+          0.0202
+        ],
+        [
+          "2027-02-10T09:23:00Z",
+          0.0199
+        ],
+        [
+          "2027-02-10T09:24:00Z",
+          0.0203
+        ],
+        [
+          "2027-02-10T09:25:00Z",
+          0.0204
+        ],
+        [
+          "2027-02-10T09:26:00Z",
+          0.02
+        ],
+        [
+          "2027-02-10T09:27:00Z",
+          0.0202
+        ],
+        [
+          "2027-02-10T09:28:00Z",
+          0.0199
+        ],
+        [
+          "2027-02-10T09:29:00Z",
+          0.0203
+        ],
+        [
+          "2027-02-10T09:30:00Z",
+          0.0196
+        ],
+        [
+          "2027-02-10T09:31:00Z",
+          0.0202
+        ],
+        [
+          "2027-02-10T09:32:00Z",
+          0.0198
+        ],
+        [
+          "2027-02-10T09:33:00Z",
+          0.0198
+        ],
+        [
+          "2027-02-10T09:34:00Z",
+          0.0201
+        ],
+        [
+          "2027-02-10T09:35:00Z",
+          0.0198
+        ],
+        [
+          "2027-02-10T09:36:00Z",
+          0.0198
+        ],
+        [
+          "2027-02-10T09:37:00Z",
+          0.0197
+        ],
+        [
+          "2027-02-10T09:38:00Z",
+          0.0202
+        ],
+        [
+          "2027-02-10T09:39:00Z",
+          0.0203
+        ],
+        [
+          "2027-02-10T09:40:00Z",
+          0.0203
+        ],
+        [
+          "2027-02-10T09:41:00Z",
+          0.0202
+        ],
+        [
+          "2027-02-10T09:42:00Z",
+          0.0197
+        ],
+        [
+          "2027-02-10T09:43:00Z",
+          0.02
+        ],
+        [
+          "2027-02-10T09:44:00Z",
+          0.0203
+        ],
+        [
+          "2027-02-10T09:45:00Z",
+          0.0196
+        ],
+        [
+          "2027-02-10T09:46:00Z",
+          0.0202
+        ],
+        [
+          "2027-02-10T09:47:00Z",
+          0.0199
+        ],
+        [
+          "2027-02-10T09:48:00Z",
+          0.0203
+        ],
+        [
+          "2027-02-10T09:49:00Z",
+          0.0201
+        ],
+        [
+          "2027-02-10T09:50:00Z",
+          0.1599
+        ],
+        [
+          "2027-02-10T09:51:00Z",
+          0.3037
+        ],
+        [
+          "2027-02-10T09:52:00Z",
+          0.2983
+        ],
+        [
+          "2027-02-10T09:53:00Z",
+          0.3058
+        ],
+        [
+          "2027-02-10T09:54:00Z",
+          0.3039
+        ],
+        [
+          "2027-02-10T09:55:00Z",
+          0.3017
+        ],
+        [
+          "2027-02-10T09:56:00Z",
+          0.2989
+        ],
+        [
+          "2027-02-10T09:57:00Z",
+          0.3002
+        ],
+        [
+          "2027-02-10T09:58:00Z",
+          0.299
+        ],
+        [
+          "2027-02-10T09:59:00Z",
+          0.2964
+        ],
+        [
+          "2027-02-10T10:00:00Z",
+          0.3057
+        ],
+        [
+          "2027-02-10T10:01:00Z",
+          0.3018
+        ],
+        [
+          "2027-02-10T10:02:00Z",
+          0.3056
+        ],
+        [
+          "2027-02-10T10:03:00Z",
+          0.3053
+        ],
+        [
+          "2027-02-10T10:04:00Z",
+          0.3026
+        ],
+        [
+          "2027-02-10T10:05:00Z",
+          0.3011
+        ],
+        [
+          "2027-02-10T10:06:00Z",
+          0.2944
+        ],
+        [
+          "2027-02-10T10:07:00Z",
+          0.2948
+        ],
+        [
+          "2027-02-10T10:08:00Z",
+          0.296
+        ],
+        [
+          "2027-02-10T10:09:00Z",
+          0.2985
+        ],
+        [
+          "2027-02-10T10:10:00Z",
+          0.3004
+        ],
+        [
+          "2027-02-10T10:11:00Z",
+          0.2998
+        ],
+        [
+          "2027-02-10T10:12:00Z",
+          0.301
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [
+    {
+      "service": "pricing-service",
+      "ts": "2027-02-10T09:45:00Z",
+      "commit": "3f4g5h6",
+      "summary": "routine dependency updates including json-lib 2.8 -> 3.0"
+    }
+  ],
+  "ground_truth": {
+    "root_cause": "The pricing-service deploy 3f4g5h6 bumped its JSON library from 2.8 to 3.0. Version 3.0 changed the default serialization of decimal values from JSON numbers to JSON strings. order-api parses pricing-service responses expecting numbers for fields like unit_price; it now received strings, failed to parse them, and fell back to 0, so computed order totals became 0.00 and ~30% of orders failed validation and were rejected. The change was invisible in pricing-service's own metrics because it still returned 200s. Recovery on rollback.",
+    "evidence_path": [
+      "deploy 3f4g5h6 to pricing-service at 09:45 bumps json-lib 2.8 -> 3.0",
+      "pricing-service INFO: json-lib 3.0 serializes decimals as strings by default (was numbers)",
+      "order-api ERROR: expected number for 'unit_price', got string \"12.99\"; falling back to 0",
+      "order-api computed totals become 0.00 and ~30% of orders are rejected on validation",
+      "downstream parsing recovers once pricing-service is rolled back"
+    ],
+    "fix": "Roll back pricing-service (done). Pin json-lib or configure it to keep numeric decimals, add a contract test on the pricing-service response schema that downstream consumers run in CI, and treat dependency-bump deploys as behavior-changing.",
+    "should_escalate": false
+  }
+}

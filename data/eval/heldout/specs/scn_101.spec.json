@@ -1,0 +1,45 @@
+{
+  "id": "scn_101",
+  "category": "bad_deploy",
+  "difficulty": "medium",
+  "title": "Canary routing bug sends 100% of traffic to a broken new version",
+  "source_url": "https://sre.google/workbook/canarying-releases/",
+  "source_note": "Failure pattern (a release marked as a small canary that a routing/weighting bug actually exposes to all traffic, so a broken build hits everyone) follows the canarying guidance in the Google SRE Workbook. All services, commit hashes, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~11:20 UTC checkout-web is throwing 500s for most users. A release went out around 11:18 but it was supposed to be a 1% canary. No infrastructure changes.",
+  "incident_start": "2027-02-03T11:18:00Z",
+  "detected_offset_s": 120,
+  "window_before_s": 1800,
+  "window_after_s": 1200,
+  "primary_service": "checkout-web",
+  "distractor_services": [
+    { "name": "cart-api", "role": "api" },
+    { "name": "session-worker", "role": "worker" },
+    { "name": "asset-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "deploy-system", "level": "INFO", "msg": "checkout-web 5c6d7e8 released as canary weight=1%" },
+    { "offset_s": 60, "service": "traffic-router", "level": "WARN", "msg": "canary weight config parsed as 100 (expected 1); routing all checkout-web traffic to 5c6d7e8" },
+    { "offset_s": 120, "service": "checkout-web", "level": "ERROR", "msg": "unhandled exception in 5c6d7e8 render path: TypeError on null cart total; 500 rate 71%" },
+    { "offset_s": 180, "service": "traffic-router", "level": "ERROR", "msg": "100% of checkout-web requests served by the canary build; error rate 70%+" },
+    { "offset_s": 600, "service": "deploy-system", "level": "INFO", "msg": "canary halted; traffic shifted back to the previous build; errors clearing" }
+  ],
+  "metrics": [
+    { "name": "http_5xx_rate", "unit": "ratio", "service": "checkout-web", "baseline": 0.004, "spike": 0.71, "spike_at_offset_s": 120, "ramp_s": 60 },
+    { "name": "canary_traffic_share", "unit": "ratio", "service": "traffic-router", "baseline": 0.0, "spike": 1.0, "spike_at_offset_s": 60, "ramp_s": 30 }
+  ],
+  "deploys": [
+    { "service": "checkout-web", "offset_s": 0, "commit": "5c6d7e8", "summary": "checkout render refactor, released as 1% canary" }
+  ],
+  "ground_truth": {
+    "root_cause": "The checkout-web release 5c6d7e8 was meant to receive 1% of traffic as a canary, but the traffic router parsed the canary weight as 100 instead of 1 and routed 100% of checkout-web traffic to the new build. That build has a bug (a TypeError on a null cart total in the render path), so once it was serving everyone the 500 rate jumped to ~71%. The bug would have been caught at 1%; the routing misconfiguration is what made it a full outage.",
+    "evidence_path": [
+      "deploy-system INFO at 11:18: checkout-web 5c6d7e8 released as canary weight=1%",
+      "traffic-router WARN: canary weight parsed as 100 (expected 1); all checkout-web traffic routed to 5c6d7e8",
+      "canary_traffic_share jumps from 0 to 1.0",
+      "checkout-web ERROR: unhandled TypeError in the 5c6d7e8 render path; 5xx rate ~71%",
+      "errors clear once traffic is shifted back to the previous build"
+    ],
+    "fix": "Halt the canary and shift traffic back (done). Fix the canary-weight parsing in the traffic router and add a guard that rejects a canary weight above a sane ceiling. Separately, fix and re-test the null-cart-total bug before re-releasing.",
+    "should_escalate": false
+  }
+}

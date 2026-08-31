@@ -1,0 +1,669 @@
+{
+  "id": "scn_101",
+  "category": "bad_deploy",
+  "difficulty": "medium",
+  "title": "Canary routing bug sends 100% of traffic to a broken new version",
+  "source_url": "https://sre.google/workbook/canarying-releases/",
+  "source_note": "Failure pattern (a release marked as a small canary that a routing/weighting bug actually exposes to all traffic, so a broken build hits everyone) follows the canarying guidance in the Google SRE Workbook. All services, commit hashes, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~11:20 UTC checkout-web is throwing 500s for most users. A release went out around 11:18 but it was supposed to be a 1% canary. No infrastructure changes.",
+  "synthetic_logs": [
+    {
+      "ts": "2027-02-03T10:48:41.437602Z",
+      "service": "session-worker",
+      "level": "INFO",
+      "msg": "processed batch size=735"
+    },
+    {
+      "ts": "2027-02-03T10:52:20.112019Z",
+      "service": "session-worker",
+      "level": "INFO",
+      "msg": "processed batch size=666"
+    },
+    {
+      "ts": "2027-02-03T11:00:42.809499Z",
+      "service": "cart-api",
+      "level": "INFO",
+      "msg": "GET /search 200 in 97ms"
+    },
+    {
+      "ts": "2027-02-03T11:01:25.087577Z",
+      "service": "session-worker",
+      "level": "INFO",
+      "msg": "queue depth=93"
+    },
+    {
+      "ts": "2027-02-03T11:02:54.945182Z",
+      "service": "checkout-web",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 81ms"
+    },
+    {
+      "ts": "2027-02-03T11:03:19.031552Z",
+      "service": "asset-cache",
+      "level": "INFO",
+      "msg": "GET key=user:784 hit"
+    },
+    {
+      "ts": "2027-02-03T11:08:43.374633Z",
+      "service": "cart-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 18ms"
+    },
+    {
+      "ts": "2027-02-03T11:09:58.037399Z",
+      "service": "asset-cache",
+      "level": "WARN",
+      "msg": "GET key=user:6 miss"
+    },
+    {
+      "ts": "2027-02-03T11:10:24.899789Z",
+      "service": "session-worker",
+      "level": "INFO",
+      "msg": "processed batch size=833"
+    },
+    {
+      "ts": "2027-02-03T11:13:36.255246Z",
+      "service": "cart-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-03T11:13:39.829178Z",
+      "service": "asset-cache",
+      "level": "INFO",
+      "msg": "SET key=session:828 ttl=3600"
+    },
+    {
+      "ts": "2027-02-03T11:15:00.291595Z",
+      "service": "cart-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2027-02-03T11:16:24.960423Z",
+      "service": "cart-api",
+      "level": "INFO",
+      "msg": "POST /search 201 in 42ms"
+    },
+    {
+      "ts": "2027-02-03T11:16:59.419649Z",
+      "service": "cart-api",
+      "level": "WARN",
+      "msg": "slow request path=/products duration_ms=126"
+    },
+    {
+      "ts": "2027-02-03T11:17:42.898944Z",
+      "service": "session-worker",
+      "level": "INFO",
+      "msg": "processed batch size=485"
+    },
+    {
+      "ts": "2027-02-03T11:18:00Z",
+      "service": "deploy-system",
+      "level": "INFO",
+      "msg": "checkout-web 5c6d7e8 released as canary weight=1%"
+    },
+    {
+      "ts": "2027-02-03T11:18:42.373429Z",
+      "service": "session-worker",
+      "level": "INFO",
+      "msg": "processed batch size=588"
+    },
+    {
+      "ts": "2027-02-03T11:19:00Z",
+      "service": "traffic-router",
+      "level": "WARN",
+      "msg": "canary weight config parsed as 100 (expected 1); routing all checkout-web traffic to 5c6d7e8"
+    },
+    {
+      "ts": "2027-02-03T11:19:07.623867Z",
+      "service": "checkout-web",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 93ms"
+    },
+    {
+      "ts": "2027-02-03T11:20:00Z",
+      "service": "checkout-web",
+      "level": "ERROR",
+      "msg": "unhandled exception in 5c6d7e8 render path: TypeError on null cart total; 500 rate 71%"
+    },
+    {
+      "ts": "2027-02-03T11:20:03.539805Z",
+      "service": "checkout-web",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2027-02-03T11:20:58.437079Z",
+      "service": "checkout-web",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-03T11:21:00Z",
+      "service": "traffic-router",
+      "level": "ERROR",
+      "msg": "100% of checkout-web requests served by the canary build; error rate 70%+"
+    },
+    {
+      "ts": "2027-02-03T11:26:08.824205Z",
+      "service": "cart-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-03T11:28:00Z",
+      "service": "deploy-system",
+      "level": "INFO",
+      "msg": "canary halted; traffic shifted back to the previous build; errors clearing"
+    },
+    {
+      "ts": "2027-02-03T11:29:11.373656Z",
+      "service": "cart-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=134"
+    },
+    {
+      "ts": "2027-02-03T11:30:03.676545Z",
+      "service": "asset-cache",
+      "level": "WARN",
+      "msg": "GET key=user:232 miss"
+    },
+    {
+      "ts": "2027-02-03T11:30:06.415314Z",
+      "service": "asset-cache",
+      "level": "INFO",
+      "msg": "SET key=session:84 ttl=3600"
+    },
+    {
+      "ts": "2027-02-03T11:30:27.119119Z",
+      "service": "cart-api",
+      "level": "INFO",
+      "msg": "GET /products 200 in 19ms"
+    },
+    {
+      "ts": "2027-02-03T11:31:38.347725Z",
+      "service": "checkout-web",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=194"
+    },
+    {
+      "ts": "2027-02-03T11:35:34.117327Z",
+      "service": "cart-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=103"
+    },
+    {
+      "ts": "2027-02-03T11:35:51.158747Z",
+      "service": "session-worker",
+      "level": "INFO",
+      "msg": "queue depth=724"
+    },
+    {
+      "ts": "2027-02-03T11:39:41.259408Z",
+      "service": "session-worker",
+      "level": "INFO",
+      "msg": "job report.build completed in 110ms"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "http_5xx_rate",
+      "unit": "ratio",
+      "service": "checkout-web",
+      "points": [
+        [
+          "2027-02-03T10:48:00Z",
+          0.0039
+        ],
+        [
+          "2027-02-03T10:49:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T10:50:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T10:51:00Z",
+          0.0041
+        ],
+        [
+          "2027-02-03T10:52:00Z",
+          0.0039
+        ],
+        [
+          "2027-02-03T10:53:00Z",
+          0.0039
+        ],
+        [
+          "2027-02-03T10:54:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T10:55:00Z",
+          0.0041
+        ],
+        [
+          "2027-02-03T10:56:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T10:57:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T10:58:00Z",
+          0.0041
+        ],
+        [
+          "2027-02-03T10:59:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T11:00:00Z",
+          0.0041
+        ],
+        [
+          "2027-02-03T11:01:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T11:02:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T11:03:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T11:04:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T11:05:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T11:06:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T11:07:00Z",
+          0.0039
+        ],
+        [
+          "2027-02-03T11:08:00Z",
+          0.0039
+        ],
+        [
+          "2027-02-03T11:09:00Z",
+          0.0041
+        ],
+        [
+          "2027-02-03T11:10:00Z",
+          0.0041
+        ],
+        [
+          "2027-02-03T11:11:00Z",
+          0.0041
+        ],
+        [
+          "2027-02-03T11:12:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T11:13:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T11:14:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T11:15:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T11:16:00Z",
+          0.0039
+        ],
+        [
+          "2027-02-03T11:17:00Z",
+          0.0039
+        ],
+        [
+          "2027-02-03T11:18:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T11:19:00Z",
+          0.004
+        ],
+        [
+          "2027-02-03T11:20:00Z",
+          0.0039
+        ],
+        [
+          "2027-02-03T11:21:00Z",
+          0.7165
+        ],
+        [
+          "2027-02-03T11:22:00Z",
+          0.707
+        ],
+        [
+          "2027-02-03T11:23:00Z",
+          0.6992
+        ],
+        [
+          "2027-02-03T11:24:00Z",
+          0.7027
+        ],
+        [
+          "2027-02-03T11:25:00Z",
+          0.7175
+        ],
+        [
+          "2027-02-03T11:26:00Z",
+          0.7053
+        ],
+        [
+          "2027-02-03T11:27:00Z",
+          0.7176
+        ],
+        [
+          "2027-02-03T11:28:00Z",
+          0.7234
+        ],
+        [
+          "2027-02-03T11:29:00Z",
+          0.7039
+        ],
+        [
+          "2027-02-03T11:30:00Z",
+          0.7162
+        ],
+        [
+          "2027-02-03T11:31:00Z",
+          0.7143
+        ],
+        [
+          "2027-02-03T11:32:00Z",
+          0.7184
+        ],
+        [
+          "2027-02-03T11:33:00Z",
+          0.7232
+        ],
+        [
+          "2027-02-03T11:34:00Z",
+          0.7235
+        ],
+        [
+          "2027-02-03T11:35:00Z",
+          0.6982
+        ],
+        [
+          "2027-02-03T11:36:00Z",
+          0.6964
+        ],
+        [
+          "2027-02-03T11:37:00Z",
+          0.7164
+        ],
+        [
+          "2027-02-03T11:38:00Z",
+          0.7207
+        ],
+        [
+          "2027-02-03T11:39:00Z",
+          0.7056
+        ],
+        [
+          "2027-02-03T11:40:00Z",
+          0.6974
+        ]
+      ]
+    },
+    {
+      "name": "canary_traffic_share",
+      "unit": "ratio",
+      "service": "traffic-router",
+      "points": [
+        [
+          "2027-02-03T10:48:00Z",
+          -0.0096
+        ],
+        [
+          "2027-02-03T10:49:00Z",
+          -0.007
+        ],
+        [
+          "2027-02-03T10:50:00Z",
+          -0.01
+        ],
+        [
+          "2027-02-03T10:51:00Z",
+          0.0004
+        ],
+        [
+          "2027-02-03T10:52:00Z",
+          -0.0193
+        ],
+        [
+          "2027-02-03T10:53:00Z",
+          -0.0163
+        ],
+        [
+          "2027-02-03T10:54:00Z",
+          -0.0026
+        ],
+        [
+          "2027-02-03T10:55:00Z",
+          -0.0027
+        ],
+        [
+          "2027-02-03T10:56:00Z",
+          -0.0033
+        ],
+        [
+          "2027-02-03T10:57:00Z",
+          -0.004
+        ],
+        [
+          "2027-02-03T10:58:00Z",
+          0.0065
+        ],
+        [
+          "2027-02-03T10:59:00Z",
+          0.0185
+        ],
+        [
+          "2027-02-03T11:00:00Z",
+          0.0037
+        ],
+        [
+          "2027-02-03T11:01:00Z",
+          -0.0184
+        ],
+        [
+          "2027-02-03T11:02:00Z",
+          -0.0024
+        ],
+        [
+          "2027-02-03T11:03:00Z",
+          -0.0174
+        ],
+        [
+          "2027-02-03T11:04:00Z",
+          0.0139
+        ],
+        [
+          "2027-02-03T11:05:00Z",
+          -0.0091
+        ],
+        [
+          "2027-02-03T11:06:00Z",
+          0.0125
+        ],
+        [
+          "2027-02-03T11:07:00Z",
+          -0.011
+        ],
+        [
+          "2027-02-03T11:08:00Z",
+          -0.0159
+        ],
+        [
+          "2027-02-03T11:09:00Z",
+          0.0147
+        ],
+        [
+          "2027-02-03T11:10:00Z",
+          -0.0128
+        ],
+        [
+          "2027-02-03T11:11:00Z",
+          0.0071
+        ],
+        [
+          "2027-02-03T11:12:00Z",
+          -0.0105
+        ],
+        [
+          "2027-02-03T11:13:00Z",
+          0.0038
+        ],
+        [
+          "2027-02-03T11:14:00Z",
+          -0.0046
+        ],
+        [
+          "2027-02-03T11:15:00Z",
+          0.0166
+        ],
+        [
+          "2027-02-03T11:16:00Z",
+          -0.0021
+        ],
+        [
+          "2027-02-03T11:17:00Z",
+          0.0081
+        ],
+        [
+          "2027-02-03T11:18:00Z",
+          0.0082
+        ],
+        [
+          "2027-02-03T11:19:00Z",
+          0.0155
+        ],
+        [
+          "2027-02-03T11:20:00Z",
+          0.9977
+        ],
+        [
+          "2027-02-03T11:21:00Z",
+          1.0145
+        ],
+        [
+          "2027-02-03T11:22:00Z",
+          1.0061
+        ],
+        [
+          "2027-02-03T11:23:00Z",
+          1.0017
+        ],
+        [
+          "2027-02-03T11:24:00Z",
+          1.0034
+        ],
+        [
+          "2027-02-03T11:25:00Z",
+          0.9815
+        ],
+        [
+          "2027-02-03T11:26:00Z",
+          0.9955
+        ],
+        [
+          "2027-02-03T11:27:00Z",
+          0.9802
+        ],
+        [
+          "2027-02-03T11:28:00Z",
+          1.0173
+        ],
+        [
+          "2027-02-03T11:29:00Z",
+          1.0042
+        ],
+        [
+          "2027-02-03T11:30:00Z",
+          1.0037
+        ],
+        [
+          "2027-02-03T11:31:00Z",
+          1.0181
+        ],
+        [
+          "2027-02-03T11:32:00Z",
+          1.0084
+        ],
+        [
+          "2027-02-03T11:33:00Z",
+          0.9847
+        ],
+        [
+          "2027-02-03T11:34:00Z",
+          0.9847
+        ],
+        [
+          "2027-02-03T11:35:00Z",
+          0.9886
+        ],
+        [
+          "2027-02-03T11:36:00Z",
+          1.0004
+        ],
+        [
+          "2027-02-03T11:37:00Z",
+          0.9869
+        ],
+        [
+          "2027-02-03T11:38:00Z",
+          0.987
+        ],
+        [
+          "2027-02-03T11:39:00Z",
+          1.0134
+        ],
+        [
+          "2027-02-03T11:40:00Z",
+          1.0162
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [
+    {
+      "service": "checkout-web",
+      "ts": "2027-02-03T11:18:00Z",
+      "commit": "5c6d7e8",
+      "summary": "checkout render refactor, released as 1% canary"
+    }
+  ],
+  "ground_truth": {
+    "root_cause": "The checkout-web release 5c6d7e8 was meant to receive 1% of traffic as a canary, but the traffic router parsed the canary weight as 100 instead of 1 and routed 100% of checkout-web traffic to the new build. That build has a bug (a TypeError on a null cart total in the render path), so once it was serving everyone the 500 rate jumped to ~71%. The bug would have been caught at 1%; the routing misconfiguration is what made it a full outage.",
+    "evidence_path": [
+      "deploy-system INFO at 11:18: checkout-web 5c6d7e8 released as canary weight=1%",
+      "traffic-router WARN: canary weight parsed as 100 (expected 1); all checkout-web traffic routed to 5c6d7e8",
+      "canary_traffic_share jumps from 0 to 1.0",
+      "checkout-web ERROR: unhandled TypeError in the 5c6d7e8 render path; 5xx rate ~71%",
+      "errors clear once traffic is shifted back to the previous build"
+    ],
+    "fix": "Halt the canary and shift traffic back (done). Fix the canary-weight parsing in the traffic router and add a guard that rejects a canary weight above a sane ceiling. Separately, fix and re-test the null-cart-total bug before re-releasing.",
+    "should_escalate": false
+  }
+}

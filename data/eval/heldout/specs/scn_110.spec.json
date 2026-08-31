@@ -1,0 +1,39 @@
+{
+  "id": "scn_110",
+  "category": "ambiguous",
+  "difficulty": "hard",
+  "title": "Two changes land in the same window and the evidence cannot attribute the regression",
+  "source_url": "https://www.microsoft.com/en-us/research/publication/gray-failure-the-achilles-heel-of-cloud-scale-systems/",
+  "source_note": "Constructed as a deliberately confounded case: an error-rate regression that coincides with two independent changes (a deploy and a downstream provider degradation) close enough in time that the available evidence cannot say which caused it. In the spirit of the Microsoft Research 'Gray Failure' paper. All services, log lines, metrics, and timestamps are fabricated for evaluation; this scenario should be escalated.",
+  "incident_report": "checkout-api error rate rose from ~0.5% to ~3% starting around 16:20 UTC and has held there. A checkout-api deploy went out at 16:05, and the payments provider posted a 'minor degradation' notice for 16:15-16:40. On-call wants to know which one to blame before rolling back.",
+  "incident_start": "2027-04-07T16:20:00Z",
+  "detected_offset_s": 600,
+  "window_before_s": 3600,
+  "window_after_s": 1800,
+  "primary_service": "checkout-api",
+  "distractor_services": [
+    { "name": "cart-api", "role": "api" },
+    { "name": "order-worker", "role": "worker" },
+    { "name": "pricing-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": -900, "service": "checkout-api", "level": "INFO", "msg": "deploy 7h8i9j0 applied: dependency updates and a logging change; no intended behaviour change" },
+    { "offset_s": 0, "service": "checkout-api", "level": "WARN", "msg": "error rate 3.1% (baseline ~0.5%); errors are a mix of payment timeouts and generic 500s, spread across all hosts" },
+    { "offset_s": 300, "service": "checkout-api", "level": "INFO", "msg": "payments provider status page: 'minor degradation, elevated latency' for 16:15-16:40 UTC" },
+    { "offset_s": 600, "service": "checkout-api", "level": "INFO", "msg": "the deploy (16:05) and the provider degradation (16:15) both fall just before onset; error mix does not clearly point to either; no rollback or provider recovery has been tried" },
+    { "offset_s": 1500, "service": "checkout-api", "level": "WARN", "msg": "error rate still ~2.8%; provider notice cleared at 16:40 but errors did not drop, which is suggestive but not conclusive" }
+  ],
+  "metrics": [
+    { "name": "error_rate", "unit": "ratio", "service": "checkout-api", "baseline": 0.005, "spike": 0.031, "spike_at_offset_s": 0, "ramp_s": 300 },
+    { "name": "p95_latency_ms", "unit": "milliseconds", "service": "checkout-api", "baseline": 180.0, "spike": 240.0, "spike_at_offset_s": 0, "ramp_s": 600 }
+  ],
+  "deploys": [
+    { "service": "checkout-api", "offset_s": -900, "commit": "7h8i9j0", "summary": "dependency updates and a logging change" }
+  ],
+  "ground_truth": {
+    "root_cause": "Undetermined. checkout-api error rate rose from ~0.5% to ~3% at ~16:20, and two independent changes land in that window: a checkout-api deploy at 16:05 (described as dependency and logging changes only) and a payments-provider 'minor degradation' from 16:15-16:40. The error mix (payment timeouts plus generic 500s) is consistent with either, the errors are spread across all hosts, and the provider notice clearing without the errors dropping is suggestive but not conclusive. The available evidence cannot attribute the regression to one cause.",
+    "evidence_path": [],
+    "fix": "Escalate. To disambiguate: canary-rollback the 16:05 deploy on a fraction of hosts and compare error rates, get a precise per-error-type breakdown before and after each change, ask the payments provider for the exact scope and timing of their degradation, and check whether the deploy's dependency changes touched the payments client or its timeouts.",
+    "should_escalate": true
+  }
+}

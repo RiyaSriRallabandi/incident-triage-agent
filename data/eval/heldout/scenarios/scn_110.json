@@ -1,0 +1,1179 @@
+{
+  "id": "scn_110",
+  "category": "ambiguous",
+  "difficulty": "hard",
+  "title": "Two changes land in the same window and the evidence cannot attribute the regression",
+  "source_url": "https://www.microsoft.com/en-us/research/publication/gray-failure-the-achilles-heel-of-cloud-scale-systems/",
+  "source_note": "Constructed as a deliberately confounded case: an error-rate regression that coincides with two independent changes (a deploy and a downstream provider degradation) close enough in time that the available evidence cannot say which caused it. In the spirit of the Microsoft Research 'Gray Failure' paper. All services, log lines, metrics, and timestamps are fabricated for evaluation; this scenario should be escalated.",
+  "incident_report": "checkout-api error rate rose from ~0.5% to ~3% starting around 16:20 UTC and has held there. A checkout-api deploy went out at 16:05, and the payments provider posted a 'minor degradation' notice for 16:15-16:40. On-call wants to know which one to blame before rolling back.",
+  "synthetic_logs": [
+    {
+      "ts": "2027-04-07T15:22:20.900726Z",
+      "service": "pricing-cache",
+      "level": "INFO",
+      "msg": "SET key=session:496 ttl=3600"
+    },
+    {
+      "ts": "2027-04-07T15:22:49.796912Z",
+      "service": "order-worker",
+      "level": "INFO",
+      "msg": "queue depth=425"
+    },
+    {
+      "ts": "2027-04-07T15:26:00.892904Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=226"
+    },
+    {
+      "ts": "2027-04-07T15:26:47.062064Z",
+      "service": "pricing-cache",
+      "level": "INFO",
+      "msg": "SET key=session:127 ttl=3600"
+    },
+    {
+      "ts": "2027-04-07T15:26:55.635556Z",
+      "service": "order-worker",
+      "level": "INFO",
+      "msg": "queue depth=708"
+    },
+    {
+      "ts": "2027-04-07T15:28:33.227354Z",
+      "service": "pricing-cache",
+      "level": "INFO",
+      "msg": "evicted 374 keys (lru)"
+    },
+    {
+      "ts": "2027-04-07T15:28:54.591580Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=28"
+    },
+    {
+      "ts": "2027-04-07T15:29:00.968620Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=149"
+    },
+    {
+      "ts": "2027-04-07T15:32:28.802589Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "GET /products 200 in 64ms"
+    },
+    {
+      "ts": "2027-04-07T15:33:13.810751Z",
+      "service": "cart-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=50"
+    },
+    {
+      "ts": "2027-04-07T15:36:51.494308Z",
+      "service": "order-worker",
+      "level": "INFO",
+      "msg": "processed batch size=801"
+    },
+    {
+      "ts": "2027-04-07T15:38:43.002578Z",
+      "service": "cart-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 12ms"
+    },
+    {
+      "ts": "2027-04-07T15:44:32.927299Z",
+      "service": "pricing-cache",
+      "level": "WARN",
+      "msg": "GET key=user:159 miss"
+    },
+    {
+      "ts": "2027-04-07T15:45:17.003708Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "POST /products 201 in 171ms"
+    },
+    {
+      "ts": "2027-04-07T15:47:08.872820Z",
+      "service": "order-worker",
+      "level": "INFO",
+      "msg": "queue depth=386"
+    },
+    {
+      "ts": "2027-04-07T15:48:26.542258Z",
+      "service": "cart-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=175"
+    },
+    {
+      "ts": "2027-04-07T15:48:50.924078Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2027-04-07T15:50:29.918184Z",
+      "service": "order-worker",
+      "level": "INFO",
+      "msg": "job email.send completed in 197ms"
+    },
+    {
+      "ts": "2027-04-07T15:56:12.382560Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "POST /search 201 in 147ms"
+    },
+    {
+      "ts": "2027-04-07T15:57:21.039971Z",
+      "service": "order-worker",
+      "level": "WARN",
+      "msg": "job cache.warm retried attempt=1"
+    },
+    {
+      "ts": "2027-04-07T16:01:05.806837Z",
+      "service": "pricing-cache",
+      "level": "INFO",
+      "msg": "GET key=user:119 hit"
+    },
+    {
+      "ts": "2027-04-07T16:03:20.984258Z",
+      "service": "cart-api",
+      "level": "INFO",
+      "msg": "GET /products 200 in 188ms"
+    },
+    {
+      "ts": "2027-04-07T16:05:00Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "deploy 7h8i9j0 applied: dependency updates and a logging change; no intended behaviour change"
+    },
+    {
+      "ts": "2027-04-07T16:06:45.198176Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "POST /search 201 in 12ms"
+    },
+    {
+      "ts": "2027-04-07T16:07:06.836505Z",
+      "service": "order-worker",
+      "level": "INFO",
+      "msg": "queue depth=500"
+    },
+    {
+      "ts": "2027-04-07T16:10:34.107872Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2027-04-07T16:16:31.334856Z",
+      "service": "order-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2027-04-07T16:16:40.068049Z",
+      "service": "pricing-cache",
+      "level": "WARN",
+      "msg": "GET key=user:742 miss"
+    },
+    {
+      "ts": "2027-04-07T16:18:42.229848Z",
+      "service": "pricing-cache",
+      "level": "INFO",
+      "msg": "evicted 174 keys (lru)"
+    },
+    {
+      "ts": "2027-04-07T16:18:42.364668Z",
+      "service": "cart-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=23"
+    },
+    {
+      "ts": "2027-04-07T16:19:03.989434Z",
+      "service": "cart-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=170"
+    },
+    {
+      "ts": "2027-04-07T16:20:00Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "error rate 3.1% (baseline ~0.5%); errors are a mix of payment timeouts and generic 500s, spread across all hosts"
+    },
+    {
+      "ts": "2027-04-07T16:24:54.107131Z",
+      "service": "cart-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=6"
+    },
+    {
+      "ts": "2027-04-07T16:25:00Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "payments provider status page: 'minor degradation, elevated latency' for 16:15-16:40 UTC"
+    },
+    {
+      "ts": "2027-04-07T16:26:11.665138Z",
+      "service": "pricing-cache",
+      "level": "INFO",
+      "msg": "GET key=user:289 hit"
+    },
+    {
+      "ts": "2027-04-07T16:27:01.419217Z",
+      "service": "order-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2027-04-07T16:28:08.635465Z",
+      "service": "order-worker",
+      "level": "INFO",
+      "msg": "processed batch size=750"
+    },
+    {
+      "ts": "2027-04-07T16:29:39.586128Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-04-07T16:29:44.834406Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2027-04-07T16:30:00Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "the deploy (16:05) and the provider degradation (16:15) both fall just before onset; error mix does not clearly point to either; no rollback or provider recovery has been tried"
+    },
+    {
+      "ts": "2027-04-07T16:32:08.636091Z",
+      "service": "cart-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-04-07T16:32:28.901981Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=48"
+    },
+    {
+      "ts": "2027-04-07T16:35:04.474563Z",
+      "service": "order-worker",
+      "level": "INFO",
+      "msg": "processed batch size=775"
+    },
+    {
+      "ts": "2027-04-07T16:37:10.520858Z",
+      "service": "pricing-cache",
+      "level": "INFO",
+      "msg": "GET key=user:282 hit"
+    },
+    {
+      "ts": "2027-04-07T16:40:02.903699Z",
+      "service": "cart-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 15ms"
+    },
+    {
+      "ts": "2027-04-07T16:41:26.804983Z",
+      "service": "checkout-api",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 19ms"
+    },
+    {
+      "ts": "2027-04-07T16:43:35.788839Z",
+      "service": "cart-api",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=193"
+    },
+    {
+      "ts": "2027-04-07T16:45:00Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "error rate still ~2.8%; provider notice cleared at 16:40 but errors did not drop, which is suggestive but not conclusive"
+    },
+    {
+      "ts": "2027-04-07T16:45:45.581998Z",
+      "service": "checkout-api",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=164"
+    },
+    {
+      "ts": "2027-04-07T16:48:50.117004Z",
+      "service": "cart-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-04-07T16:53:48.680660Z",
+      "service": "order-worker",
+      "level": "INFO",
+      "msg": "processed batch size=707"
+    },
+    {
+      "ts": "2027-04-07T16:53:55.344407Z",
+      "service": "cart-api",
+      "level": "INFO",
+      "msg": "GET /search 200 in 218ms"
+    },
+    {
+      "ts": "2027-04-07T16:56:58.291717Z",
+      "service": "pricing-cache",
+      "level": "INFO",
+      "msg": "evicted 175 keys (lru)"
+    },
+    {
+      "ts": "2027-04-07T16:58:15.643374Z",
+      "service": "pricing-cache",
+      "level": "INFO",
+      "msg": "SET key=session:90 ttl=3600"
+    },
+    {
+      "ts": "2027-04-07T16:59:57.899864Z",
+      "service": "pricing-cache",
+      "level": "INFO",
+      "msg": "GET key=user:577 hit"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "error_rate",
+      "unit": "ratio",
+      "service": "checkout-api",
+      "points": [
+        [
+          "2027-04-07T15:20:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T15:21:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:22:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:23:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T15:24:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T15:25:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:26:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:27:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T15:28:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:29:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T15:30:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:31:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T15:32:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:33:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:34:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:35:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T15:36:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T15:37:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T15:38:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T15:39:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T15:40:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T15:41:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T15:42:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:43:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:44:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:45:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:46:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:47:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:48:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:49:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T15:50:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T15:51:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T15:52:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T15:53:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T15:54:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:55:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T15:56:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T15:57:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T15:58:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T15:59:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T16:00:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T16:01:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T16:02:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T16:03:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T16:04:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T16:05:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T16:06:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T16:07:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T16:08:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T16:09:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T16:10:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T16:11:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T16:12:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T16:13:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T16:14:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T16:15:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T16:16:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T16:17:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T16:18:00Z",
+          0.0049
+        ],
+        [
+          "2027-04-07T16:19:00Z",
+          0.005
+        ],
+        [
+          "2027-04-07T16:20:00Z",
+          0.0051
+        ],
+        [
+          "2027-04-07T16:21:00Z",
+          0.01
+        ],
+        [
+          "2027-04-07T16:22:00Z",
+          0.0151
+        ],
+        [
+          "2027-04-07T16:23:00Z",
+          0.0204
+        ],
+        [
+          "2027-04-07T16:24:00Z",
+          0.0257
+        ],
+        [
+          "2027-04-07T16:25:00Z",
+          0.0307
+        ],
+        [
+          "2027-04-07T16:26:00Z",
+          0.0307
+        ],
+        [
+          "2027-04-07T16:27:00Z",
+          0.0314
+        ],
+        [
+          "2027-04-07T16:28:00Z",
+          0.0316
+        ],
+        [
+          "2027-04-07T16:29:00Z",
+          0.0309
+        ],
+        [
+          "2027-04-07T16:30:00Z",
+          0.0311
+        ],
+        [
+          "2027-04-07T16:31:00Z",
+          0.031
+        ],
+        [
+          "2027-04-07T16:32:00Z",
+          0.0312
+        ],
+        [
+          "2027-04-07T16:33:00Z",
+          0.0308
+        ],
+        [
+          "2027-04-07T16:34:00Z",
+          0.0313
+        ],
+        [
+          "2027-04-07T16:35:00Z",
+          0.0311
+        ],
+        [
+          "2027-04-07T16:36:00Z",
+          0.031
+        ],
+        [
+          "2027-04-07T16:37:00Z",
+          0.0305
+        ],
+        [
+          "2027-04-07T16:38:00Z",
+          0.0306
+        ],
+        [
+          "2027-04-07T16:39:00Z",
+          0.0311
+        ],
+        [
+          "2027-04-07T16:40:00Z",
+          0.0312
+        ],
+        [
+          "2027-04-07T16:41:00Z",
+          0.031
+        ],
+        [
+          "2027-04-07T16:42:00Z",
+          0.0313
+        ],
+        [
+          "2027-04-07T16:43:00Z",
+          0.0316
+        ],
+        [
+          "2027-04-07T16:44:00Z",
+          0.0307
+        ],
+        [
+          "2027-04-07T16:45:00Z",
+          0.0308
+        ],
+        [
+          "2027-04-07T16:46:00Z",
+          0.0306
+        ],
+        [
+          "2027-04-07T16:47:00Z",
+          0.0313
+        ],
+        [
+          "2027-04-07T16:48:00Z",
+          0.0309
+        ],
+        [
+          "2027-04-07T16:49:00Z",
+          0.0304
+        ],
+        [
+          "2027-04-07T16:50:00Z",
+          0.0313
+        ],
+        [
+          "2027-04-07T16:51:00Z",
+          0.0308
+        ],
+        [
+          "2027-04-07T16:52:00Z",
+          0.0315
+        ],
+        [
+          "2027-04-07T16:53:00Z",
+          0.0305
+        ],
+        [
+          "2027-04-07T16:54:00Z",
+          0.0304
+        ],
+        [
+          "2027-04-07T16:55:00Z",
+          0.0311
+        ],
+        [
+          "2027-04-07T16:56:00Z",
+          0.0314
+        ],
+        [
+          "2027-04-07T16:57:00Z",
+          0.0315
+        ],
+        [
+          "2027-04-07T16:58:00Z",
+          0.0308
+        ],
+        [
+          "2027-04-07T16:59:00Z",
+          0.0309
+        ],
+        [
+          "2027-04-07T17:00:00Z",
+          0.0304
+        ]
+      ]
+    },
+    {
+      "name": "p95_latency_ms",
+      "unit": "milliseconds",
+      "service": "checkout-api",
+      "points": [
+        [
+          "2027-04-07T15:20:00Z",
+          176.5908
+        ],
+        [
+          "2027-04-07T15:21:00Z",
+          177.019
+        ],
+        [
+          "2027-04-07T15:22:00Z",
+          181.0562
+        ],
+        [
+          "2027-04-07T15:23:00Z",
+          178.9299
+        ],
+        [
+          "2027-04-07T15:24:00Z",
+          177.5587
+        ],
+        [
+          "2027-04-07T15:25:00Z",
+          179.6786
+        ],
+        [
+          "2027-04-07T15:26:00Z",
+          178.6168
+        ],
+        [
+          "2027-04-07T15:27:00Z",
+          181.7187
+        ],
+        [
+          "2027-04-07T15:28:00Z",
+          180.0463
+        ],
+        [
+          "2027-04-07T15:29:00Z",
+          178.0069
+        ],
+        [
+          "2027-04-07T15:30:00Z",
+          183.3205
+        ],
+        [
+          "2027-04-07T15:31:00Z",
+          181.4089
+        ],
+        [
+          "2027-04-07T15:32:00Z",
+          179.8006
+        ],
+        [
+          "2027-04-07T15:33:00Z",
+          176.6159
+        ],
+        [
+          "2027-04-07T15:34:00Z",
+          179.2023
+        ],
+        [
+          "2027-04-07T15:35:00Z",
+          181.5849
+        ],
+        [
+          "2027-04-07T15:36:00Z",
+          181.5727
+        ],
+        [
+          "2027-04-07T15:37:00Z",
+          180.632
+        ],
+        [
+          "2027-04-07T15:38:00Z",
+          182.8763
+        ],
+        [
+          "2027-04-07T15:39:00Z",
+          179.6663
+        ],
+        [
+          "2027-04-07T15:40:00Z",
+          182.5803
+        ],
+        [
+          "2027-04-07T15:41:00Z",
+          180.9542
+        ],
+        [
+          "2027-04-07T15:42:00Z",
+          182.0173
+        ],
+        [
+          "2027-04-07T15:43:00Z",
+          181.0725
+        ],
+        [
+          "2027-04-07T15:44:00Z",
+          180.8577
+        ],
+        [
+          "2027-04-07T15:45:00Z",
+          180.8642
+        ],
+        [
+          "2027-04-07T15:46:00Z",
+          182.2676
+        ],
+        [
+          "2027-04-07T15:47:00Z",
+          182.31
+        ],
+        [
+          "2027-04-07T15:48:00Z",
+          176.7243
+        ],
+        [
+          "2027-04-07T15:49:00Z",
+          182.0718
+        ],
+        [
+          "2027-04-07T15:50:00Z",
+          182.3171
+        ],
+        [
+          "2027-04-07T15:51:00Z",
+          177.7499
+        ],
+        [
+          "2027-04-07T15:52:00Z",
+          179.2998
+        ],
+        [
+          "2027-04-07T15:53:00Z",
+          178.2251
+        ],
+        [
+          "2027-04-07T15:54:00Z",
+          181.3341
+        ],
+        [
+          "2027-04-07T15:55:00Z",
+          182.2109
+        ],
+        [
+          "2027-04-07T15:56:00Z",
+          181.9263
+        ],
+        [
+          "2027-04-07T15:57:00Z",
+          180.8437
+        ],
+        [
+          "2027-04-07T15:58:00Z",
+          177.1414
+        ],
+        [
+          "2027-04-07T15:59:00Z",
+          182.9781
+        ],
+        [
+          "2027-04-07T16:00:00Z",
+          180.54
+        ],
+        [
+          "2027-04-07T16:01:00Z",
+          177.2456
+        ],
+        [
+          "2027-04-07T16:02:00Z",
+          182.0635
+        ],
+        [
+          "2027-04-07T16:03:00Z",
+          180.1636
+        ],
+        [
+          "2027-04-07T16:04:00Z",
+          182.4787
+        ],
+        [
+          "2027-04-07T16:05:00Z",
+          183.0337
+        ],
+        [
+          "2027-04-07T16:06:00Z",
+          181.1105
+        ],
+        [
+          "2027-04-07T16:07:00Z",
+          176.5377
+        ],
+        [
+          "2027-04-07T16:08:00Z",
+          177.5744
+        ],
+        [
+          "2027-04-07T16:09:00Z",
+          182.549
+        ],
+        [
+          "2027-04-07T16:10:00Z",
+          182.7371
+        ],
+        [
+          "2027-04-07T16:11:00Z",
+          183.54
+        ],
+        [
+          "2027-04-07T16:12:00Z",
+          178.2598
+        ],
+        [
+          "2027-04-07T16:13:00Z",
+          181.2441
+        ],
+        [
+          "2027-04-07T16:14:00Z",
+          177.7978
+        ],
+        [
+          "2027-04-07T16:15:00Z",
+          182.9312
+        ],
+        [
+          "2027-04-07T16:16:00Z",
+          177.5833
+        ],
+        [
+          "2027-04-07T16:17:00Z",
+          179.7065
+        ],
+        [
+          "2027-04-07T16:18:00Z",
+          177.7609
+        ],
+        [
+          "2027-04-07T16:19:00Z",
+          178.5631
+        ],
+        [
+          "2027-04-07T16:20:00Z",
+          178.5395
+        ],
+        [
+          "2027-04-07T16:21:00Z",
+          182.4579
+        ],
+        [
+          "2027-04-07T16:22:00Z",
+          188.1891
+        ],
+        [
+          "2027-04-07T16:23:00Z",
+          195.4246
+        ],
+        [
+          "2027-04-07T16:24:00Z",
+          207.6259
+        ],
+        [
+          "2027-04-07T16:25:00Z",
+          212.2332
+        ],
+        [
+          "2027-04-07T16:26:00Z",
+          217.9739
+        ],
+        [
+          "2027-04-07T16:27:00Z",
+          218.626
+        ],
+        [
+          "2027-04-07T16:28:00Z",
+          228.6554
+        ],
+        [
+          "2027-04-07T16:29:00Z",
+          231.6478
+        ],
+        [
+          "2027-04-07T16:30:00Z",
+          240.2677
+        ],
+        [
+          "2027-04-07T16:31:00Z",
+          243.8095
+        ],
+        [
+          "2027-04-07T16:32:00Z",
+          235.7261
+        ],
+        [
+          "2027-04-07T16:33:00Z",
+          237.7131
+        ],
+        [
+          "2027-04-07T16:34:00Z",
+          238.3126
+        ],
+        [
+          "2027-04-07T16:35:00Z",
+          242.3415
+        ],
+        [
+          "2027-04-07T16:36:00Z",
+          237.2414
+        ],
+        [
+          "2027-04-07T16:37:00Z",
+          242.0599
+        ],
+        [
+          "2027-04-07T16:38:00Z",
+          235.3427
+        ],
+        [
+          "2027-04-07T16:39:00Z",
+          237.9789
+        ],
+        [
+          "2027-04-07T16:40:00Z",
+          242.7984
+        ],
+        [
+          "2027-04-07T16:41:00Z",
+          242.4851
+        ],
+        [
+          "2027-04-07T16:42:00Z",
+          242.7569
+        ],
+        [
+          "2027-04-07T16:43:00Z",
+          240.8312
+        ],
+        [
+          "2027-04-07T16:44:00Z",
+          235.3603
+        ],
+        [
+          "2027-04-07T16:45:00Z",
+          235.3415
+        ],
+        [
+          "2027-04-07T16:46:00Z",
+          235.9596
+        ],
+        [
+          "2027-04-07T16:47:00Z",
+          242.8157
+        ],
+        [
+          "2027-04-07T16:48:00Z",
+          236.0168
+        ],
+        [
+          "2027-04-07T16:49:00Z",
+          242.0834
+        ],
+        [
+          "2027-04-07T16:50:00Z",
+          242.9127
+        ],
+        [
+          "2027-04-07T16:51:00Z",
+          240.1945
+        ],
+        [
+          "2027-04-07T16:52:00Z",
+          236.8906
+        ],
+        [
+          "2027-04-07T16:53:00Z",
+          242.8416
+        ],
+        [
+          "2027-04-07T16:54:00Z",
+          237.8521
+        ],
+        [
+          "2027-04-07T16:55:00Z",
+          243.8557
+        ],
+        [
+          "2027-04-07T16:56:00Z",
+          236.8306
+        ],
+        [
+          "2027-04-07T16:57:00Z",
+          236.9604
+        ],
+        [
+          "2027-04-07T16:58:00Z",
+          236.1476
+        ],
+        [
+          "2027-04-07T16:59:00Z",
+          243.8695
+        ],
+        [
+          "2027-04-07T17:00:00Z",
+          238.5033
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [
+    {
+      "service": "checkout-api",
+      "ts": "2027-04-07T16:05:00Z",
+      "commit": "7h8i9j0",
+      "summary": "dependency updates and a logging change"
+    }
+  ],
+  "ground_truth": {
+    "root_cause": "Undetermined. checkout-api error rate rose from ~0.5% to ~3% at ~16:20, and two independent changes land in that window: a checkout-api deploy at 16:05 (described as dependency and logging changes only) and a payments-provider 'minor degradation' from 16:15-16:40. The error mix (payment timeouts plus generic 500s) is consistent with either, the errors are spread across all hosts, and the provider notice clearing without the errors dropping is suggestive but not conclusive. The available evidence cannot attribute the regression to one cause.",
+    "evidence_path": [],
+    "fix": "Escalate. To disambiguate: canary-rollback the 16:05 deploy on a fraction of hosts and compare error rates, get a precise per-error-type breakdown before and after each change, ask the payments provider for the exact scope and timing of their degradation, and check whether the deploy's dependency changes touched the payments client or its timeouts.",
+    "should_escalate": true
+  }
+}

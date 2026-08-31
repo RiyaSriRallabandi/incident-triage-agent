@@ -1,0 +1,45 @@
+{
+  "id": "scn_102",
+  "category": "bad_deploy",
+  "difficulty": "hard",
+  "title": "Library upgrade in a deploy changes JSON number serialization, breaking downstream parsers",
+  "source_url": "https://danluu.com/postmortem-lessons/",
+  "source_note": "Failure pattern (a dependency version bump inside a routine deploy silently changes an output format, so downstream consumers that parse it start failing) is a recurring class in the danluu/post-mortems collection. All services, versions, commit hashes, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~09:47 UTC the mobile apps are showing wrong prices and some orders are being rejected. Backend error rates on order-api look normal. A pricing-service deploy went out at 09:45. No infra changes.",
+  "incident_start": "2027-02-10T09:45:00Z",
+  "detected_offset_s": 120,
+  "window_before_s": 1800,
+  "window_after_s": 1500,
+  "primary_service": "pricing-service",
+  "distractor_services": [
+    { "name": "order-api", "role": "api" },
+    { "name": "inventory-worker", "role": "worker" },
+    { "name": "rate-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "deploy-system", "level": "INFO", "msg": "pricing-service 3f4g5h6 deployed (bumps json-lib 2.8 -> 3.0)" },
+    { "offset_s": 60, "service": "pricing-service", "level": "INFO", "msg": "json-lib 3.0 now serializes decimals as strings by default (was numbers)" },
+    { "offset_s": 120, "service": "order-api", "level": "ERROR", "msg": "parsing pricing-service response: expected number for field 'unit_price', got string \"12.99\"; falling back to 0" },
+    { "offset_s": 240, "service": "order-api", "level": "ERROR", "msg": "orders rejected: computed total 0.00 fails validation; ~30% of orders affected" },
+    { "offset_s": 900, "service": "deploy-system", "level": "INFO", "msg": "pricing-service rolled back to the previous build; downstream parsing recovered" }
+  ],
+  "metrics": [
+    { "name": "price_parse_error_rate", "unit": "ratio", "service": "order-api", "baseline": 0.001, "spike": 0.32, "spike_at_offset_s": 120, "ramp_s": 90 },
+    { "name": "order_rejection_rate", "unit": "ratio", "service": "order-api", "baseline": 0.02, "spike": 0.3, "spike_at_offset_s": 240, "ramp_s": 120 }
+  ],
+  "deploys": [
+    { "service": "pricing-service", "offset_s": 0, "commit": "3f4g5h6", "summary": "routine dependency updates including json-lib 2.8 -> 3.0" }
+  ],
+  "ground_truth": {
+    "root_cause": "The pricing-service deploy 3f4g5h6 bumped its JSON library from 2.8 to 3.0. Version 3.0 changed the default serialization of decimal values from JSON numbers to JSON strings. order-api parses pricing-service responses expecting numbers for fields like unit_price; it now received strings, failed to parse them, and fell back to 0, so computed order totals became 0.00 and ~30% of orders failed validation and were rejected. The change was invisible in pricing-service's own metrics because it still returned 200s. Recovery on rollback.",
+    "evidence_path": [
+      "deploy 3f4g5h6 to pricing-service at 09:45 bumps json-lib 2.8 -> 3.0",
+      "pricing-service INFO: json-lib 3.0 serializes decimals as strings by default (was numbers)",
+      "order-api ERROR: expected number for 'unit_price', got string \"12.99\"; falling back to 0",
+      "order-api computed totals become 0.00 and ~30% of orders are rejected on validation",
+      "downstream parsing recovers once pricing-service is rolled back"
+    ],
+    "fix": "Roll back pricing-service (done). Pin json-lib or configure it to keep numeric decimals, add a contract test on the pricing-service response schema that downstream consumers run in CI, and treat dependency-bump deploys as behavior-changing.",
+    "should_escalate": false
+  }
+}

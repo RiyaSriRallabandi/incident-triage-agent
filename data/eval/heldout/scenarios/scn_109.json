@@ -1,0 +1,806 @@
+{
+  "id": "scn_109",
+  "category": "database_issue",
+  "difficulty": "medium",
+  "title": "A common query goes from index seek to full scan as a table crosses a size threshold",
+  "source_url": "https://about.gitlab.com/blog/2017/02/10/postmortem-of-database-outage-of-january-31/",
+  "source_note": "Failure pattern (a frequently-run query that was fine at small scale degrades sharply once a table grows past the point where its access path stops fitting cache / stops being cheap, with no deploy involved) is a common data-growth database class. All services, query names, row counts, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~14:00 UTC the activity feed is loading slowly and sometimes times out. It has been getting gradually worse over the last week and tipped over today. No deploys. The feed database CPU and disk read rate are elevated.",
+  "synthetic_logs": [
+    {
+      "ts": "2027-03-31T13:22:52.409233Z",
+      "service": "feed-db",
+      "level": "INFO",
+      "msg": "GET /search 200 in 23ms"
+    },
+    {
+      "ts": "2027-03-31T13:25:46.203468Z",
+      "service": "fanout-worker",
+      "level": "INFO",
+      "msg": "queue depth=429"
+    },
+    {
+      "ts": "2027-03-31T13:27:39.164808Z",
+      "service": "fanout-worker",
+      "level": "INFO",
+      "msg": "processed batch size=1"
+    },
+    {
+      "ts": "2027-03-31T13:33:53.249805Z",
+      "service": "fanout-worker",
+      "level": "INFO",
+      "msg": "queue depth=183"
+    },
+    {
+      "ts": "2027-03-31T13:34:44.716288Z",
+      "service": "timeline-cache",
+      "level": "INFO",
+      "msg": "GET key=user:786 hit"
+    },
+    {
+      "ts": "2027-03-31T13:35:30.749372Z",
+      "service": "timeline-cache",
+      "level": "INFO",
+      "msg": "evicted 335 keys (lru)"
+    },
+    {
+      "ts": "2027-03-31T13:36:47.531891Z",
+      "service": "fanout-worker",
+      "level": "WARN",
+      "msg": "job webhook.deliver retried attempt=1"
+    },
+    {
+      "ts": "2027-03-31T13:38:57.943287Z",
+      "service": "feed-db",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2027-03-31T13:43:45.465947Z",
+      "service": "feed-db",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=213"
+    },
+    {
+      "ts": "2027-03-31T13:45:46.146413Z",
+      "service": "feed-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2027-03-31T13:50:00Z",
+      "service": "feed-db",
+      "level": "WARN",
+      "msg": "query q_feed_recent p95 latency 2.4s (was ~120ms last week); disk reads per query way up"
+    },
+    {
+      "ts": "2027-03-31T13:50:44.389426Z",
+      "service": "timeline-cache",
+      "level": "INFO",
+      "msg": "SET key=session:617 ttl=3600"
+    },
+    {
+      "ts": "2027-03-31T13:54:00Z",
+      "service": "feed-db",
+      "level": "WARN",
+      "msg": "q_feed_recent still uses the (user_id, created_at) index but the range it scans per user has grown; activity table now 1.1B rows, up from ~700M a week ago"
+    },
+    {
+      "ts": "2027-03-31T14:00:00Z",
+      "service": "feed-api",
+      "level": "ERROR",
+      "msg": "feed requests timing out; feed-db CPU 90%, mostly I/O wait from q_feed_recent"
+    },
+    {
+      "ts": "2027-03-31T14:00:40.156801Z",
+      "service": "feed-api",
+      "level": "INFO",
+      "msg": "POST /products 201 in 112ms"
+    },
+    {
+      "ts": "2027-03-31T14:02:00Z",
+      "service": "feed-db",
+      "level": "INFO",
+      "msg": "no deploy or schema change; the query plan is unchanged - the working set for this query no longer fits in the buffer cache"
+    },
+    {
+      "ts": "2027-03-31T14:03:11.376952Z",
+      "service": "timeline-cache",
+      "level": "INFO",
+      "msg": "GET key=user:202 hit"
+    },
+    {
+      "ts": "2027-03-31T14:03:21.870982Z",
+      "service": "timeline-cache",
+      "level": "INFO",
+      "msg": "evicted 397 keys (lru)"
+    },
+    {
+      "ts": "2027-03-31T14:04:25.004941Z",
+      "service": "feed-db",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-31T14:07:01.205004Z",
+      "service": "feed-db",
+      "level": "INFO",
+      "msg": "POST /search 201 in 199ms"
+    },
+    {
+      "ts": "2027-03-31T14:07:34.642699Z",
+      "service": "feed-db",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 73ms"
+    },
+    {
+      "ts": "2027-03-31T14:13:52.329629Z",
+      "service": "feed-db",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-31T14:14:10.822719Z",
+      "service": "feed-db",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-31T14:15:00Z",
+      "service": "feed-db",
+      "level": "INFO",
+      "msg": "added a partial index limiting q_feed_recent to the last 14 days and a retention job to trim old activity rows; latency back to ~150ms"
+    },
+    {
+      "ts": "2027-03-31T14:16:08.628544Z",
+      "service": "feed-api",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=55"
+    },
+    {
+      "ts": "2027-03-31T14:16:16.185607Z",
+      "service": "feed-db",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-31T14:16:33.800526Z",
+      "service": "timeline-cache",
+      "level": "INFO",
+      "msg": "GET key=user:570 hit"
+    },
+    {
+      "ts": "2027-03-31T14:18:07.295863Z",
+      "service": "fanout-worker",
+      "level": "INFO",
+      "msg": "queue depth=5"
+    },
+    {
+      "ts": "2027-03-31T14:21:56.496698Z",
+      "service": "timeline-cache",
+      "level": "WARN",
+      "msg": "GET key=user:174 miss"
+    },
+    {
+      "ts": "2027-03-31T14:23:29.852893Z",
+      "service": "feed-db",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=138"
+    },
+    {
+      "ts": "2027-03-31T14:25:38.097185Z",
+      "service": "feed-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 27ms"
+    },
+    {
+      "ts": "2027-03-31T14:29:23.776581Z",
+      "service": "timeline-cache",
+      "level": "WARN",
+      "msg": "GET key=user:654 miss"
+    },
+    {
+      "ts": "2027-03-31T14:29:53.754480Z",
+      "service": "feed-db",
+      "level": "INFO",
+      "msg": "health check ok"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "q_feed_recent_p95_ms",
+      "unit": "milliseconds",
+      "service": "feed-db",
+      "points": [
+        [
+          "2027-03-31T13:20:00Z",
+          129.1069
+        ],
+        [
+          "2027-03-31T13:21:00Z",
+          128.7617
+        ],
+        [
+          "2027-03-31T13:22:00Z",
+          129.9327
+        ],
+        [
+          "2027-03-31T13:23:00Z",
+          127.8663
+        ],
+        [
+          "2027-03-31T13:24:00Z",
+          131.411
+        ],
+        [
+          "2027-03-31T13:25:00Z",
+          130.026
+        ],
+        [
+          "2027-03-31T13:26:00Z",
+          132.3846
+        ],
+        [
+          "2027-03-31T13:27:00Z",
+          127.998
+        ],
+        [
+          "2027-03-31T13:28:00Z",
+          129.8097
+        ],
+        [
+          "2027-03-31T13:29:00Z",
+          131.1226
+        ],
+        [
+          "2027-03-31T13:30:00Z",
+          129.0854
+        ],
+        [
+          "2027-03-31T13:31:00Z",
+          128.7381
+        ],
+        [
+          "2027-03-31T13:32:00Z",
+          130.2881
+        ],
+        [
+          "2027-03-31T13:33:00Z",
+          131.7009
+        ],
+        [
+          "2027-03-31T13:34:00Z",
+          128.1241
+        ],
+        [
+          "2027-03-31T13:35:00Z",
+          129.3516
+        ],
+        [
+          "2027-03-31T13:36:00Z",
+          131.0145
+        ],
+        [
+          "2027-03-31T13:37:00Z",
+          130.5102
+        ],
+        [
+          "2027-03-31T13:38:00Z",
+          129.8998
+        ],
+        [
+          "2027-03-31T13:39:00Z",
+          131.6096
+        ],
+        [
+          "2027-03-31T13:40:00Z",
+          132.0606
+        ],
+        [
+          "2027-03-31T13:41:00Z",
+          129.1003
+        ],
+        [
+          "2027-03-31T13:42:00Z",
+          131.7896
+        ],
+        [
+          "2027-03-31T13:43:00Z",
+          129.3707
+        ],
+        [
+          "2027-03-31T13:44:00Z",
+          130.4185
+        ],
+        [
+          "2027-03-31T13:45:00Z",
+          128.7866
+        ],
+        [
+          "2027-03-31T13:46:00Z",
+          129.5964
+        ],
+        [
+          "2027-03-31T13:47:00Z",
+          128.223
+        ],
+        [
+          "2027-03-31T13:48:00Z",
+          132.0152
+        ],
+        [
+          "2027-03-31T13:49:00Z",
+          132.581
+        ],
+        [
+          "2027-03-31T13:50:00Z",
+          127.7476
+        ],
+        [
+          "2027-03-31T13:51:00Z",
+          585.3749
+        ],
+        [
+          "2027-03-31T13:52:00Z",
+          1024.0888
+        ],
+        [
+          "2027-03-31T13:53:00Z",
+          1509.8185
+        ],
+        [
+          "2027-03-31T13:54:00Z",
+          1940.4121
+        ],
+        [
+          "2027-03-31T13:55:00Z",
+          2434.8981
+        ],
+        [
+          "2027-03-31T13:56:00Z",
+          2378.9861
+        ],
+        [
+          "2027-03-31T13:57:00Z",
+          2405.0105
+        ],
+        [
+          "2027-03-31T13:58:00Z",
+          2364.1309
+        ],
+        [
+          "2027-03-31T13:59:00Z",
+          2414.6658
+        ],
+        [
+          "2027-03-31T14:00:00Z",
+          2441.65
+        ],
+        [
+          "2027-03-31T14:01:00Z",
+          2420.4991
+        ],
+        [
+          "2027-03-31T14:02:00Z",
+          2372.4656
+        ],
+        [
+          "2027-03-31T14:03:00Z",
+          2435.198
+        ],
+        [
+          "2027-03-31T14:04:00Z",
+          2418.7287
+        ],
+        [
+          "2027-03-31T14:05:00Z",
+          2370.166
+        ],
+        [
+          "2027-03-31T14:06:00Z",
+          2384.3696
+        ],
+        [
+          "2027-03-31T14:07:00Z",
+          2366.1511
+        ],
+        [
+          "2027-03-31T14:08:00Z",
+          2358.5363
+        ],
+        [
+          "2027-03-31T14:09:00Z",
+          2400.0683
+        ],
+        [
+          "2027-03-31T14:10:00Z",
+          2401.0378
+        ],
+        [
+          "2027-03-31T14:11:00Z",
+          2420.7434
+        ],
+        [
+          "2027-03-31T14:12:00Z",
+          2417.2923
+        ],
+        [
+          "2027-03-31T14:13:00Z",
+          2428.7505
+        ],
+        [
+          "2027-03-31T14:14:00Z",
+          2371.3511
+        ],
+        [
+          "2027-03-31T14:15:00Z",
+          2427.971
+        ],
+        [
+          "2027-03-31T14:16:00Z",
+          2443.6795
+        ],
+        [
+          "2027-03-31T14:17:00Z",
+          2438.3058
+        ],
+        [
+          "2027-03-31T14:18:00Z",
+          2405.711
+        ],
+        [
+          "2027-03-31T14:19:00Z",
+          2378.1537
+        ],
+        [
+          "2027-03-31T14:20:00Z",
+          2358.763
+        ],
+        [
+          "2027-03-31T14:21:00Z",
+          2369.8905
+        ],
+        [
+          "2027-03-31T14:22:00Z",
+          2440.8089
+        ],
+        [
+          "2027-03-31T14:23:00Z",
+          2391.3028
+        ],
+        [
+          "2027-03-31T14:24:00Z",
+          2446.0375
+        ],
+        [
+          "2027-03-31T14:25:00Z",
+          2395.9909
+        ],
+        [
+          "2027-03-31T14:26:00Z",
+          2419.7291
+        ],
+        [
+          "2027-03-31T14:27:00Z",
+          2401.8157
+        ],
+        [
+          "2027-03-31T14:28:00Z",
+          2434.247
+        ],
+        [
+          "2027-03-31T14:29:00Z",
+          2446.8455
+        ],
+        [
+          "2027-03-31T14:30:00Z",
+          2442.643
+        ]
+      ]
+    },
+    {
+      "name": "db_cpu_utilization_pct",
+      "unit": "percent",
+      "service": "feed-db",
+      "points": [
+        [
+          "2027-03-31T13:20:00Z",
+          39.7392
+        ],
+        [
+          "2027-03-31T13:21:00Z",
+          40.7127
+        ],
+        [
+          "2027-03-31T13:22:00Z",
+          40.2294
+        ],
+        [
+          "2027-03-31T13:23:00Z",
+          39.6491
+        ],
+        [
+          "2027-03-31T13:24:00Z",
+          39.324
+        ],
+        [
+          "2027-03-31T13:25:00Z",
+          40.3585
+        ],
+        [
+          "2027-03-31T13:26:00Z",
+          39.8453
+        ],
+        [
+          "2027-03-31T13:27:00Z",
+          40.5053
+        ],
+        [
+          "2027-03-31T13:28:00Z",
+          39.4986
+        ],
+        [
+          "2027-03-31T13:29:00Z",
+          39.616
+        ],
+        [
+          "2027-03-31T13:30:00Z",
+          40.0458
+        ],
+        [
+          "2027-03-31T13:31:00Z",
+          39.9509
+        ],
+        [
+          "2027-03-31T13:32:00Z",
+          40.598
+        ],
+        [
+          "2027-03-31T13:33:00Z",
+          40.5018
+        ],
+        [
+          "2027-03-31T13:34:00Z",
+          40.6174
+        ],
+        [
+          "2027-03-31T13:35:00Z",
+          39.7617
+        ],
+        [
+          "2027-03-31T13:36:00Z",
+          39.7913
+        ],
+        [
+          "2027-03-31T13:37:00Z",
+          40.1382
+        ],
+        [
+          "2027-03-31T13:38:00Z",
+          40.7415
+        ],
+        [
+          "2027-03-31T13:39:00Z",
+          40.0644
+        ],
+        [
+          "2027-03-31T13:40:00Z",
+          40.4794
+        ],
+        [
+          "2027-03-31T13:41:00Z",
+          39.8121
+        ],
+        [
+          "2027-03-31T13:42:00Z",
+          40.1195
+        ],
+        [
+          "2027-03-31T13:43:00Z",
+          40.6854
+        ],
+        [
+          "2027-03-31T13:44:00Z",
+          40.0566
+        ],
+        [
+          "2027-03-31T13:45:00Z",
+          40.479
+        ],
+        [
+          "2027-03-31T13:46:00Z",
+          40.184
+        ],
+        [
+          "2027-03-31T13:47:00Z",
+          39.7887
+        ],
+        [
+          "2027-03-31T13:48:00Z",
+          39.9676
+        ],
+        [
+          "2027-03-31T13:49:00Z",
+          40.1565
+        ],
+        [
+          "2027-03-31T13:50:00Z",
+          39.3345
+        ],
+        [
+          "2027-03-31T13:51:00Z",
+          39.7921
+        ],
+        [
+          "2027-03-31T13:52:00Z",
+          39.9907
+        ],
+        [
+          "2027-03-31T13:53:00Z",
+          53.5183
+        ],
+        [
+          "2027-03-31T13:54:00Z",
+          65.5237
+        ],
+        [
+          "2027-03-31T13:55:00Z",
+          76.3411
+        ],
+        [
+          "2027-03-31T13:56:00Z",
+          88.896
+        ],
+        [
+          "2027-03-31T13:57:00Z",
+          91.7471
+        ],
+        [
+          "2027-03-31T13:58:00Z",
+          91.42
+        ],
+        [
+          "2027-03-31T13:59:00Z",
+          89.0253
+        ],
+        [
+          "2027-03-31T14:00:00Z",
+          90.7322
+        ],
+        [
+          "2027-03-31T14:01:00Z",
+          89.1916
+        ],
+        [
+          "2027-03-31T14:02:00Z",
+          90.076
+        ],
+        [
+          "2027-03-31T14:03:00Z",
+          90.6161
+        ],
+        [
+          "2027-03-31T14:04:00Z",
+          89.3204
+        ],
+        [
+          "2027-03-31T14:05:00Z",
+          88.9613
+        ],
+        [
+          "2027-03-31T14:06:00Z",
+          88.2039
+        ],
+        [
+          "2027-03-31T14:07:00Z",
+          89.8957
+        ],
+        [
+          "2027-03-31T14:08:00Z",
+          89.6029
+        ],
+        [
+          "2027-03-31T14:09:00Z",
+          89.7498
+        ],
+        [
+          "2027-03-31T14:10:00Z",
+          88.9864
+        ],
+        [
+          "2027-03-31T14:11:00Z",
+          88.6292
+        ],
+        [
+          "2027-03-31T14:12:00Z",
+          88.9203
+        ],
+        [
+          "2027-03-31T14:13:00Z",
+          89.0964
+        ],
+        [
+          "2027-03-31T14:14:00Z",
+          88.9553
+        ],
+        [
+          "2027-03-31T14:15:00Z",
+          88.3913
+        ],
+        [
+          "2027-03-31T14:16:00Z",
+          91.2064
+        ],
+        [
+          "2027-03-31T14:17:00Z",
+          90.2355
+        ],
+        [
+          "2027-03-31T14:18:00Z",
+          90.722
+        ],
+        [
+          "2027-03-31T14:19:00Z",
+          91.4742
+        ],
+        [
+          "2027-03-31T14:20:00Z",
+          90.4401
+        ],
+        [
+          "2027-03-31T14:21:00Z",
+          89.2042
+        ],
+        [
+          "2027-03-31T14:22:00Z",
+          89.531
+        ],
+        [
+          "2027-03-31T14:23:00Z",
+          91.3472
+        ],
+        [
+          "2027-03-31T14:24:00Z",
+          91.4176
+        ],
+        [
+          "2027-03-31T14:25:00Z",
+          89.1532
+        ],
+        [
+          "2027-03-31T14:26:00Z",
+          88.4827
+        ],
+        [
+          "2027-03-31T14:27:00Z",
+          90.2623
+        ],
+        [
+          "2027-03-31T14:28:00Z",
+          90.8668
+        ],
+        [
+          "2027-03-31T14:29:00Z",
+          90.954
+        ],
+        [
+          "2027-03-31T14:30:00Z",
+          91.6578
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "The activity table grew from ~700M to ~1.1B rows over the past week. The frequently-run q_feed_recent query still uses the same (user_id, created_at) index, but the amount of data it reads per user has grown to the point that its working set no longer fits in the database buffer cache, so most reads now hit disk. Query p95 latency jumped from ~120ms to ~2.4s and the resulting I/O wait pushed feed-db CPU to 90%, timing out feed requests. There was no deploy or schema change - the trigger is data growth crossing a cache-fit threshold. Recovery required constraining the query's scan range (a 14-day partial index) and trimming old rows.",
+    "evidence_path": [
+      "feed-db WARN: q_feed_recent p95 latency 2.4s vs ~120ms a week ago; disk reads per query up sharply",
+      "feed-db WARN: the activity table is now 1.1B rows, up from ~700M a week ago; the per-user scan range has grown",
+      "feed-api requests time out; feed-db CPU 90%, dominated by I/O wait from q_feed_recent",
+      "no deploy or schema change; the query plan is unchanged - the working set no longer fits in the buffer cache",
+      "latency returns to ~150ms after a 14-day partial index and a retention job are added"
+    ],
+    "fix": "Add a partial index limiting q_feed_recent to recent rows and a retention job to trim old activity (done). Add plan and working-set monitoring on the top queries, and size the buffer cache for the real working set or partition the activity table by time.",
+    "should_escalate": false
+  }
+}

@@ -1,0 +1,938 @@
+{
+  "id": "scn_105",
+  "category": "dependency_failure",
+  "difficulty": "hard",
+  "title": "A poison message stalls a consumer group and downstream events stop flowing",
+  "source_url": "https://sre.google/sre-book/addressing-cascading-failures/",
+  "source_note": "Failure pattern (a single un-processable message that a consumer retries forever, blocking the partition so the whole consumer group falls behind and downstream systems stop receiving events) is a common queue/streaming class. All services, topics, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~13:00 UTC order confirmation emails and fulfillment handoffs have stopped. Orders are still being placed fine. No deploys. The events pipeline seems stuck.",
+  "synthetic_logs": [
+    {
+      "ts": "2027-03-03T12:25:29.505071Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "POST /search 201 in 158ms"
+    },
+    {
+      "ts": "2027-03-03T12:30:43.472030Z",
+      "service": "events-consumer",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 95ms"
+    },
+    {
+      "ts": "2027-03-03T12:30:44.113317Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2027-03-03T12:32:20.553570Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "queue depth=776"
+    },
+    {
+      "ts": "2027-03-03T12:33:19.800064Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "job invoice.render completed in 9ms"
+    },
+    {
+      "ts": "2027-03-03T12:34:20.008061Z",
+      "service": "email-worker",
+      "level": "INFO",
+      "msg": "queue depth=598"
+    },
+    {
+      "ts": "2027-03-03T12:35:01.886970Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2027-03-03T12:35:43.145385Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "processed batch size=111"
+    },
+    {
+      "ts": "2027-03-03T12:36:09.512350Z",
+      "service": "events-consumer",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 40ms"
+    },
+    {
+      "ts": "2027-03-03T12:37:28.609558Z",
+      "service": "order-api",
+      "level": "WARN",
+      "msg": "slow request path=/products duration_ms=98"
+    },
+    {
+      "ts": "2027-03-03T12:37:48.812455Z",
+      "service": "email-worker",
+      "level": "INFO",
+      "msg": "job email.send completed in 144ms"
+    },
+    {
+      "ts": "2027-03-03T12:40:10.137108Z",
+      "service": "order-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=49"
+    },
+    {
+      "ts": "2027-03-03T12:41:27.205528Z",
+      "service": "email-worker",
+      "level": "WARN",
+      "msg": "job webhook.deliver retried attempt=1"
+    },
+    {
+      "ts": "2027-03-03T12:41:46.594346Z",
+      "service": "events-consumer",
+      "level": "INFO",
+      "msg": "GET /search 200 in 125ms"
+    },
+    {
+      "ts": "2027-03-03T12:42:27.027735Z",
+      "service": "fulfillment-worker",
+      "level": "WARN",
+      "msg": "job invoice.render retried attempt=1"
+    },
+    {
+      "ts": "2027-03-03T12:44:16.007519Z",
+      "service": "email-worker",
+      "level": "WARN",
+      "msg": "job webhook.deliver retried attempt=1"
+    },
+    {
+      "ts": "2027-03-03T12:44:16.668321Z",
+      "service": "email-worker",
+      "level": "INFO",
+      "msg": "processed batch size=317"
+    },
+    {
+      "ts": "2027-03-03T12:48:23.830813Z",
+      "service": "events-consumer",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 107ms"
+    },
+    {
+      "ts": "2027-03-03T12:49:41.865036Z",
+      "service": "events-consumer",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-03T12:50:33.056806Z",
+      "service": "events-consumer",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=203"
+    },
+    {
+      "ts": "2027-03-03T12:51:25.322311Z",
+      "service": "events-consumer",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-03T12:52:52.996582Z",
+      "service": "fulfillment-worker",
+      "level": "WARN",
+      "msg": "job webhook.deliver retried attempt=1"
+    },
+    {
+      "ts": "2027-03-03T12:55:00Z",
+      "service": "events-consumer",
+      "level": "ERROR",
+      "msg": "failed to deserialize message at partition 3 offset 88214102: unexpected field 'legacy_promo'; retrying"
+    },
+    {
+      "ts": "2027-03-03T12:56:23.936401Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "queue depth=221"
+    },
+    {
+      "ts": "2027-03-03T12:57:00Z",
+      "service": "events-consumer",
+      "level": "WARN",
+      "msg": "partition 3 offset stuck at 88214102 for 2 minutes; same message failing on every retry"
+    },
+    {
+      "ts": "2027-03-03T12:59:04.132948Z",
+      "service": "email-worker",
+      "level": "INFO",
+      "msg": "queue depth=814"
+    },
+    {
+      "ts": "2027-03-03T13:00:02.679383Z",
+      "service": "email-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2027-03-03T13:00:07.036014Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2027-03-03T13:00:28.880422Z",
+      "service": "events-consumer",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2027-03-03T13:01:01.435279Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "job cache.warm completed in 122ms"
+    },
+    {
+      "ts": "2027-03-03T13:04:59.576517Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-03T13:05:00Z",
+      "service": "events-consumer",
+      "level": "ERROR",
+      "msg": "consumer group lag on 'order-events' now 190000 and rising; partition 3 not advancing"
+    },
+    {
+      "ts": "2027-03-03T13:06:46.742409Z",
+      "service": "events-consumer",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=166"
+    },
+    {
+      "ts": "2027-03-03T13:07:00Z",
+      "service": "events-consumer",
+      "level": "INFO",
+      "msg": "order-api is producing to order-events normally; the block is entirely on the consumer side at partition 3"
+    },
+    {
+      "ts": "2027-03-03T13:07:44.864673Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 122ms"
+    },
+    {
+      "ts": "2027-03-03T13:08:52.137723Z",
+      "service": "fulfillment-worker",
+      "level": "WARN",
+      "msg": "job webhook.deliver retried attempt=1"
+    },
+    {
+      "ts": "2027-03-03T13:11:47.208654Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-03T13:12:38.896498Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 49ms"
+    },
+    {
+      "ts": "2027-03-03T13:12:47.656977Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "queue depth=374"
+    },
+    {
+      "ts": "2027-03-03T13:13:09.622503Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "GET /search 200 in 4ms"
+    },
+    {
+      "ts": "2027-03-03T13:13:34.640189Z",
+      "service": "email-worker",
+      "level": "WARN",
+      "msg": "job webhook.deliver retried attempt=1"
+    },
+    {
+      "ts": "2027-03-03T13:15:15.934429Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "processed batch size=646"
+    },
+    {
+      "ts": "2027-03-03T13:15:55.152575Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 190ms"
+    },
+    {
+      "ts": "2027-03-03T13:15:56.080436Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "job report.build completed in 84ms"
+    },
+    {
+      "ts": "2027-03-03T13:16:01.314398Z",
+      "service": "events-consumer",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2027-03-03T13:18:32.237065Z",
+      "service": "events-consumer",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-03T13:19:34.598470Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "processed batch size=118"
+    },
+    {
+      "ts": "2027-03-03T13:19:39.489615Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "job invoice.render completed in 25ms"
+    },
+    {
+      "ts": "2027-03-03T13:20:00Z",
+      "service": "events-consumer",
+      "level": "INFO",
+      "msg": "operator routed offset 88214102 to the dead-letter queue and skipped it; partition 3 advancing, lag draining"
+    },
+    {
+      "ts": "2027-03-03T13:20:46.255061Z",
+      "service": "order-api",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 53ms"
+    },
+    {
+      "ts": "2027-03-03T13:21:18.009859Z",
+      "service": "email-worker",
+      "level": "INFO",
+      "msg": "processed batch size=419"
+    },
+    {
+      "ts": "2027-03-03T13:21:37.465353Z",
+      "service": "events-consumer",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-03T13:22:53.751343Z",
+      "service": "fulfillment-worker",
+      "level": "INFO",
+      "msg": "processed batch size=305"
+    },
+    {
+      "ts": "2027-03-03T13:23:12.335544Z",
+      "service": "email-worker",
+      "level": "INFO",
+      "msg": "processed batch size=720"
+    },
+    {
+      "ts": "2027-03-03T13:24:44.338858Z",
+      "service": "email-worker",
+      "level": "WARN",
+      "msg": "job invoice.render retried attempt=1"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "consumer_group_lag",
+      "unit": "count",
+      "service": "events-consumer",
+      "points": [
+        [
+          "2027-03-03T12:25:00Z",
+          490.109
+        ],
+        [
+          "2027-03-03T12:26:00Z",
+          509.0912
+        ],
+        [
+          "2027-03-03T12:27:00Z",
+          497.5993
+        ],
+        [
+          "2027-03-03T12:28:00Z",
+          508.2317
+        ],
+        [
+          "2027-03-03T12:29:00Z",
+          501.5084
+        ],
+        [
+          "2027-03-03T12:30:00Z",
+          499.9684
+        ],
+        [
+          "2027-03-03T12:31:00Z",
+          493.6634
+        ],
+        [
+          "2027-03-03T12:32:00Z",
+          504.4395
+        ],
+        [
+          "2027-03-03T12:33:00Z",
+          495.7741
+        ],
+        [
+          "2027-03-03T12:34:00Z",
+          507.3018
+        ],
+        [
+          "2027-03-03T12:35:00Z",
+          494.1491
+        ],
+        [
+          "2027-03-03T12:36:00Z",
+          490.7838
+        ],
+        [
+          "2027-03-03T12:37:00Z",
+          499.909
+        ],
+        [
+          "2027-03-03T12:38:00Z",
+          496.4404
+        ],
+        [
+          "2027-03-03T12:39:00Z",
+          491.9309
+        ],
+        [
+          "2027-03-03T12:40:00Z",
+          500.8687
+        ],
+        [
+          "2027-03-03T12:41:00Z",
+          495.2723
+        ],
+        [
+          "2027-03-03T12:42:00Z",
+          493.5324
+        ],
+        [
+          "2027-03-03T12:43:00Z",
+          490.1314
+        ],
+        [
+          "2027-03-03T12:44:00Z",
+          498.8864
+        ],
+        [
+          "2027-03-03T12:45:00Z",
+          509.8987
+        ],
+        [
+          "2027-03-03T12:46:00Z",
+          502.9862
+        ],
+        [
+          "2027-03-03T12:47:00Z",
+          505.8265
+        ],
+        [
+          "2027-03-03T12:48:00Z",
+          498.2547
+        ],
+        [
+          "2027-03-03T12:49:00Z",
+          494.8153
+        ],
+        [
+          "2027-03-03T12:50:00Z",
+          494.9003
+        ],
+        [
+          "2027-03-03T12:51:00Z",
+          498.9863
+        ],
+        [
+          "2027-03-03T12:52:00Z",
+          504.8019
+        ],
+        [
+          "2027-03-03T12:53:00Z",
+          492.3572
+        ],
+        [
+          "2027-03-03T12:54:00Z",
+          493.7197
+        ],
+        [
+          "2027-03-03T12:55:00Z",
+          498.0418
+        ],
+        [
+          "2027-03-03T12:56:00Z",
+          498.8415
+        ],
+        [
+          "2027-03-03T12:57:00Z",
+          508.2935
+        ],
+        [
+          "2027-03-03T12:58:00Z",
+          19758.4853
+        ],
+        [
+          "2027-03-03T12:59:00Z",
+          38921.1482
+        ],
+        [
+          "2027-03-03T13:00:00Z",
+          57722.623
+        ],
+        [
+          "2027-03-03T13:01:00Z",
+          77655.0743
+        ],
+        [
+          "2027-03-03T13:02:00Z",
+          99097.1898
+        ],
+        [
+          "2027-03-03T13:03:00Z",
+          115402.4165
+        ],
+        [
+          "2027-03-03T13:04:00Z",
+          133956.4871
+        ],
+        [
+          "2027-03-03T13:05:00Z",
+          159163.0503
+        ],
+        [
+          "2027-03-03T13:06:00Z",
+          177490.8162
+        ],
+        [
+          "2027-03-03T13:07:00Z",
+          191652.556
+        ],
+        [
+          "2027-03-03T13:08:00Z",
+          194049.7231
+        ],
+        [
+          "2027-03-03T13:09:00Z",
+          198329.719
+        ],
+        [
+          "2027-03-03T13:10:00Z",
+          196428.1089
+        ],
+        [
+          "2027-03-03T13:11:00Z",
+          193712.8853
+        ],
+        [
+          "2027-03-03T13:12:00Z",
+          194869.1701
+        ],
+        [
+          "2027-03-03T13:13:00Z",
+          196523.5794
+        ],
+        [
+          "2027-03-03T13:14:00Z",
+          192053.458
+        ],
+        [
+          "2027-03-03T13:15:00Z",
+          196920.9158
+        ],
+        [
+          "2027-03-03T13:16:00Z",
+          197482.5154
+        ],
+        [
+          "2027-03-03T13:17:00Z",
+          197556.1244
+        ],
+        [
+          "2027-03-03T13:18:00Z",
+          195351.5606
+        ],
+        [
+          "2027-03-03T13:19:00Z",
+          195091.4179
+        ],
+        [
+          "2027-03-03T13:20:00Z",
+          195865.612
+        ],
+        [
+          "2027-03-03T13:21:00Z",
+          191716.8625
+        ],
+        [
+          "2027-03-03T13:22:00Z",
+          196209.9002
+        ],
+        [
+          "2027-03-03T13:23:00Z",
+          197463.0318
+        ],
+        [
+          "2027-03-03T13:24:00Z",
+          194036.0614
+        ],
+        [
+          "2027-03-03T13:25:00Z",
+          194559.2748
+        ],
+        [
+          "2027-03-03T13:26:00Z",
+          194305.5857
+        ],
+        [
+          "2027-03-03T13:27:00Z",
+          197721.6038
+        ],
+        [
+          "2027-03-03T13:28:00Z",
+          197468.0207
+        ],
+        [
+          "2027-03-03T13:29:00Z",
+          195569.1395
+        ],
+        [
+          "2027-03-03T13:30:00Z",
+          193835.5443
+        ],
+        [
+          "2027-03-03T13:31:00Z",
+          194385.2515
+        ],
+        [
+          "2027-03-03T13:32:00Z",
+          196687.1891
+        ],
+        [
+          "2027-03-03T13:33:00Z",
+          196920.794
+        ],
+        [
+          "2027-03-03T13:34:00Z",
+          198571.4612
+        ],
+        [
+          "2027-03-03T13:35:00Z",
+          198703.7243
+        ]
+      ]
+    },
+    {
+      "name": "downstream_events_per_s",
+      "unit": "count_per_second",
+      "service": "events-consumer",
+      "points": [
+        [
+          "2027-03-03T12:25:00Z",
+          324.3883
+        ],
+        [
+          "2027-03-03T12:26:00Z",
+          316.1078
+        ],
+        [
+          "2027-03-03T12:27:00Z",
+          318.72
+        ],
+        [
+          "2027-03-03T12:28:00Z",
+          313.9433
+        ],
+        [
+          "2027-03-03T12:29:00Z",
+          322.8287
+        ],
+        [
+          "2027-03-03T12:30:00Z",
+          324.9671
+        ],
+        [
+          "2027-03-03T12:31:00Z",
+          322.6728
+        ],
+        [
+          "2027-03-03T12:32:00Z",
+          317.3754
+        ],
+        [
+          "2027-03-03T12:33:00Z",
+          314.6047
+        ],
+        [
+          "2027-03-03T12:34:00Z",
+          318.6702
+        ],
+        [
+          "2027-03-03T12:35:00Z",
+          322.6345
+        ],
+        [
+          "2027-03-03T12:36:00Z",
+          317.3497
+        ],
+        [
+          "2027-03-03T12:37:00Z",
+          321.8267
+        ],
+        [
+          "2027-03-03T12:38:00Z",
+          315.8832
+        ],
+        [
+          "2027-03-03T12:39:00Z",
+          326.1963
+        ],
+        [
+          "2027-03-03T12:40:00Z",
+          321.0896
+        ],
+        [
+          "2027-03-03T12:41:00Z",
+          326.3463
+        ],
+        [
+          "2027-03-03T12:42:00Z",
+          322.6471
+        ],
+        [
+          "2027-03-03T12:43:00Z",
+          326.0799
+        ],
+        [
+          "2027-03-03T12:44:00Z",
+          317.2161
+        ],
+        [
+          "2027-03-03T12:45:00Z",
+          317.3539
+        ],
+        [
+          "2027-03-03T12:46:00Z",
+          322.7717
+        ],
+        [
+          "2027-03-03T12:47:00Z",
+          316.9723
+        ],
+        [
+          "2027-03-03T12:48:00Z",
+          314.8803
+        ],
+        [
+          "2027-03-03T12:49:00Z",
+          315.7174
+        ],
+        [
+          "2027-03-03T12:50:00Z",
+          325.329
+        ],
+        [
+          "2027-03-03T12:51:00Z",
+          321.2854
+        ],
+        [
+          "2027-03-03T12:52:00Z",
+          314.307
+        ],
+        [
+          "2027-03-03T12:53:00Z",
+          323.0882
+        ],
+        [
+          "2027-03-03T12:54:00Z",
+          325.5061
+        ],
+        [
+          "2027-03-03T12:55:00Z",
+          317.8522
+        ],
+        [
+          "2027-03-03T12:56:00Z",
+          316.5106
+        ],
+        [
+          "2027-03-03T12:57:00Z",
+          158.6881
+        ],
+        [
+          "2027-03-03T12:58:00Z",
+          0.0066
+        ],
+        [
+          "2027-03-03T12:59:00Z",
+          0.0019
+        ],
+        [
+          "2027-03-03T13:00:00Z",
+          -0.015
+        ],
+        [
+          "2027-03-03T13:01:00Z",
+          -0.0061
+        ],
+        [
+          "2027-03-03T13:02:00Z",
+          -0.0197
+        ],
+        [
+          "2027-03-03T13:03:00Z",
+          0.019
+        ],
+        [
+          "2027-03-03T13:04:00Z",
+          0.0083
+        ],
+        [
+          "2027-03-03T13:05:00Z",
+          0.0044
+        ],
+        [
+          "2027-03-03T13:06:00Z",
+          0.0038
+        ],
+        [
+          "2027-03-03T13:07:00Z",
+          0.0192
+        ],
+        [
+          "2027-03-03T13:08:00Z",
+          0.014
+        ],
+        [
+          "2027-03-03T13:09:00Z",
+          0.0128
+        ],
+        [
+          "2027-03-03T13:10:00Z",
+          0.0056
+        ],
+        [
+          "2027-03-03T13:11:00Z",
+          0.0149
+        ],
+        [
+          "2027-03-03T13:12:00Z",
+          -0.0152
+        ],
+        [
+          "2027-03-03T13:13:00Z",
+          0.0198
+        ],
+        [
+          "2027-03-03T13:14:00Z",
+          -0.0127
+        ],
+        [
+          "2027-03-03T13:15:00Z",
+          -0.0108
+        ],
+        [
+          "2027-03-03T13:16:00Z",
+          -0.0188
+        ],
+        [
+          "2027-03-03T13:17:00Z",
+          -0.0064
+        ],
+        [
+          "2027-03-03T13:18:00Z",
+          -0.0035
+        ],
+        [
+          "2027-03-03T13:19:00Z",
+          0.0129
+        ],
+        [
+          "2027-03-03T13:20:00Z",
+          -0.01
+        ],
+        [
+          "2027-03-03T13:21:00Z",
+          -0.0134
+        ],
+        [
+          "2027-03-03T13:22:00Z",
+          0.0104
+        ],
+        [
+          "2027-03-03T13:23:00Z",
+          0.0062
+        ],
+        [
+          "2027-03-03T13:24:00Z",
+          0.0191
+        ],
+        [
+          "2027-03-03T13:25:00Z",
+          -0.0116
+        ],
+        [
+          "2027-03-03T13:26:00Z",
+          0.0191
+        ],
+        [
+          "2027-03-03T13:27:00Z",
+          -0.0103
+        ],
+        [
+          "2027-03-03T13:28:00Z",
+          -0.0019
+        ],
+        [
+          "2027-03-03T13:29:00Z",
+          -0.0028
+        ],
+        [
+          "2027-03-03T13:30:00Z",
+          -0.0017
+        ],
+        [
+          "2027-03-03T13:31:00Z",
+          0.0054
+        ],
+        [
+          "2027-03-03T13:32:00Z",
+          0.0083
+        ],
+        [
+          "2027-03-03T13:33:00Z",
+          0.0076
+        ],
+        [
+          "2027-03-03T13:34:00Z",
+          0.0084
+        ],
+        [
+          "2027-03-03T13:35:00Z",
+          0.0175
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "A single malformed message arrived on partition 3 of the 'order-events' topic (an unexpected 'legacy_promo' field the consumer cannot deserialize). events-consumer retried that message forever instead of skipping it, so partition 3's offset never advanced and the consumer stopped processing anything behind it. Consumer-group lag climbed to ~190,000 and downstream event delivery (confirmation emails, fulfillment handoffs) dropped to zero. Orders themselves were unaffected because order-api produces to the topic normally - the block is entirely on the consumer side. Recovery required routing the poison message to a dead-letter queue and skipping it.",
+    "evidence_path": [
+      "events-consumer ERROR: failed to deserialize the message at partition 3 offset 88214102 (unexpected field 'legacy_promo'); retrying",
+      "events-consumer WARN: partition 3 offset stuck; the same message fails every retry",
+      "consumer_group_lag climbs to ~190,000 and downstream_events_per_s drops to 0",
+      "order-api is producing to the topic normally - the block is on the consumer side at partition 3",
+      "the pipeline drains once the poison offset is dead-lettered and skipped"
+    ],
+    "fix": "Dead-letter and skip the poison message (done). Add a retry limit that routes a message to the DLQ after N failures, make the consumer tolerant of unknown fields, and alert on per-partition offset stalls.",
+    "should_escalate": false
+  }
+}

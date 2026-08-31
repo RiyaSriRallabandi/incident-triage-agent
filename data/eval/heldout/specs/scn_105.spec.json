@@ -1,0 +1,43 @@
+{
+  "id": "scn_105",
+  "category": "dependency_failure",
+  "difficulty": "hard",
+  "title": "A poison message stalls a consumer group and downstream events stop flowing",
+  "source_url": "https://sre.google/sre-book/addressing-cascading-failures/",
+  "source_note": "Failure pattern (a single un-processable message that a consumer retries forever, blocking the partition so the whole consumer group falls behind and downstream systems stop receiving events) is a common queue/streaming class. All services, topics, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~13:00 UTC order confirmation emails and fulfillment handoffs have stopped. Orders are still being placed fine. No deploys. The events pipeline seems stuck.",
+  "incident_start": "2027-03-03T12:55:00Z",
+  "detected_offset_s": 600,
+  "window_before_s": 1800,
+  "window_after_s": 1800,
+  "primary_service": "events-consumer",
+  "distractor_services": [
+    { "name": "order-api", "role": "api" },
+    { "name": "email-worker", "role": "worker" },
+    { "name": "fulfillment-worker", "role": "worker" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "events-consumer", "level": "ERROR", "msg": "failed to deserialize message at partition 3 offset 88214102: unexpected field 'legacy_promo'; retrying" },
+    { "offset_s": 120, "service": "events-consumer", "level": "WARN", "msg": "partition 3 offset stuck at 88214102 for 2 minutes; same message failing on every retry" },
+    { "offset_s": 600, "service": "events-consumer", "level": "ERROR", "msg": "consumer group lag on 'order-events' now 190000 and rising; partition 3 not advancing" },
+    { "offset_s": 720, "service": "events-consumer", "level": "INFO", "msg": "order-api is producing to order-events normally; the block is entirely on the consumer side at partition 3" },
+    { "offset_s": 1500, "service": "events-consumer", "level": "INFO", "msg": "operator routed offset 88214102 to the dead-letter queue and skipped it; partition 3 advancing, lag draining" }
+  ],
+  "metrics": [
+    { "name": "consumer_group_lag", "unit": "count", "service": "events-consumer", "baseline": 500.0, "spike": 195000.0, "spike_at_offset_s": 120, "ramp_s": 600 },
+    { "name": "downstream_events_per_s", "unit": "count_per_second", "service": "events-consumer", "baseline": 320.0, "spike": 0.0, "spike_at_offset_s": 60, "ramp_s": 120 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "A single malformed message arrived on partition 3 of the 'order-events' topic (an unexpected 'legacy_promo' field the consumer cannot deserialize). events-consumer retried that message forever instead of skipping it, so partition 3's offset never advanced and the consumer stopped processing anything behind it. Consumer-group lag climbed to ~190,000 and downstream event delivery (confirmation emails, fulfillment handoffs) dropped to zero. Orders themselves were unaffected because order-api produces to the topic normally - the block is entirely on the consumer side. Recovery required routing the poison message to a dead-letter queue and skipping it.",
+    "evidence_path": [
+      "events-consumer ERROR: failed to deserialize the message at partition 3 offset 88214102 (unexpected field 'legacy_promo'); retrying",
+      "events-consumer WARN: partition 3 offset stuck; the same message fails every retry",
+      "consumer_group_lag climbs to ~190,000 and downstream_events_per_s drops to 0",
+      "order-api is producing to the topic normally - the block is on the consumer side at partition 3",
+      "the pipeline drains once the poison offset is dead-lettered and skipped"
+    ],
+    "fix": "Dead-letter and skip the poison message (done). Add a retry limit that routes a message to the DLQ after N failures, make the consumer tolerant of unknown fields, and alert on per-partition offset stalls.",
+    "should_escalate": false
+  }
+}

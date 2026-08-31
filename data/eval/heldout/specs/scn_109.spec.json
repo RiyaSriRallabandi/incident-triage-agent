@@ -1,0 +1,43 @@
+{
+  "id": "scn_109",
+  "category": "database_issue",
+  "difficulty": "medium",
+  "title": "A common query goes from index seek to full scan as a table crosses a size threshold",
+  "source_url": "https://about.gitlab.com/blog/2017/02/10/postmortem-of-database-outage-of-january-31/",
+  "source_note": "Failure pattern (a frequently-run query that was fine at small scale degrades sharply once a table grows past the point where its access path stops fitting cache / stops being cheap, with no deploy involved) is a common data-growth database class. All services, query names, row counts, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~14:00 UTC the activity feed is loading slowly and sometimes times out. It has been getting gradually worse over the last week and tipped over today. No deploys. The feed database CPU and disk read rate are elevated.",
+  "incident_start": "2027-03-31T13:50:00Z",
+  "detected_offset_s": 600,
+  "window_before_s": 1800,
+  "window_after_s": 1800,
+  "primary_service": "feed-db",
+  "distractor_services": [
+    { "name": "feed-api", "role": "api" },
+    { "name": "fanout-worker", "role": "worker" },
+    { "name": "timeline-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "feed-db", "level": "WARN", "msg": "query q_feed_recent p95 latency 2.4s (was ~120ms last week); disk reads per query way up" },
+    { "offset_s": 240, "service": "feed-db", "level": "WARN", "msg": "q_feed_recent still uses the (user_id, created_at) index but the range it scans per user has grown; activity table now 1.1B rows, up from ~700M a week ago" },
+    { "offset_s": 600, "service": "feed-api", "level": "ERROR", "msg": "feed requests timing out; feed-db CPU 90%, mostly I/O wait from q_feed_recent" },
+    { "offset_s": 720, "service": "feed-db", "level": "INFO", "msg": "no deploy or schema change; the query plan is unchanged - the working set for this query no longer fits in the buffer cache" },
+    { "offset_s": 1500, "service": "feed-db", "level": "INFO", "msg": "added a partial index limiting q_feed_recent to the last 14 days and a retention job to trim old activity rows; latency back to ~150ms" }
+  ],
+  "metrics": [
+    { "name": "q_feed_recent_p95_ms", "unit": "milliseconds", "service": "feed-db", "baseline": 130.0, "spike": 2400.0, "spike_at_offset_s": 0, "ramp_s": 300 },
+    { "name": "db_cpu_utilization_pct", "unit": "percent", "service": "feed-db", "baseline": 40.0, "spike": 90.0, "spike_at_offset_s": 120, "ramp_s": 240 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "The activity table grew from ~700M to ~1.1B rows over the past week. The frequently-run q_feed_recent query still uses the same (user_id, created_at) index, but the amount of data it reads per user has grown to the point that its working set no longer fits in the database buffer cache, so most reads now hit disk. Query p95 latency jumped from ~120ms to ~2.4s and the resulting I/O wait pushed feed-db CPU to 90%, timing out feed requests. There was no deploy or schema change - the trigger is data growth crossing a cache-fit threshold. Recovery required constraining the query's scan range (a 14-day partial index) and trimming old rows.",
+    "evidence_path": [
+      "feed-db WARN: q_feed_recent p95 latency 2.4s vs ~120ms a week ago; disk reads per query up sharply",
+      "feed-db WARN: the activity table is now 1.1B rows, up from ~700M a week ago; the per-user scan range has grown",
+      "feed-api requests time out; feed-db CPU 90%, dominated by I/O wait from q_feed_recent",
+      "no deploy or schema change; the query plan is unchanged - the working set no longer fits in the buffer cache",
+      "latency returns to ~150ms after a 14-day partial index and a retention job are added"
+    ],
+    "fix": "Add a partial index limiting q_feed_recent to recent rows and a retention job to trim old activity (done). Add plan and working-set monitoring on the top queries, and size the buffer cache for the real working set or partition the activity table by time.",
+    "should_escalate": false
+  }
+}

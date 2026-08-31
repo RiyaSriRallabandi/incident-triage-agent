@@ -1,0 +1,43 @@
+{
+  "id": "scn_108",
+  "category": "cert_config_expiry",
+  "difficulty": "hard",
+  "title": "An expired intermediate CA breaks stricter clients while lenient ones still connect",
+  "source_url": "https://letsencrypt.org/2020/12/21/extending-android-compatibility.html",
+  "source_note": "Failure pattern (an intermediate certificate in the chain expires rather than the leaf, so clients that do strict chain validation fail while clients that skip or cache the intermediate keep working, producing a partial and confusing outage) is in the spirit of the Let's Encrypt / DST Root expiry events. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~00:00 UTC roughly 40% of API clients are getting TLS errors connecting to api-gateway. The rest connect fine. No deploys. The leaf certificate is valid for months.",
+  "incident_start": "2027-03-24T00:00:00Z",
+  "detected_offset_s": 300,
+  "window_before_s": 1800,
+  "window_after_s": 1800,
+  "primary_service": "api-gateway",
+  "distractor_services": [
+    { "name": "orders-api", "role": "api" },
+    { "name": "webhook-worker", "role": "worker" },
+    { "name": "token-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "api-gateway", "level": "ERROR", "msg": "rising TLS handshake failures: 'unable to get issuer certificate' / 'certificate has expired' - but our leaf cert notAfter is 2027-09-01" },
+    { "offset_s": 120, "service": "api-gateway", "level": "WARN", "msg": "intermediate CA in the served chain 'Acme Intermediate G2' expired at 2027-03-24T00:00:00Z" },
+    { "offset_s": 300, "service": "api-gateway", "level": "INFO", "msg": "clients doing strict chain validation reject the expired intermediate (~40%); clients with a cached/pinned intermediate still connect" },
+    { "offset_s": 420, "service": "api-gateway", "level": "INFO", "msg": "leaf key and cert are fine; only the intermediate needs replacing in the served chain" },
+    { "offset_s": 1500, "service": "api-gateway", "level": "INFO", "msg": "installed the renewed intermediate ('Acme Intermediate G3') in the served chain and reloaded the TLS config; handshake failures clearing" }
+  ],
+  "metrics": [
+    { "name": "tls_handshake_error_rate", "unit": "ratio", "service": "api-gateway", "baseline": 0.003, "spike": 0.4, "spike_at_offset_s": 0, "ramp_s": 120 },
+    { "name": "chain_validation_failures_per_s", "unit": "count_per_second", "service": "api-gateway", "baseline": 0.2, "spike": 60.0, "spike_at_offset_s": 0, "ramp_s": 120 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "The intermediate CA certificate that api-gateway serves as part of its TLS chain ('Acme Intermediate G2') reached its expiry at exactly 2027-03-24T00:00:00Z. The leaf certificate is still valid for months, but clients that perform strict chain validation reject the chain because the intermediate is expired, so ~40% of clients failed the TLS handshake. Clients that had the intermediate cached or pinned kept connecting, which is why the outage was partial and looked confusing. The fix is to replace the expired intermediate in the served chain - the leaf key and certificate do not need to change.",
+    "evidence_path": [
+      "api-gateway ERROR: TLS handshake failures ('unable to get issuer certificate' / 'certificate has expired') despite the leaf cert being valid until 2027-09-01",
+      "api-gateway WARN: the intermediate CA 'Acme Intermediate G2' in the served chain expired at 2027-03-24T00:00:00Z",
+      "the failure begins exactly at that wall-clock time and hits ~40% - the clients doing strict chain validation",
+      "clients with a cached or pinned intermediate still connect",
+      "handshake failures clear after the renewed intermediate is installed in the served chain and the TLS config is reloaded"
+    ],
+    "fix": "Install the renewed intermediate certificate in the served chain and reload the TLS config (done). Monitor expiry for every certificate in the chain, not just the leaf, and automate chain updates.",
+    "should_escalate": false
+  }
+}

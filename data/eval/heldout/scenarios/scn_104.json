@@ -1,0 +1,938 @@
+{
+  "id": "scn_104",
+  "category": "resource_exhaustion",
+  "difficulty": "hard",
+  "title": "Ephemeral source-port exhaustion from short-lived outbound connections",
+  "source_url": "https://sre.google/sre-book/addressing-cascading-failures/",
+  "source_note": "Failure pattern (a service opening many short-lived outbound connections exhausts the ephemeral source-port range as TIME_WAIT sockets accumulate, so new outbound connections fail) is a classic OS-level resource-exhaustion class. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~04:30 UTC the sync-service is intermittently failing to reach the upstream API - about 20% of calls. The upstream is healthy. No deploys. Traffic is a bit higher than usual overnight due to a batch window.",
+  "synthetic_logs": [
+    {
+      "ts": "2027-02-24T03:50:16.806060Z",
+      "service": "sync-service",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=47"
+    },
+    {
+      "ts": "2027-02-24T03:50:58.372259Z",
+      "service": "upstream-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-24T03:51:39.363879Z",
+      "service": "upstream-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=33"
+    },
+    {
+      "ts": "2027-02-24T03:53:15.134368Z",
+      "service": "upstream-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-24T03:53:20.082073Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "SET key=session:511 ttl=3600"
+    },
+    {
+      "ts": "2027-02-24T03:57:18.928726Z",
+      "service": "reconcile-worker",
+      "level": "INFO",
+      "msg": "job webhook.deliver completed in 165ms"
+    },
+    {
+      "ts": "2027-02-24T03:57:28.409740Z",
+      "service": "reconcile-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2027-02-24T03:57:57.964282Z",
+      "service": "sync-service",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 227ms"
+    },
+    {
+      "ts": "2027-02-24T03:58:52.524887Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "GET key=user:680 hit"
+    },
+    {
+      "ts": "2027-02-24T03:58:58.274539Z",
+      "service": "reconcile-worker",
+      "level": "INFO",
+      "msg": "processed batch size=749"
+    },
+    {
+      "ts": "2027-02-24T04:00:32.629837Z",
+      "service": "upstream-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 186ms"
+    },
+    {
+      "ts": "2027-02-24T04:00:36.671732Z",
+      "service": "sync-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2027-02-24T04:05:35.500313Z",
+      "service": "sync-service",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 37ms"
+    },
+    {
+      "ts": "2027-02-24T04:10:35.092750Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "evicted 117 keys (lru)"
+    },
+    {
+      "ts": "2027-02-24T04:12:16.897312Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "SET key=session:604 ttl=3600"
+    },
+    {
+      "ts": "2027-02-24T04:13:08.417619Z",
+      "service": "reconcile-worker",
+      "level": "INFO",
+      "msg": "job webhook.deliver completed in 214ms"
+    },
+    {
+      "ts": "2027-02-24T04:14:03.657821Z",
+      "service": "upstream-api",
+      "level": "INFO",
+      "msg": "POST /search 201 in 78ms"
+    },
+    {
+      "ts": "2027-02-24T04:15:34.687045Z",
+      "service": "upstream-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/cart status=200"
+    },
+    {
+      "ts": "2027-02-24T04:15:51.930424Z",
+      "service": "upstream-api",
+      "level": "INFO",
+      "msg": "GET /products 200 in 172ms"
+    },
+    {
+      "ts": "2027-02-24T04:17:21.800478Z",
+      "service": "upstream-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-24T04:17:23.005184Z",
+      "service": "upstream-api",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 240ms"
+    },
+    {
+      "ts": "2027-02-24T04:18:58.813761Z",
+      "service": "lookup-cache",
+      "level": "WARN",
+      "msg": "GET key=user:396 miss"
+    },
+    {
+      "ts": "2027-02-24T04:20:00Z",
+      "service": "sync-service",
+      "level": "WARN",
+      "msg": "outbound connections to upstream-api occasionally failing: cannot assign requested address (EADDRNOTAVAIL)"
+    },
+    {
+      "ts": "2027-02-24T04:20:56.114360Z",
+      "service": "sync-service",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 128ms"
+    },
+    {
+      "ts": "2027-02-24T04:22:26.274166Z",
+      "service": "reconcile-worker",
+      "level": "INFO",
+      "msg": "queue depth=178"
+    },
+    {
+      "ts": "2027-02-24T04:22:43.787203Z",
+      "service": "sync-service",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 41ms"
+    },
+    {
+      "ts": "2027-02-24T04:22:48.674400Z",
+      "service": "lookup-cache",
+      "level": "WARN",
+      "msg": "GET key=user:276 miss"
+    },
+    {
+      "ts": "2027-02-24T04:23:06.303150Z",
+      "service": "reconcile-worker",
+      "level": "INFO",
+      "msg": "job cache.warm completed in 157ms"
+    },
+    {
+      "ts": "2027-02-24T04:23:19.341928Z",
+      "service": "sync-service",
+      "level": "INFO",
+      "msg": "POST /products 201 in 100ms"
+    },
+    {
+      "ts": "2027-02-24T04:23:37.594030Z",
+      "service": "sync-service",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 160ms"
+    },
+    {
+      "ts": "2027-02-24T04:23:41.475084Z",
+      "service": "upstream-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2027-02-24T04:23:44.372368Z",
+      "service": "upstream-api",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=160"
+    },
+    {
+      "ts": "2027-02-24T04:24:50.501225Z",
+      "service": "reconcile-worker",
+      "level": "INFO",
+      "msg": "job report.build completed in 236ms"
+    },
+    {
+      "ts": "2027-02-24T04:25:00Z",
+      "service": "sync-service",
+      "level": "WARN",
+      "msg": "sockets in TIME_WAIT to upstream-api: 27000 and rising; each request opens a fresh connection (no keep-alive)"
+    },
+    {
+      "ts": "2027-02-24T04:25:03.215154Z",
+      "service": "sync-service",
+      "level": "INFO",
+      "msg": "GET /products 200 in 94ms"
+    },
+    {
+      "ts": "2027-02-24T04:27:57.808084Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "GET key=user:662 hit"
+    },
+    {
+      "ts": "2027-02-24T04:28:25.490089Z",
+      "service": "sync-service",
+      "level": "INFO",
+      "msg": "POST /products 201 in 221ms"
+    },
+    {
+      "ts": "2027-02-24T04:30:00Z",
+      "service": "sync-service",
+      "level": "ERROR",
+      "msg": "ephemeral port range (32768-60999) exhausted; ~20% of outbound calls failing to get a source port"
+    },
+    {
+      "ts": "2027-02-24T04:30:47.156770Z",
+      "service": "reconcile-worker",
+      "level": "WARN",
+      "msg": "job email.send retried attempt=1"
+    },
+    {
+      "ts": "2027-02-24T04:32:00Z",
+      "service": "sync-service",
+      "level": "INFO",
+      "msg": "upstream-api latency and error rate normal from other clients; issue is local socket exhaustion"
+    },
+    {
+      "ts": "2027-02-24T04:33:23.662340Z",
+      "service": "sync-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-24T04:37:45.135952Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "GET key=user:730 hit"
+    },
+    {
+      "ts": "2027-02-24T04:39:21.340027Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "evicted 209 keys (lru)"
+    },
+    {
+      "ts": "2027-02-24T04:42:40.893886Z",
+      "service": "sync-service",
+      "level": "INFO",
+      "msg": "POST /search 201 in 43ms"
+    },
+    {
+      "ts": "2027-02-24T04:44:05.752040Z",
+      "service": "reconcile-worker",
+      "level": "INFO",
+      "msg": "queue depth=97"
+    },
+    {
+      "ts": "2027-02-24T04:44:38.202455Z",
+      "service": "upstream-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=60"
+    },
+    {
+      "ts": "2027-02-24T04:45:00Z",
+      "service": "sync-service",
+      "level": "INFO",
+      "msg": "enabled HTTP keep-alive / connection pooling to upstream-api; TIME_WAIT count falling, errors clearing"
+    },
+    {
+      "ts": "2027-02-24T04:46:05.484109Z",
+      "service": "upstream-api",
+      "level": "INFO",
+      "msg": "GET /search 200 in 93ms"
+    },
+    {
+      "ts": "2027-02-24T04:48:16.465148Z",
+      "service": "lookup-cache",
+      "level": "INFO",
+      "msg": "SET key=session:29 ttl=3600"
+    },
+    {
+      "ts": "2027-02-24T04:48:23.404676Z",
+      "service": "reconcile-worker",
+      "level": "INFO",
+      "msg": "processed batch size=529"
+    },
+    {
+      "ts": "2027-02-24T04:48:31.197107Z",
+      "service": "upstream-api",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=131"
+    },
+    {
+      "ts": "2027-02-24T04:52:04.069621Z",
+      "service": "reconcile-worker",
+      "level": "WARN",
+      "msg": "job invoice.render retried attempt=1"
+    },
+    {
+      "ts": "2027-02-24T04:52:18.385595Z",
+      "service": "reconcile-worker",
+      "level": "INFO",
+      "msg": "queue depth=772"
+    },
+    {
+      "ts": "2027-02-24T04:56:56.340728Z",
+      "service": "upstream-api",
+      "level": "INFO",
+      "msg": "POST /products 201 in 193ms"
+    },
+    {
+      "ts": "2027-02-24T04:58:03.056485Z",
+      "service": "upstream-api",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 119ms"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "time_wait_sockets",
+      "unit": "count",
+      "service": "sync-service",
+      "points": [
+        [
+          "2027-02-24T03:50:00Z",
+          3037.3843
+        ],
+        [
+          "2027-02-24T03:51:00Z",
+          3019.3019
+        ],
+        [
+          "2027-02-24T03:52:00Z",
+          2951.4083
+        ],
+        [
+          "2027-02-24T03:53:00Z",
+          3042.6421
+        ],
+        [
+          "2027-02-24T03:54:00Z",
+          3044.1111
+        ],
+        [
+          "2027-02-24T03:55:00Z",
+          3059.1636
+        ],
+        [
+          "2027-02-24T03:56:00Z",
+          3008.5666
+        ],
+        [
+          "2027-02-24T03:57:00Z",
+          3033.0682
+        ],
+        [
+          "2027-02-24T03:58:00Z",
+          2963.2248
+        ],
+        [
+          "2027-02-24T03:59:00Z",
+          2961.1385
+        ],
+        [
+          "2027-02-24T04:00:00Z",
+          2953.9244
+        ],
+        [
+          "2027-02-24T04:01:00Z",
+          3023.865
+        ],
+        [
+          "2027-02-24T04:02:00Z",
+          3050.8326
+        ],
+        [
+          "2027-02-24T04:03:00Z",
+          2974.818
+        ],
+        [
+          "2027-02-24T04:04:00Z",
+          3015.6776
+        ],
+        [
+          "2027-02-24T04:05:00Z",
+          3012.1721
+        ],
+        [
+          "2027-02-24T04:06:00Z",
+          3006.4748
+        ],
+        [
+          "2027-02-24T04:07:00Z",
+          2942.9901
+        ],
+        [
+          "2027-02-24T04:08:00Z",
+          2968.6666
+        ],
+        [
+          "2027-02-24T04:09:00Z",
+          3032.6741
+        ],
+        [
+          "2027-02-24T04:10:00Z",
+          3053.8824
+        ],
+        [
+          "2027-02-24T04:11:00Z",
+          2982.5069
+        ],
+        [
+          "2027-02-24T04:12:00Z",
+          2966.6756
+        ],
+        [
+          "2027-02-24T04:13:00Z",
+          3017.4039
+        ],
+        [
+          "2027-02-24T04:14:00Z",
+          3009.8078
+        ],
+        [
+          "2027-02-24T04:15:00Z",
+          2948.9627
+        ],
+        [
+          "2027-02-24T04:16:00Z",
+          3027.7804
+        ],
+        [
+          "2027-02-24T04:17:00Z",
+          3048.6349
+        ],
+        [
+          "2027-02-24T04:18:00Z",
+          2941.4031
+        ],
+        [
+          "2027-02-24T04:19:00Z",
+          2945.0554
+        ],
+        [
+          "2027-02-24T04:20:00Z",
+          2988.9
+        ],
+        [
+          "2027-02-24T04:21:00Z",
+          6025.5507
+        ],
+        [
+          "2027-02-24T04:22:00Z",
+          9405.7061
+        ],
+        [
+          "2027-02-24T04:23:00Z",
+          12274.3398
+        ],
+        [
+          "2027-02-24T04:24:00Z",
+          15217.5448
+        ],
+        [
+          "2027-02-24T04:25:00Z",
+          18403.5875
+        ],
+        [
+          "2027-02-24T04:26:00Z",
+          21731.0777
+        ],
+        [
+          "2027-02-24T04:27:00Z",
+          25161.5067
+        ],
+        [
+          "2027-02-24T04:28:00Z",
+          27456.74
+        ],
+        [
+          "2027-02-24T04:29:00Z",
+          28472.4734
+        ],
+        [
+          "2027-02-24T04:30:00Z",
+          28283.9743
+        ],
+        [
+          "2027-02-24T04:31:00Z",
+          28354.788
+        ],
+        [
+          "2027-02-24T04:32:00Z",
+          27463.1155
+        ],
+        [
+          "2027-02-24T04:33:00Z",
+          27602.8505
+        ],
+        [
+          "2027-02-24T04:34:00Z",
+          27904.0616
+        ],
+        [
+          "2027-02-24T04:35:00Z",
+          27510.1879
+        ],
+        [
+          "2027-02-24T04:36:00Z",
+          28462.9666
+        ],
+        [
+          "2027-02-24T04:37:00Z",
+          28335.6524
+        ],
+        [
+          "2027-02-24T04:38:00Z",
+          28273.1906
+        ],
+        [
+          "2027-02-24T04:39:00Z",
+          28521.0329
+        ],
+        [
+          "2027-02-24T04:40:00Z",
+          27555.6651
+        ],
+        [
+          "2027-02-24T04:41:00Z",
+          27543.0639
+        ],
+        [
+          "2027-02-24T04:42:00Z",
+          27929.3853
+        ],
+        [
+          "2027-02-24T04:43:00Z",
+          28221.8671
+        ],
+        [
+          "2027-02-24T04:44:00Z",
+          28213.6534
+        ],
+        [
+          "2027-02-24T04:45:00Z",
+          28255.5185
+        ],
+        [
+          "2027-02-24T04:46:00Z",
+          28029.4429
+        ],
+        [
+          "2027-02-24T04:47:00Z",
+          28477.1632
+        ],
+        [
+          "2027-02-24T04:48:00Z",
+          27770.8171
+        ],
+        [
+          "2027-02-24T04:49:00Z",
+          28425.0724
+        ],
+        [
+          "2027-02-24T04:50:00Z",
+          27930.2944
+        ],
+        [
+          "2027-02-24T04:51:00Z",
+          27517.1094
+        ],
+        [
+          "2027-02-24T04:52:00Z",
+          28366.3906
+        ],
+        [
+          "2027-02-24T04:53:00Z",
+          28187.5355
+        ],
+        [
+          "2027-02-24T04:54:00Z",
+          27508.0385
+        ],
+        [
+          "2027-02-24T04:55:00Z",
+          27613.1202
+        ],
+        [
+          "2027-02-24T04:56:00Z",
+          28186.4462
+        ],
+        [
+          "2027-02-24T04:57:00Z",
+          27978.0793
+        ],
+        [
+          "2027-02-24T04:58:00Z",
+          27442.3749
+        ],
+        [
+          "2027-02-24T04:59:00Z",
+          28379.6309
+        ],
+        [
+          "2027-02-24T05:00:00Z",
+          27700.5158
+        ]
+      ]
+    },
+    {
+      "name": "outbound_call_error_rate",
+      "unit": "ratio",
+      "service": "sync-service",
+      "points": [
+        [
+          "2027-02-24T03:50:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T03:51:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T03:52:00Z",
+          0.0029
+        ],
+        [
+          "2027-02-24T03:53:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T03:54:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T03:55:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T03:56:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T03:57:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T03:58:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T03:59:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:00:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:01:00Z",
+          0.0029
+        ],
+        [
+          "2027-02-24T04:02:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:03:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:04:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:05:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:06:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:07:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:08:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:09:00Z",
+          0.0031
+        ],
+        [
+          "2027-02-24T04:10:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:11:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:12:00Z",
+          0.0029
+        ],
+        [
+          "2027-02-24T04:13:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:14:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:15:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:16:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:17:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:18:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:19:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:20:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:21:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:22:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:23:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:24:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:25:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:26:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:27:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:28:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:29:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:30:00Z",
+          0.003
+        ],
+        [
+          "2027-02-24T04:31:00Z",
+          0.068
+        ],
+        [
+          "2027-02-24T04:32:00Z",
+          0.1329
+        ],
+        [
+          "2027-02-24T04:33:00Z",
+          0.1981
+        ],
+        [
+          "2027-02-24T04:34:00Z",
+          0.1993
+        ],
+        [
+          "2027-02-24T04:35:00Z",
+          0.197
+        ],
+        [
+          "2027-02-24T04:36:00Z",
+          0.1977
+        ],
+        [
+          "2027-02-24T04:37:00Z",
+          0.2012
+        ],
+        [
+          "2027-02-24T04:38:00Z",
+          0.2022
+        ],
+        [
+          "2027-02-24T04:39:00Z",
+          0.201
+        ],
+        [
+          "2027-02-24T04:40:00Z",
+          0.1996
+        ],
+        [
+          "2027-02-24T04:41:00Z",
+          0.2037
+        ],
+        [
+          "2027-02-24T04:42:00Z",
+          0.2037
+        ],
+        [
+          "2027-02-24T04:43:00Z",
+          0.2021
+        ],
+        [
+          "2027-02-24T04:44:00Z",
+          0.1984
+        ],
+        [
+          "2027-02-24T04:45:00Z",
+          0.1962
+        ],
+        [
+          "2027-02-24T04:46:00Z",
+          0.1993
+        ],
+        [
+          "2027-02-24T04:47:00Z",
+          0.1991
+        ],
+        [
+          "2027-02-24T04:48:00Z",
+          0.1994
+        ],
+        [
+          "2027-02-24T04:49:00Z",
+          0.203
+        ],
+        [
+          "2027-02-24T04:50:00Z",
+          0.2004
+        ],
+        [
+          "2027-02-24T04:51:00Z",
+          0.1997
+        ],
+        [
+          "2027-02-24T04:52:00Z",
+          0.1967
+        ],
+        [
+          "2027-02-24T04:53:00Z",
+          0.1971
+        ],
+        [
+          "2027-02-24T04:54:00Z",
+          0.1978
+        ],
+        [
+          "2027-02-24T04:55:00Z",
+          0.2018
+        ],
+        [
+          "2027-02-24T04:56:00Z",
+          0.1963
+        ],
+        [
+          "2027-02-24T04:57:00Z",
+          0.1981
+        ],
+        [
+          "2027-02-24T04:58:00Z",
+          0.1967
+        ],
+        [
+          "2027-02-24T04:59:00Z",
+          0.2015
+        ],
+        [
+          "2027-02-24T05:00:00Z",
+          0.1997
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "sync-service opens a fresh outbound TCP connection to upstream-api for every request with no HTTP keep-alive, so closed connections pile up in TIME_WAIT. During the higher-volume overnight batch window, the TIME_WAIT count climbed past 27,000 and exhausted the host's ephemeral source-port range (32768-60999). With no source port available, ~20% of new outbound calls failed with 'cannot assign requested address'. upstream-api is healthy - the exhaustion is local. Recovery required enabling connection pooling / keep-alive so connections are reused instead of recreated.",
+    "evidence_path": [
+      "sync-service WARN: outbound connections failing with EADDRNOTAVAIL ('cannot assign requested address')",
+      "sync-service WARN: 27000+ TIME_WAIT sockets to upstream-api; every request opens a fresh connection (no keep-alive)",
+      "sync-service ERROR: ephemeral port range (32768-60999) exhausted; ~20% of calls cannot get a source port",
+      "upstream-api confirmed healthy for other clients - the exhaustion is local to sync-service",
+      "errors clear after HTTP keep-alive / connection pooling is enabled"
+    ],
+    "fix": "Enable HTTP keep-alive and a bounded connection pool to upstream-api (done). Reduce the TIME_WAIT window where safe, widen the ephemeral port range, and alert on TIME_WAIT socket count.",
+    "should_escalate": false
+  }
+}

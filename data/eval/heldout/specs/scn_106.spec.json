@@ -1,0 +1,43 @@
+{
+  "id": "scn_106",
+  "category": "dependency_failure",
+  "difficulty": "medium",
+  "title": "A caller crosses a downstream rate limit as its own traffic grows",
+  "source_url": "https://sre.google/sre-book/handling-overload/",
+  "source_note": "Failure pattern (a client's legitimate traffic growth pushes it past a downstream service's per-client rate limit, so a fraction of its requests get 429 and fail) follows overload-handling guidance in the Google SRE Book. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~10:40 UTC the recommendations widget is failing to load for about 15% of page views. It got worse through the morning. No deploys. Recommendations-service says its own health is fine.",
+  "incident_start": "2027-03-10T10:30:00Z",
+  "detected_offset_s": 600,
+  "window_before_s": 2400,
+  "window_after_s": 1500,
+  "primary_service": "recommendations-service",
+  "distractor_services": [
+    { "name": "web-frontend", "role": "api" },
+    { "name": "profile-api", "role": "api" },
+    { "name": "reco-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "recommendations-service", "level": "WARN", "msg": "calls to the model-scoring API returning 429 Too Many Requests; ~4% of reco requests affected" },
+    { "offset_s": 300, "service": "recommendations-service", "level": "WARN", "msg": "our request rate to model-scoring API is 1180/s; the per-client limit for our key is 1000/s" },
+    { "offset_s": 600, "service": "recommendations-service", "level": "ERROR", "msg": "~15% of reco requests failing on model-scoring 429; rate has grown ~25% week-over-week with traffic" },
+    { "offset_s": 720, "service": "recommendations-service", "level": "INFO", "msg": "model-scoring API is healthy for other clients; the 429s are our per-client quota, not an outage" },
+    { "offset_s": 1200, "service": "recommendations-service", "level": "INFO", "msg": "added client-side caching of scores for repeat items + requested a quota increase; 429 rate falling" }
+  ],
+  "metrics": [
+    { "name": "downstream_429_rate", "unit": "ratio", "service": "recommendations-service", "baseline": 0.002, "spike": 0.15, "spike_at_offset_s": 0, "ramp_s": 600 },
+    { "name": "outbound_rps_to_model_scoring", "unit": "count_per_second", "service": "recommendations-service", "baseline": 780.0, "spike": 1180.0, "spike_at_offset_s": 0, "ramp_s": 900 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "recommendations-service calls an external model-scoring API that enforces a per-client rate limit of 1000 requests/second on its API key. The service's own traffic has grown ~25% week-over-week, and its outbound rate to the scoring API crossed 1000/s (now ~1180/s). The scoring API started returning 429 Too Many Requests for the excess, so ~15% of recommendation requests failed. There was no deploy and no outage - the scoring API is healthy for other clients. The cause is the caller's traffic growth crossing a fixed downstream quota. Recovery required cutting the outbound rate (client-side score caching) and requesting a higher quota.",
+    "evidence_path": [
+      "recommendations-service WARN: model-scoring API calls returning 429 Too Many Requests",
+      "recommendations-service WARN: our outbound rate is 1180/s against a 1000/s per-client limit",
+      "downstream_429_rate rises to ~15% as outbound_rps climbs past the limit with traffic growth",
+      "the model-scoring API is healthy for other clients - this is our per-client quota, not an outage",
+      "429 rate falls after client-side score caching cuts the outbound rate and a quota increase is requested"
+    ],
+    "fix": "Add client-side caching of scores for repeat items and request a quota increase (done). Add a client-side rate limiter that stays under the quota with graceful degradation, and alert on approaching the downstream limit.",
+    "should_escalate": false
+  }
+}

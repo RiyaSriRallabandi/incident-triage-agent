@@ -1,0 +1,43 @@
+{
+  "id": "scn_107",
+  "category": "network_dns",
+  "difficulty": "medium",
+  "title": "Stale DNS cache after an IP migration points clients at decommissioned hosts",
+  "source_url": "https://sre.google/sre-book/load-balancing-frontend/",
+  "source_note": "Failure pattern (a planned IP migration where DNS was updated but long client-side cache TTLs mean some clients keep resolving to the old, now-decommissioned addresses, so resolution 'succeeds' but connections fail) follows frontend load-balancing guidance in the Google SRE Book. All services, IPs, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~08:15 UTC a subset of internal services can't reach billing-api - connection refused or timeouts - while others reach it fine. billing-api itself is healthy. The platform team migrated billing-api to new hosts overnight.",
+  "incident_start": "2027-03-17T08:00:00Z",
+  "detected_offset_s": 300,
+  "window_before_s": 3600,
+  "window_after_s": 1800,
+  "primary_service": "billing-api",
+  "distractor_services": [
+    { "name": "orders-api", "role": "api" },
+    { "name": "invoicing-worker", "role": "worker" },
+    { "name": "tax-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": -3600, "service": "platform-net", "level": "INFO", "msg": "billing-api migrated to new host pool; DNS A records updated 10.4.1.x -> 10.9.2.x; old hosts scheduled for shutdown at 08:00" },
+    { "offset_s": 60, "service": "orders-api", "level": "ERROR", "msg": "connections to billing-api (10.4.1.14) refused; that address no longer responds" },
+    { "offset_s": 300, "service": "platform-net", "level": "WARN", "msg": "some clients still resolving billing-api to 10.4.1.x (old pool); their resolver cache TTL was 3600s, records changed <1h ago" },
+    { "offset_s": 420, "service": "billing-api", "level": "INFO", "msg": "billing-api on the new pool (10.9.2.x) is healthy; clients that re-resolved are fine; ~25% of callers still on stale cache" },
+    { "offset_s": 1500, "service": "platform-net", "level": "INFO", "msg": "flushed resolver caches on affected clients / temporarily re-pointed old IPs to the new pool; errors clearing" }
+  ],
+  "metrics": [
+    { "name": "billing_api_connect_error_rate", "unit": "ratio", "service": "orders-api", "baseline": 0.002, "spike": 0.25, "spike_at_offset_s": 60, "ramp_s": 120 },
+    { "name": "stale_resolution_share", "unit": "ratio", "service": "platform-net", "baseline": 0.0, "spike": 0.25, "spike_at_offset_s": 60, "ramp_s": 60 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "billing-api was migrated to a new host pool overnight and its DNS A records were updated from 10.4.1.x to 10.9.2.x, with the old hosts shut down at 08:00. Some client resolvers had cached the old records with a 3600s TTL and the change was less than an hour old, so ~25% of callers were still resolving billing-api to the old, now-dead addresses. For those clients, DNS resolution succeeded but connections went to decommissioned hosts and were refused or timed out. billing-api on the new pool is healthy. The cause is stale DNS caches outliving the old hosts after the migration. Recovery required flushing the affected resolver caches (or temporarily keeping the old IPs pointed at the new pool).",
+    "evidence_path": [
+      "platform-net INFO ~1h before: billing-api migrated, DNS updated 10.4.1.x -> 10.9.2.x, old hosts shut down at 08:00",
+      "orders-api ERROR: connections to billing-api at 10.4.1.14 refused - that address no longer responds",
+      "platform-net WARN: some clients still resolving billing-api to the old pool; resolver TTL 3600s, records changed <1h ago",
+      "billing-api on the new pool is healthy; clients that re-resolved are fine; ~25% still on stale cache",
+      "errors clear after resolver caches are flushed / old IPs temporarily re-pointed at the new pool"
+    ],
+    "fix": "Flush affected resolver caches and keep the old IPs pointed at the new pool during the transition (done). Lower DNS TTLs well before a planned migration and keep old addresses live until at least one full TTL has passed after the cutover.",
+    "should_escalate": false
+  }
+}

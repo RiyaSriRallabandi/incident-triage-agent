@@ -81,3 +81,11 @@ confirms. The same rubric seeds the Task 8 LLM-judge.
 
 `scn_004`, `scn_012`, and `scn_027` have no single correct root cause by design:
 they test whether the agent escalates rather than fabricating one.
+
+## Held-out test set (`heldout/`, 10 scenarios)
+
+`scn_101`–`scn_110`, one or two per failure category plus one escalate case. These
+were **not used for prompt iteration or ablations** — the dev set (above) was. The
+agent is run against the held-out set exactly once, with the frozen final config,
+to produce the report's headline numbers. Built and generated the same way; run
+`uv run python scripts/generate_evidence.py --heldout`.

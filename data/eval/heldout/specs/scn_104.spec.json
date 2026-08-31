@@ -1,0 +1,43 @@
+{
+  "id": "scn_104",
+  "category": "resource_exhaustion",
+  "difficulty": "hard",
+  "title": "Ephemeral source-port exhaustion from short-lived outbound connections",
+  "source_url": "https://sre.google/sre-book/addressing-cascading-failures/",
+  "source_note": "Failure pattern (a service opening many short-lived outbound connections exhausts the ephemeral source-port range as TIME_WAIT sockets accumulate, so new outbound connections fail) is a classic OS-level resource-exhaustion class. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~04:30 UTC the sync-service is intermittently failing to reach the upstream API - about 20% of calls. The upstream is healthy. No deploys. Traffic is a bit higher than usual overnight due to a batch window.",
+  "incident_start": "2027-02-24T04:20:00Z",
+  "detected_offset_s": 600,
+  "window_before_s": 1800,
+  "window_after_s": 1800,
+  "primary_service": "sync-service",
+  "distractor_services": [
+    { "name": "upstream-api", "role": "api" },
+    { "name": "reconcile-worker", "role": "worker" },
+    { "name": "lookup-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "sync-service", "level": "WARN", "msg": "outbound connections to upstream-api occasionally failing: cannot assign requested address (EADDRNOTAVAIL)" },
+    { "offset_s": 300, "service": "sync-service", "level": "WARN", "msg": "sockets in TIME_WAIT to upstream-api: 27000 and rising; each request opens a fresh connection (no keep-alive)" },
+    { "offset_s": 600, "service": "sync-service", "level": "ERROR", "msg": "ephemeral port range (32768-60999) exhausted; ~20% of outbound calls failing to get a source port" },
+    { "offset_s": 720, "service": "sync-service", "level": "INFO", "msg": "upstream-api latency and error rate normal from other clients; issue is local socket exhaustion" },
+    { "offset_s": 1500, "service": "sync-service", "level": "INFO", "msg": "enabled HTTP keep-alive / connection pooling to upstream-api; TIME_WAIT count falling, errors clearing" }
+  ],
+  "metrics": [
+    { "name": "time_wait_sockets", "unit": "count", "service": "sync-service", "baseline": 3000.0, "spike": 28000.0, "spike_at_offset_s": 0, "ramp_s": 480 },
+    { "name": "outbound_call_error_rate", "unit": "ratio", "service": "sync-service", "baseline": 0.003, "spike": 0.2, "spike_at_offset_s": 600, "ramp_s": 180 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "sync-service opens a fresh outbound TCP connection to upstream-api for every request with no HTTP keep-alive, so closed connections pile up in TIME_WAIT. During the higher-volume overnight batch window, the TIME_WAIT count climbed past 27,000 and exhausted the host's ephemeral source-port range (32768-60999). With no source port available, ~20% of new outbound calls failed with 'cannot assign requested address'. upstream-api is healthy - the exhaustion is local. Recovery required enabling connection pooling / keep-alive so connections are reused instead of recreated.",
+    "evidence_path": [
+      "sync-service WARN: outbound connections failing with EADDRNOTAVAIL ('cannot assign requested address')",
+      "sync-service WARN: 27000+ TIME_WAIT sockets to upstream-api; every request opens a fresh connection (no keep-alive)",
+      "sync-service ERROR: ephemeral port range (32768-60999) exhausted; ~20% of calls cannot get a source port",
+      "upstream-api confirmed healthy for other clients - the exhaustion is local to sync-service",
+      "errors clear after HTTP keep-alive / connection pooling is enabled"
+    ],
+    "fix": "Enable HTTP keep-alive and a bounded connection pool to upstream-api (done). Reduce the TIME_WAIT window where safe, widen the ephemeral port range, and alert on TIME_WAIT socket count.",
+    "should_escalate": false
+  }
+}

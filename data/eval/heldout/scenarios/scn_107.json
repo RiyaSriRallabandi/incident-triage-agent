@@ -1,0 +1,1006 @@
+{
+  "id": "scn_107",
+  "category": "network_dns",
+  "difficulty": "medium",
+  "title": "Stale DNS cache after an IP migration points clients at decommissioned hosts",
+  "source_url": "https://sre.google/sre-book/load-balancing-frontend/",
+  "source_note": "Failure pattern (a planned IP migration where DNS was updated but long client-side cache TTLs mean some clients keep resolving to the old, now-decommissioned addresses, so resolution 'succeeds' but connections fail) follows frontend load-balancing guidance in the Google SRE Book. All services, IPs, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~08:15 UTC a subset of internal services can't reach billing-api - connection refused or timeouts - while others reach it fine. billing-api itself is healthy. The platform team migrated billing-api to new hosts overnight.",
+  "synthetic_logs": [
+    {
+      "ts": "2027-03-17T07:00:00Z",
+      "service": "platform-net",
+      "level": "INFO",
+      "msg": "billing-api migrated to new host pool; DNS A records updated 10.4.1.x -> 10.9.2.x; old hosts scheduled for shutdown at 08:00"
+    },
+    {
+      "ts": "2027-03-17T07:03:32.787664Z",
+      "service": "invoicing-worker",
+      "level": "INFO",
+      "msg": "job invoice.render completed in 66ms"
+    },
+    {
+      "ts": "2027-03-17T07:05:47.415217Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "GET /products 200 in 26ms"
+    },
+    {
+      "ts": "2027-03-17T07:12:59.133510Z",
+      "service": "orders-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=87"
+    },
+    {
+      "ts": "2027-03-17T07:14:54.246770Z",
+      "service": "invoicing-worker",
+      "level": "INFO",
+      "msg": "job email.send completed in 148ms"
+    },
+    {
+      "ts": "2027-03-17T07:15:07.520784Z",
+      "service": "tax-cache",
+      "level": "INFO",
+      "msg": "evicted 335 keys (lru)"
+    },
+    {
+      "ts": "2027-03-17T07:15:57.926925Z",
+      "service": "tax-cache",
+      "level": "WARN",
+      "msg": "GET key=user:470 miss"
+    },
+    {
+      "ts": "2027-03-17T07:17:48.283592Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-17T07:38:13.688097Z",
+      "service": "invoicing-worker",
+      "level": "INFO",
+      "msg": "processed batch size=40"
+    },
+    {
+      "ts": "2027-03-17T07:38:29.589799Z",
+      "service": "tax-cache",
+      "level": "INFO",
+      "msg": "evicted 365 keys (lru)"
+    },
+    {
+      "ts": "2027-03-17T07:39:29.742876Z",
+      "service": "billing-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-17T07:44:51.842100Z",
+      "service": "billing-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2027-03-17T07:47:17.947735Z",
+      "service": "billing-api",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 28ms"
+    },
+    {
+      "ts": "2027-03-17T07:58:09.341946Z",
+      "service": "billing-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=5"
+    },
+    {
+      "ts": "2027-03-17T08:01:00Z",
+      "service": "orders-api",
+      "level": "ERROR",
+      "msg": "connections to billing-api (10.4.1.14) refused; that address no longer responds"
+    },
+    {
+      "ts": "2027-03-17T08:03:19.008110Z",
+      "service": "billing-api",
+      "level": "INFO",
+      "msg": "POST /products 201 in 131ms"
+    },
+    {
+      "ts": "2027-03-17T08:04:34.647812Z",
+      "service": "billing-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=3"
+    },
+    {
+      "ts": "2027-03-17T08:05:00Z",
+      "service": "platform-net",
+      "level": "WARN",
+      "msg": "some clients still resolving billing-api to 10.4.1.x (old pool); their resolver cache TTL was 3600s, records changed <1h ago"
+    },
+    {
+      "ts": "2027-03-17T08:06:05.562166Z",
+      "service": "invoicing-worker",
+      "level": "INFO",
+      "msg": "processed batch size=847"
+    },
+    {
+      "ts": "2027-03-17T08:06:09.633469Z",
+      "service": "orders-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=104"
+    },
+    {
+      "ts": "2027-03-17T08:07:00Z",
+      "service": "billing-api",
+      "level": "INFO",
+      "msg": "billing-api on the new pool (10.9.2.x) is healthy; clients that re-resolved are fine; ~25% of callers still on stale cache"
+    },
+    {
+      "ts": "2027-03-17T08:07:44.361292Z",
+      "service": "orders-api",
+      "level": "WARN",
+      "msg": "slow request path=/cart duration_ms=82"
+    },
+    {
+      "ts": "2027-03-17T08:11:14.354794Z",
+      "service": "tax-cache",
+      "level": "INFO",
+      "msg": "SET key=session:363 ttl=3600"
+    },
+    {
+      "ts": "2027-03-17T08:11:27.207922Z",
+      "service": "billing-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2027-03-17T08:12:53.980405Z",
+      "service": "billing-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 208ms"
+    },
+    {
+      "ts": "2027-03-17T08:13:10.605495Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "POST /checkout 201 in 94ms"
+    },
+    {
+      "ts": "2027-03-17T08:16:26.046925Z",
+      "service": "billing-api",
+      "level": "INFO",
+      "msg": "POST /cart 201 in 24ms"
+    },
+    {
+      "ts": "2027-03-17T08:21:41.223481Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-17T08:25:00Z",
+      "service": "platform-net",
+      "level": "INFO",
+      "msg": "flushed resolver caches on affected clients / temporarily re-pointed old IPs to the new pool; errors clearing"
+    },
+    {
+      "ts": "2027-03-17T08:27:00.036003Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2027-03-17T08:27:42.112411Z",
+      "service": "billing-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 72ms"
+    },
+    {
+      "ts": "2027-03-17T08:32:52.376838Z",
+      "service": "billing-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-17T08:34:14.971811Z",
+      "service": "tax-cache",
+      "level": "WARN",
+      "msg": "GET key=user:438 miss"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "billing_api_connect_error_rate",
+      "unit": "ratio",
+      "service": "orders-api",
+      "points": [
+        [
+          "2027-03-17T07:00:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:01:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:02:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:03:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:04:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:05:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:06:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:07:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:08:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:09:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:10:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:11:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:12:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:13:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:14:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:15:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:16:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:17:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:18:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:19:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:20:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:21:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:22:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:23:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:24:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:25:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:26:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:27:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:28:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:29:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:30:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:31:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:32:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:33:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:34:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:35:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:36:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:37:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:38:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:39:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:40:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:41:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:42:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:43:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:44:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:45:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:46:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:47:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:48:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:49:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:50:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:51:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:52:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:53:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:54:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:55:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:56:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:57:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:58:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T07:59:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T08:00:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T08:01:00Z",
+          0.002
+        ],
+        [
+          "2027-03-17T08:02:00Z",
+          0.1265
+        ],
+        [
+          "2027-03-17T08:03:00Z",
+          0.2462
+        ],
+        [
+          "2027-03-17T08:04:00Z",
+          0.253
+        ],
+        [
+          "2027-03-17T08:05:00Z",
+          0.2476
+        ],
+        [
+          "2027-03-17T08:06:00Z",
+          0.2518
+        ],
+        [
+          "2027-03-17T08:07:00Z",
+          0.2544
+        ],
+        [
+          "2027-03-17T08:08:00Z",
+          0.2483
+        ],
+        [
+          "2027-03-17T08:09:00Z",
+          0.2488
+        ],
+        [
+          "2027-03-17T08:10:00Z",
+          0.2515
+        ],
+        [
+          "2027-03-17T08:11:00Z",
+          0.2532
+        ],
+        [
+          "2027-03-17T08:12:00Z",
+          0.2546
+        ],
+        [
+          "2027-03-17T08:13:00Z",
+          0.2533
+        ],
+        [
+          "2027-03-17T08:14:00Z",
+          0.2505
+        ],
+        [
+          "2027-03-17T08:15:00Z",
+          0.2543
+        ],
+        [
+          "2027-03-17T08:16:00Z",
+          0.2536
+        ],
+        [
+          "2027-03-17T08:17:00Z",
+          0.2452
+        ],
+        [
+          "2027-03-17T08:18:00Z",
+          0.2506
+        ],
+        [
+          "2027-03-17T08:19:00Z",
+          0.2508
+        ],
+        [
+          "2027-03-17T08:20:00Z",
+          0.2489
+        ],
+        [
+          "2027-03-17T08:21:00Z",
+          0.2528
+        ],
+        [
+          "2027-03-17T08:22:00Z",
+          0.2549
+        ],
+        [
+          "2027-03-17T08:23:00Z",
+          0.2534
+        ],
+        [
+          "2027-03-17T08:24:00Z",
+          0.2482
+        ],
+        [
+          "2027-03-17T08:25:00Z",
+          0.2467
+        ],
+        [
+          "2027-03-17T08:26:00Z",
+          0.2473
+        ],
+        [
+          "2027-03-17T08:27:00Z",
+          0.2501
+        ],
+        [
+          "2027-03-17T08:28:00Z",
+          0.2485
+        ],
+        [
+          "2027-03-17T08:29:00Z",
+          0.2519
+        ],
+        [
+          "2027-03-17T08:30:00Z",
+          0.2467
+        ],
+        [
+          "2027-03-17T08:31:00Z",
+          0.2484
+        ],
+        [
+          "2027-03-17T08:32:00Z",
+          0.2476
+        ],
+        [
+          "2027-03-17T08:33:00Z",
+          0.245
+        ],
+        [
+          "2027-03-17T08:34:00Z",
+          0.2538
+        ],
+        [
+          "2027-03-17T08:35:00Z",
+          0.2525
+        ]
+      ]
+    },
+    {
+      "name": "stale_resolution_share",
+      "unit": "ratio",
+      "service": "platform-net",
+      "points": [
+        [
+          "2027-03-17T07:00:00Z",
+          0.012
+        ],
+        [
+          "2027-03-17T07:01:00Z",
+          0.0043
+        ],
+        [
+          "2027-03-17T07:02:00Z",
+          -0.0064
+        ],
+        [
+          "2027-03-17T07:03:00Z",
+          -0.0043
+        ],
+        [
+          "2027-03-17T07:04:00Z",
+          0.0024
+        ],
+        [
+          "2027-03-17T07:05:00Z",
+          0.0061
+        ],
+        [
+          "2027-03-17T07:06:00Z",
+          0.0163
+        ],
+        [
+          "2027-03-17T07:07:00Z",
+          -0.009
+        ],
+        [
+          "2027-03-17T07:08:00Z",
+          -0.0178
+        ],
+        [
+          "2027-03-17T07:09:00Z",
+          -0.01
+        ],
+        [
+          "2027-03-17T07:10:00Z",
+          -0.0071
+        ],
+        [
+          "2027-03-17T07:11:00Z",
+          0.0175
+        ],
+        [
+          "2027-03-17T07:12:00Z",
+          0.011
+        ],
+        [
+          "2027-03-17T07:13:00Z",
+          0.015
+        ],
+        [
+          "2027-03-17T07:14:00Z",
+          0.0064
+        ],
+        [
+          "2027-03-17T07:15:00Z",
+          -0.0126
+        ],
+        [
+          "2027-03-17T07:16:00Z",
+          0.0056
+        ],
+        [
+          "2027-03-17T07:17:00Z",
+          -0.0106
+        ],
+        [
+          "2027-03-17T07:18:00Z",
+          0.0098
+        ],
+        [
+          "2027-03-17T07:19:00Z",
+          0.019
+        ],
+        [
+          "2027-03-17T07:20:00Z",
+          0.0183
+        ],
+        [
+          "2027-03-17T07:21:00Z",
+          0.0164
+        ],
+        [
+          "2027-03-17T07:22:00Z",
+          0.0129
+        ],
+        [
+          "2027-03-17T07:23:00Z",
+          -0.0158
+        ],
+        [
+          "2027-03-17T07:24:00Z",
+          0.0009
+        ],
+        [
+          "2027-03-17T07:25:00Z",
+          -0.0068
+        ],
+        [
+          "2027-03-17T07:26:00Z",
+          -0.0186
+        ],
+        [
+          "2027-03-17T07:27:00Z",
+          0.0057
+        ],
+        [
+          "2027-03-17T07:28:00Z",
+          0.0105
+        ],
+        [
+          "2027-03-17T07:29:00Z",
+          -0.0045
+        ],
+        [
+          "2027-03-17T07:30:00Z",
+          -0.0075
+        ],
+        [
+          "2027-03-17T07:31:00Z",
+          0.0164
+        ],
+        [
+          "2027-03-17T07:32:00Z",
+          0.0096
+        ],
+        [
+          "2027-03-17T07:33:00Z",
+          0.006
+        ],
+        [
+          "2027-03-17T07:34:00Z",
+          -0.0192
+        ],
+        [
+          "2027-03-17T07:35:00Z",
+          -0.0181
+        ],
+        [
+          "2027-03-17T07:36:00Z",
+          -0.0182
+        ],
+        [
+          "2027-03-17T07:37:00Z",
+          -0.0103
+        ],
+        [
+          "2027-03-17T07:38:00Z",
+          0.0117
+        ],
+        [
+          "2027-03-17T07:39:00Z",
+          -0.007
+        ],
+        [
+          "2027-03-17T07:40:00Z",
+          0.0011
+        ],
+        [
+          "2027-03-17T07:41:00Z",
+          0.0165
+        ],
+        [
+          "2027-03-17T07:42:00Z",
+          0.0179
+        ],
+        [
+          "2027-03-17T07:43:00Z",
+          0.0006
+        ],
+        [
+          "2027-03-17T07:44:00Z",
+          0.0152
+        ],
+        [
+          "2027-03-17T07:45:00Z",
+          -0.0053
+        ],
+        [
+          "2027-03-17T07:46:00Z",
+          -0.0021
+        ],
+        [
+          "2027-03-17T07:47:00Z",
+          0.003
+        ],
+        [
+          "2027-03-17T07:48:00Z",
+          0.0062
+        ],
+        [
+          "2027-03-17T07:49:00Z",
+          -0.0047
+        ],
+        [
+          "2027-03-17T07:50:00Z",
+          0.0194
+        ],
+        [
+          "2027-03-17T07:51:00Z",
+          -0.0186
+        ],
+        [
+          "2027-03-17T07:52:00Z",
+          -0.0178
+        ],
+        [
+          "2027-03-17T07:53:00Z",
+          0.0192
+        ],
+        [
+          "2027-03-17T07:54:00Z",
+          0.0111
+        ],
+        [
+          "2027-03-17T07:55:00Z",
+          0.0196
+        ],
+        [
+          "2027-03-17T07:56:00Z",
+          0.02
+        ],
+        [
+          "2027-03-17T07:57:00Z",
+          -0.0076
+        ],
+        [
+          "2027-03-17T07:58:00Z",
+          0.0106
+        ],
+        [
+          "2027-03-17T07:59:00Z",
+          0.0022
+        ],
+        [
+          "2027-03-17T08:00:00Z",
+          0.0064
+        ],
+        [
+          "2027-03-17T08:01:00Z",
+          -0.0072
+        ],
+        [
+          "2027-03-17T08:02:00Z",
+          0.2477
+        ],
+        [
+          "2027-03-17T08:03:00Z",
+          0.2473
+        ],
+        [
+          "2027-03-17T08:04:00Z",
+          0.2506
+        ],
+        [
+          "2027-03-17T08:05:00Z",
+          0.2499
+        ],
+        [
+          "2027-03-17T08:06:00Z",
+          0.2501
+        ],
+        [
+          "2027-03-17T08:07:00Z",
+          0.2518
+        ],
+        [
+          "2027-03-17T08:08:00Z",
+          0.2505
+        ],
+        [
+          "2027-03-17T08:09:00Z",
+          0.2518
+        ],
+        [
+          "2027-03-17T08:10:00Z",
+          0.2484
+        ],
+        [
+          "2027-03-17T08:11:00Z",
+          0.2531
+        ],
+        [
+          "2027-03-17T08:12:00Z",
+          0.2547
+        ],
+        [
+          "2027-03-17T08:13:00Z",
+          0.2481
+        ],
+        [
+          "2027-03-17T08:14:00Z",
+          0.2476
+        ],
+        [
+          "2027-03-17T08:15:00Z",
+          0.2501
+        ],
+        [
+          "2027-03-17T08:16:00Z",
+          0.249
+        ],
+        [
+          "2027-03-17T08:17:00Z",
+          0.2536
+        ],
+        [
+          "2027-03-17T08:18:00Z",
+          0.2542
+        ],
+        [
+          "2027-03-17T08:19:00Z",
+          0.2514
+        ],
+        [
+          "2027-03-17T08:20:00Z",
+          0.2506
+        ],
+        [
+          "2027-03-17T08:21:00Z",
+          0.2491
+        ],
+        [
+          "2027-03-17T08:22:00Z",
+          0.2496
+        ],
+        [
+          "2027-03-17T08:23:00Z",
+          0.2488
+        ],
+        [
+          "2027-03-17T08:24:00Z",
+          0.2454
+        ],
+        [
+          "2027-03-17T08:25:00Z",
+          0.252
+        ],
+        [
+          "2027-03-17T08:26:00Z",
+          0.2535
+        ],
+        [
+          "2027-03-17T08:27:00Z",
+          0.2476
+        ],
+        [
+          "2027-03-17T08:28:00Z",
+          0.2531
+        ],
+        [
+          "2027-03-17T08:29:00Z",
+          0.2543
+        ],
+        [
+          "2027-03-17T08:30:00Z",
+          0.254
+        ],
+        [
+          "2027-03-17T08:31:00Z",
+          0.2453
+        ],
+        [
+          "2027-03-17T08:32:00Z",
+          0.2473
+        ],
+        [
+          "2027-03-17T08:33:00Z",
+          0.2547
+        ],
+        [
+          "2027-03-17T08:34:00Z",
+          0.2521
+        ],
+        [
+          "2027-03-17T08:35:00Z",
+          0.2484
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "billing-api was migrated to a new host pool overnight and its DNS A records were updated from 10.4.1.x to 10.9.2.x, with the old hosts shut down at 08:00. Some client resolvers had cached the old records with a 3600s TTL and the change was less than an hour old, so ~25% of callers were still resolving billing-api to the old, now-dead addresses. For those clients, DNS resolution succeeded but connections went to decommissioned hosts and were refused or timed out. billing-api on the new pool is healthy. The cause is stale DNS caches outliving the old hosts after the migration. Recovery required flushing the affected resolver caches (or temporarily keeping the old IPs pointed at the new pool).",
+    "evidence_path": [
+      "platform-net INFO ~1h before: billing-api migrated, DNS updated 10.4.1.x -> 10.9.2.x, old hosts shut down at 08:00",
+      "orders-api ERROR: connections to billing-api at 10.4.1.14 refused - that address no longer responds",
+      "platform-net WARN: some clients still resolving billing-api to the old pool; resolver TTL 3600s, records changed <1h ago",
+      "billing-api on the new pool is healthy; clients that re-resolved are fine; ~25% still on stale cache",
+      "errors clear after resolver caches are flushed / old IPs temporarily re-pointed at the new pool"
+    ],
+    "fix": "Flush affected resolver caches and keep the old IPs pointed at the new pool during the transition (done). Lower DNS TTLs well before a planned migration and keep old addresses live until at least one full TTL has passed after the cutover.",
+    "should_escalate": false
+  }
+}

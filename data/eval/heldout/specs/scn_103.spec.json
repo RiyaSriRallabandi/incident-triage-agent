@@ -1,0 +1,43 @@
+{
+  "id": "scn_103",
+  "category": "resource_exhaustion",
+  "difficulty": "hard",
+  "title": "Unbounded parallel fan-out exhausts the worker pool as the fan-out width grows",
+  "source_url": "https://aws.amazon.com/builders-library/avoiding-fallback-in-distributed-systems/",
+  "source_note": "Failure pattern (a request that fans out into N parallel subrequests, where N grew with data until the fan-out saturated the caller's worker pool) reflects concurrency guidance in the AWS Builders' Library. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~15:10 UTC the dashboard API is timing out for users with large accounts. Small accounts are fine. No deploys today. Worker utilization on dashboard-api is maxed.",
+  "incident_start": "2027-02-17T15:05:00Z",
+  "detected_offset_s": 300,
+  "window_before_s": 1800,
+  "window_after_s": 1500,
+  "primary_service": "dashboard-api",
+  "distractor_services": [
+    { "name": "widget-service", "role": "api" },
+    { "name": "export-worker", "role": "worker" },
+    { "name": "tile-cache", "role": "cache" }
+  ],
+  "signal_lines": [
+    { "offset_s": 0, "service": "dashboard-api", "level": "WARN", "msg": "worker pool utilisation 88%; some requests fanning out to 400+ parallel widget-service calls" },
+    { "offset_s": 120, "service": "dashboard-api", "level": "WARN", "msg": "largest accounts now have 600+ widgets; one dashboard render holds 600 worker slots at once" },
+    { "offset_s": 300, "service": "dashboard-api", "level": "ERROR", "msg": "worker pool exhausted (size=512); new dashboard requests queued then timing out" },
+    { "offset_s": 420, "service": "widget-service", "level": "INFO", "msg": "widget-service itself is healthy; p95 12ms; load is just very spiky from dashboard-api fan-out" },
+    { "offset_s": 1200, "service": "dashboard-api", "level": "INFO", "msg": "operator capped fan-out concurrency at 20 per request; worker pool recovering" }
+  ],
+  "metrics": [
+    { "name": "worker_pool_utilization", "unit": "ratio", "service": "dashboard-api", "baseline": 0.55, "spike": 1.0, "spike_at_offset_s": 0, "ramp_s": 240 },
+    { "name": "request_timeout_rate", "unit": "ratio", "service": "dashboard-api", "baseline": 0.005, "spike": 0.45, "spike_at_offset_s": 300, "ramp_s": 120 }
+  ],
+  "deploys": [],
+  "ground_truth": {
+    "root_cause": "dashboard-api renders a dashboard by fanning out one parallel call to widget-service per widget, with no cap on concurrency. As the largest accounts accumulated widgets (now 600+), a single dashboard render for one of those accounts holds hundreds of worker-pool slots at once. Enough concurrent large-account renders exhausted the 512-slot worker pool, so new requests queued and timed out. widget-service is healthy - the problem is the un-bounded fan-out width on the caller, which crossed a threshold as data grew. Recovery required capping per-request fan-out concurrency.",
+    "evidence_path": [
+      "dashboard-api WARN: requests fanning out to 400+ parallel widget-service calls; worker utilisation 88%",
+      "dashboard-api WARN: largest accounts now have 600+ widgets; one render holds 600 worker slots",
+      "dashboard-api ERROR: worker pool exhausted (size=512); new requests queue then time out",
+      "widget-service confirmed healthy (p95 12ms) - the load is spiky fan-out, not a widget-service problem",
+      "recovery after fan-out concurrency is capped at 20 per request"
+    ],
+    "fix": "Cap per-request fan-out concurrency and batch the widget calls (done). Add a bounded worker pool per fan-out stage, page or lazy-load widgets for very large dashboards, and alert on fan-out width.",
+    "should_escalate": false
+  }
+}

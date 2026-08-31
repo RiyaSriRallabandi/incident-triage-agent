@@ -1,0 +1,898 @@
+{
+  "id": "scn_108",
+  "category": "cert_config_expiry",
+  "difficulty": "hard",
+  "title": "An expired intermediate CA breaks stricter clients while lenient ones still connect",
+  "source_url": "https://letsencrypt.org/2020/12/21/extending-android-compatibility.html",
+  "source_note": "Failure pattern (an intermediate certificate in the chain expires rather than the leaf, so clients that do strict chain validation fail while clients that skip or cache the intermediate keep working, producing a partial and confusing outage) is in the spirit of the Let's Encrypt / DST Root expiry events. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~00:00 UTC roughly 40% of API clients are getting TLS errors connecting to api-gateway. The rest connect fine. No deploys. The leaf certificate is valid for months.",
+  "synthetic_logs": [
+    {
+      "ts": "2027-03-23T23:31:09.202731Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 103ms"
+    },
+    {
+      "ts": "2027-03-23T23:31:28.501483Z",
+      "service": "token-cache",
+      "level": "INFO",
+      "msg": "SET key=session:749 ttl=3600"
+    },
+    {
+      "ts": "2027-03-23T23:33:07.990125Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 80ms"
+    },
+    {
+      "ts": "2027-03-23T23:36:19.315425Z",
+      "service": "token-cache",
+      "level": "INFO",
+      "msg": "evicted 52 keys (lru)"
+    },
+    {
+      "ts": "2027-03-23T23:37:53.046441Z",
+      "service": "token-cache",
+      "level": "INFO",
+      "msg": "evicted 848 keys (lru)"
+    },
+    {
+      "ts": "2027-03-23T23:38:33.786457Z",
+      "service": "token-cache",
+      "level": "INFO",
+      "msg": "evicted 69 keys (lru)"
+    },
+    {
+      "ts": "2027-03-23T23:38:35.154440Z",
+      "service": "webhook-worker",
+      "level": "WARN",
+      "msg": "job cache.warm retried attempt=1"
+    },
+    {
+      "ts": "2027-03-23T23:39:42.972946Z",
+      "service": "webhook-worker",
+      "level": "INFO",
+      "msg": "processed batch size=855"
+    },
+    {
+      "ts": "2027-03-23T23:40:18.395101Z",
+      "service": "webhook-worker",
+      "level": "INFO",
+      "msg": "processed batch size=97"
+    },
+    {
+      "ts": "2027-03-23T23:41:31.979903Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2027-03-23T23:41:40.522880Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2027-03-23T23:42:36.971309Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/users/me status=200"
+    },
+    {
+      "ts": "2027-03-23T23:43:36.243408Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "slow request path=/products duration_ms=222"
+    },
+    {
+      "ts": "2027-03-23T23:43:36.702085Z",
+      "service": "token-cache",
+      "level": "WARN",
+      "msg": "GET key=user:263 miss"
+    },
+    {
+      "ts": "2027-03-23T23:44:30.879439Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=62"
+    },
+    {
+      "ts": "2027-03-23T23:45:05.222346Z",
+      "service": "token-cache",
+      "level": "INFO",
+      "msg": "SET key=session:618 ttl=3600"
+    },
+    {
+      "ts": "2027-03-23T23:46:47.930593Z",
+      "service": "orders-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=132"
+    },
+    {
+      "ts": "2027-03-23T23:46:54.683011Z",
+      "service": "webhook-worker",
+      "level": "INFO",
+      "msg": "queue depth=226"
+    },
+    {
+      "ts": "2027-03-23T23:47:12.315526Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/checkout status=200"
+    },
+    {
+      "ts": "2027-03-23T23:47:28.451983Z",
+      "service": "webhook-worker",
+      "level": "INFO",
+      "msg": "processed batch size=587"
+    },
+    {
+      "ts": "2027-03-23T23:48:11.601866Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-23T23:48:25.041669Z",
+      "service": "webhook-worker",
+      "level": "INFO",
+      "msg": "queue depth=431"
+    },
+    {
+      "ts": "2027-03-23T23:48:53.193670Z",
+      "service": "webhook-worker",
+      "level": "INFO",
+      "msg": "job report.build completed in 51ms"
+    },
+    {
+      "ts": "2027-03-23T23:50:52.546588Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "POST /search 201 in 150ms"
+    },
+    {
+      "ts": "2027-03-23T23:50:53.876306Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-03-23T23:52:27.086005Z",
+      "service": "token-cache",
+      "level": "INFO",
+      "msg": "evicted 9 keys (lru)"
+    },
+    {
+      "ts": "2027-03-23T23:54:34.309759Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2027-03-23T23:55:43.220432Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 170ms"
+    },
+    {
+      "ts": "2027-03-23T23:56:07.177967Z",
+      "service": "webhook-worker",
+      "level": "WARN",
+      "msg": "job cache.warm retried attempt=1"
+    },
+    {
+      "ts": "2027-03-23T23:57:38.595539Z",
+      "service": "token-cache",
+      "level": "WARN",
+      "msg": "GET key=user:651 miss"
+    },
+    {
+      "ts": "2027-03-23T23:59:17.223976Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 26ms"
+    },
+    {
+      "ts": "2027-03-23T23:59:18.305584Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=148"
+    },
+    {
+      "ts": "2027-03-24T00:00:00Z",
+      "service": "api-gateway",
+      "level": "ERROR",
+      "msg": "rising TLS handshake failures: 'unable to get issuer certificate' / 'certificate has expired' - but our leaf cert notAfter is 2027-09-01"
+    },
+    {
+      "ts": "2027-03-24T00:02:00Z",
+      "service": "api-gateway",
+      "level": "WARN",
+      "msg": "intermediate CA in the served chain 'Acme Intermediate G2' expired at 2027-03-24T00:00:00Z"
+    },
+    {
+      "ts": "2027-03-24T00:04:55.870365Z",
+      "service": "webhook-worker",
+      "level": "INFO",
+      "msg": "processed batch size=818"
+    },
+    {
+      "ts": "2027-03-24T00:04:55.944620Z",
+      "service": "webhook-worker",
+      "level": "INFO",
+      "msg": "job email.send completed in 31ms"
+    },
+    {
+      "ts": "2027-03-24T00:05:00Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "clients doing strict chain validation reject the expired intermediate (~40%); clients with a cached/pinned intermediate still connect"
+    },
+    {
+      "ts": "2027-03-24T00:07:00Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "leaf key and cert are fine; only the intermediate needs replacing in the served chain"
+    },
+    {
+      "ts": "2027-03-24T00:07:27.258613Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "POST /products 201 in 200ms"
+    },
+    {
+      "ts": "2027-03-24T00:11:31.868578Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 237ms"
+    },
+    {
+      "ts": "2027-03-24T00:15:46.087003Z",
+      "service": "token-cache",
+      "level": "WARN",
+      "msg": "GET key=user:84 miss"
+    },
+    {
+      "ts": "2027-03-24T00:17:41.733697Z",
+      "service": "webhook-worker",
+      "level": "WARN",
+      "msg": "job email.send retried attempt=1"
+    },
+    {
+      "ts": "2027-03-24T00:18:15.925722Z",
+      "service": "webhook-worker",
+      "level": "WARN",
+      "msg": "job invoice.render retried attempt=1"
+    },
+    {
+      "ts": "2027-03-24T00:19:33.045534Z",
+      "service": "token-cache",
+      "level": "INFO",
+      "msg": "SET key=session:759 ttl=3600"
+    },
+    {
+      "ts": "2027-03-24T00:21:15.226698Z",
+      "service": "token-cache",
+      "level": "WARN",
+      "msg": "GET key=user:358 miss"
+    },
+    {
+      "ts": "2027-03-24T00:21:41.663568Z",
+      "service": "webhook-worker",
+      "level": "INFO",
+      "msg": "queue depth=505"
+    },
+    {
+      "ts": "2027-03-24T00:21:57.974095Z",
+      "service": "webhook-worker",
+      "level": "INFO",
+      "msg": "processed batch size=776"
+    },
+    {
+      "ts": "2027-03-24T00:23:09.672340Z",
+      "service": "webhook-worker",
+      "level": "INFO",
+      "msg": "job invoice.render completed in 216ms"
+    },
+    {
+      "ts": "2027-03-24T00:23:36.474932Z",
+      "service": "webhook-worker",
+      "level": "INFO",
+      "msg": "queue depth=895"
+    },
+    {
+      "ts": "2027-03-24T00:25:00Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "installed the renewed intermediate ('Acme Intermediate G3') in the served chain and reloaded the TLS config; handshake failures clearing"
+    },
+    {
+      "ts": "2027-03-24T00:27:20.976168Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 30ms"
+    },
+    {
+      "ts": "2027-03-24T00:29:40.100835Z",
+      "service": "api-gateway",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 66ms"
+    },
+    {
+      "ts": "2027-03-24T00:30:33.900392Z",
+      "service": "token-cache",
+      "level": "INFO",
+      "msg": "evicted 528 keys (lru)"
+    },
+    {
+      "ts": "2027-03-24T00:30:51.710900Z",
+      "service": "orders-api",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/api/v1/orders status=200"
+    },
+    {
+      "ts": "2027-03-24T00:31:11.932709Z",
+      "service": "webhook-worker",
+      "level": "WARN",
+      "msg": "job invoice.render retried attempt=1"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "tls_handshake_error_rate",
+      "unit": "ratio",
+      "service": "api-gateway",
+      "points": [
+        [
+          "2027-03-23T23:30:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:31:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:32:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:33:00Z",
+          0.0029
+        ],
+        [
+          "2027-03-23T23:34:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:35:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:36:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:37:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:38:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:39:00Z",
+          0.0029
+        ],
+        [
+          "2027-03-23T23:40:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:41:00Z",
+          0.0031
+        ],
+        [
+          "2027-03-23T23:42:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:43:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:44:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:45:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:46:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:47:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:48:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:49:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:50:00Z",
+          0.0029
+        ],
+        [
+          "2027-03-23T23:51:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:52:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:53:00Z",
+          0.0029
+        ],
+        [
+          "2027-03-23T23:54:00Z",
+          0.0029
+        ],
+        [
+          "2027-03-23T23:55:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:56:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:57:00Z",
+          0.0029
+        ],
+        [
+          "2027-03-23T23:58:00Z",
+          0.003
+        ],
+        [
+          "2027-03-23T23:59:00Z",
+          0.003
+        ],
+        [
+          "2027-03-24T00:00:00Z",
+          0.003
+        ],
+        [
+          "2027-03-24T00:01:00Z",
+          0.2002
+        ],
+        [
+          "2027-03-24T00:02:00Z",
+          0.4043
+        ],
+        [
+          "2027-03-24T00:03:00Z",
+          0.4024
+        ],
+        [
+          "2027-03-24T00:04:00Z",
+          0.3959
+        ],
+        [
+          "2027-03-24T00:05:00Z",
+          0.4
+        ],
+        [
+          "2027-03-24T00:06:00Z",
+          0.3978
+        ],
+        [
+          "2027-03-24T00:07:00Z",
+          0.4048
+        ],
+        [
+          "2027-03-24T00:08:00Z",
+          0.4009
+        ],
+        [
+          "2027-03-24T00:09:00Z",
+          0.4028
+        ],
+        [
+          "2027-03-24T00:10:00Z",
+          0.3952
+        ],
+        [
+          "2027-03-24T00:11:00Z",
+          0.4064
+        ],
+        [
+          "2027-03-24T00:12:00Z",
+          0.4023
+        ],
+        [
+          "2027-03-24T00:13:00Z",
+          0.3991
+        ],
+        [
+          "2027-03-24T00:14:00Z",
+          0.3988
+        ],
+        [
+          "2027-03-24T00:15:00Z",
+          0.3987
+        ],
+        [
+          "2027-03-24T00:16:00Z",
+          0.4001
+        ],
+        [
+          "2027-03-24T00:17:00Z",
+          0.4014
+        ],
+        [
+          "2027-03-24T00:18:00Z",
+          0.3963
+        ],
+        [
+          "2027-03-24T00:19:00Z",
+          0.3926
+        ],
+        [
+          "2027-03-24T00:20:00Z",
+          0.3946
+        ],
+        [
+          "2027-03-24T00:21:00Z",
+          0.4014
+        ],
+        [
+          "2027-03-24T00:22:00Z",
+          0.4041
+        ],
+        [
+          "2027-03-24T00:23:00Z",
+          0.4034
+        ],
+        [
+          "2027-03-24T00:24:00Z",
+          0.4019
+        ],
+        [
+          "2027-03-24T00:25:00Z",
+          0.3999
+        ],
+        [
+          "2027-03-24T00:26:00Z",
+          0.4007
+        ],
+        [
+          "2027-03-24T00:27:00Z",
+          0.3939
+        ],
+        [
+          "2027-03-24T00:28:00Z",
+          0.4045
+        ],
+        [
+          "2027-03-24T00:29:00Z",
+          0.4006
+        ],
+        [
+          "2027-03-24T00:30:00Z",
+          0.4052
+        ],
+        [
+          "2027-03-24T00:31:00Z",
+          0.3945
+        ],
+        [
+          "2027-03-24T00:32:00Z",
+          0.3939
+        ],
+        [
+          "2027-03-24T00:33:00Z",
+          0.3959
+        ],
+        [
+          "2027-03-24T00:34:00Z",
+          0.4019
+        ],
+        [
+          "2027-03-24T00:35:00Z",
+          0.3943
+        ]
+      ]
+    },
+    {
+      "name": "chain_validation_failures_per_s",
+      "unit": "count_per_second",
+      "service": "api-gateway",
+      "points": [
+        [
+          "2027-03-23T23:30:00Z",
+          0.2016
+        ],
+        [
+          "2027-03-23T23:31:00Z",
+          0.2016
+        ],
+        [
+          "2027-03-23T23:32:00Z",
+          0.2034
+        ],
+        [
+          "2027-03-23T23:33:00Z",
+          0.204
+        ],
+        [
+          "2027-03-23T23:34:00Z",
+          0.1963
+        ],
+        [
+          "2027-03-23T23:35:00Z",
+          0.2028
+        ],
+        [
+          "2027-03-23T23:36:00Z",
+          0.2013
+        ],
+        [
+          "2027-03-23T23:37:00Z",
+          0.1982
+        ],
+        [
+          "2027-03-23T23:38:00Z",
+          0.1965
+        ],
+        [
+          "2027-03-23T23:39:00Z",
+          0.2013
+        ],
+        [
+          "2027-03-23T23:40:00Z",
+          0.1999
+        ],
+        [
+          "2027-03-23T23:41:00Z",
+          0.1988
+        ],
+        [
+          "2027-03-23T23:42:00Z",
+          0.1991
+        ],
+        [
+          "2027-03-23T23:43:00Z",
+          0.1968
+        ],
+        [
+          "2027-03-23T23:44:00Z",
+          0.2033
+        ],
+        [
+          "2027-03-23T23:45:00Z",
+          0.2007
+        ],
+        [
+          "2027-03-23T23:46:00Z",
+          0.1991
+        ],
+        [
+          "2027-03-23T23:47:00Z",
+          0.1993
+        ],
+        [
+          "2027-03-23T23:48:00Z",
+          0.2012
+        ],
+        [
+          "2027-03-23T23:49:00Z",
+          0.203
+        ],
+        [
+          "2027-03-23T23:50:00Z",
+          0.1961
+        ],
+        [
+          "2027-03-23T23:51:00Z",
+          0.2028
+        ],
+        [
+          "2027-03-23T23:52:00Z",
+          0.2007
+        ],
+        [
+          "2027-03-23T23:53:00Z",
+          0.2025
+        ],
+        [
+          "2027-03-23T23:54:00Z",
+          0.1961
+        ],
+        [
+          "2027-03-23T23:55:00Z",
+          0.2038
+        ],
+        [
+          "2027-03-23T23:56:00Z",
+          0.2015
+        ],
+        [
+          "2027-03-23T23:57:00Z",
+          0.1975
+        ],
+        [
+          "2027-03-23T23:58:00Z",
+          0.2008
+        ],
+        [
+          "2027-03-23T23:59:00Z",
+          0.2018
+        ],
+        [
+          "2027-03-24T00:00:00Z",
+          0.2008
+        ],
+        [
+          "2027-03-24T00:01:00Z",
+          29.5398
+        ],
+        [
+          "2027-03-24T00:02:00Z",
+          59.4433
+        ],
+        [
+          "2027-03-24T00:03:00Z",
+          60.0695
+        ],
+        [
+          "2027-03-24T00:04:00Z",
+          58.9691
+        ],
+        [
+          "2027-03-24T00:05:00Z",
+          60.9545
+        ],
+        [
+          "2027-03-24T00:06:00Z",
+          59.2029
+        ],
+        [
+          "2027-03-24T00:07:00Z",
+          60.5445
+        ],
+        [
+          "2027-03-24T00:08:00Z",
+          60.5081
+        ],
+        [
+          "2027-03-24T00:09:00Z",
+          60.3032
+        ],
+        [
+          "2027-03-24T00:10:00Z",
+          60.3641
+        ],
+        [
+          "2027-03-24T00:11:00Z",
+          59.1037
+        ],
+        [
+          "2027-03-24T00:12:00Z",
+          58.9896
+        ],
+        [
+          "2027-03-24T00:13:00Z",
+          60.6457
+        ],
+        [
+          "2027-03-24T00:14:00Z",
+          58.9095
+        ],
+        [
+          "2027-03-24T00:15:00Z",
+          59.034
+        ],
+        [
+          "2027-03-24T00:16:00Z",
+          61.092
+        ],
+        [
+          "2027-03-24T00:17:00Z",
+          59.689
+        ],
+        [
+          "2027-03-24T00:18:00Z",
+          61.0859
+        ],
+        [
+          "2027-03-24T00:19:00Z",
+          59.0636
+        ],
+        [
+          "2027-03-24T00:20:00Z",
+          60.335
+        ],
+        [
+          "2027-03-24T00:21:00Z",
+          60.0324
+        ],
+        [
+          "2027-03-24T00:22:00Z",
+          59.6506
+        ],
+        [
+          "2027-03-24T00:23:00Z",
+          60.0796
+        ],
+        [
+          "2027-03-24T00:24:00Z",
+          59.6953
+        ],
+        [
+          "2027-03-24T00:25:00Z",
+          60.3549
+        ],
+        [
+          "2027-03-24T00:26:00Z",
+          60.1586
+        ],
+        [
+          "2027-03-24T00:27:00Z",
+          59.322
+        ],
+        [
+          "2027-03-24T00:28:00Z",
+          59.511
+        ],
+        [
+          "2027-03-24T00:29:00Z",
+          60.3169
+        ],
+        [
+          "2027-03-24T00:30:00Z",
+          61.1036
+        ],
+        [
+          "2027-03-24T00:31:00Z",
+          61.1527
+        ],
+        [
+          "2027-03-24T00:32:00Z",
+          60.3682
+        ],
+        [
+          "2027-03-24T00:33:00Z",
+          60.0441
+        ],
+        [
+          "2027-03-24T00:34:00Z",
+          59.2918
+        ],
+        [
+          "2027-03-24T00:35:00Z",
+          59.2181
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "The intermediate CA certificate that api-gateway serves as part of its TLS chain ('Acme Intermediate G2') reached its expiry at exactly 2027-03-24T00:00:00Z. The leaf certificate is still valid for months, but clients that perform strict chain validation reject the chain because the intermediate is expired, so ~40% of clients failed the TLS handshake. Clients that had the intermediate cached or pinned kept connecting, which is why the outage was partial and looked confusing. The fix is to replace the expired intermediate in the served chain - the leaf key and certificate do not need to change.",
+    "evidence_path": [
+      "api-gateway ERROR: TLS handshake failures ('unable to get issuer certificate' / 'certificate has expired') despite the leaf cert being valid until 2027-09-01",
+      "api-gateway WARN: the intermediate CA 'Acme Intermediate G2' in the served chain expired at 2027-03-24T00:00:00Z",
+      "the failure begins exactly at that wall-clock time and hits ~40% - the clients doing strict chain validation",
+      "clients with a cached or pinned intermediate still connect",
+      "handshake failures clear after the renewed intermediate is installed in the served chain and the TLS config is reloaded"
+    ],
+    "fix": "Install the renewed intermediate certificate in the served chain and reload the TLS config (done). Monitor expiry for every certificate in the chain, not just the leaf, and automate chain updates.",
+    "should_escalate": false
+  }
+}

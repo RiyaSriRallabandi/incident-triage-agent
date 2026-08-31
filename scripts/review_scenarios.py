@@ -18,6 +18,7 @@ from triage.eval.scenario_review import review_scenario
 from triage.ingest.evidence import ScenarioSpec
 
 SPECS_DIR = REPO_ROOT / "data" / "eval" / "specs"
+HELDOUT_SPECS_DIR = REPO_ROOT / "data" / "eval" / "heldout" / "specs"
 
 
 def main(argv: list[str]) -> int:
@@ -25,8 +26,13 @@ def main(argv: list[str]) -> int:
         print("GROQ_API_KEY is not set - cannot run the automated review.")
         return 2
 
+    specs_dir = SPECS_DIR
+    if argv and argv[0] == "--heldout":
+        specs_dir = HELDOUT_SPECS_DIR
+        argv = argv[1:]
+
     wanted = set(argv)
-    spec_paths = sorted(SPECS_DIR.glob("*.spec.json"))
+    spec_paths = sorted(specs_dir.glob("*.spec.json"))
     if wanted:
         spec_paths = [p for p in spec_paths if p.stem.replace(".spec", "") in wanted]
     if not spec_paths:

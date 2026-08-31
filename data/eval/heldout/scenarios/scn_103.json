@@ -1,0 +1,858 @@
+{
+  "id": "scn_103",
+  "category": "resource_exhaustion",
+  "difficulty": "hard",
+  "title": "Unbounded parallel fan-out exhausts the worker pool as the fan-out width grows",
+  "source_url": "https://aws.amazon.com/builders-library/avoiding-fallback-in-distributed-systems/",
+  "source_note": "Failure pattern (a request that fans out into N parallel subrequests, where N grew with data until the fan-out saturated the caller's worker pool) reflects concurrency guidance in the AWS Builders' Library. All services, log lines, metrics, and timestamps are fabricated for evaluation.",
+  "incident_report": "Since ~15:10 UTC the dashboard API is timing out for users with large accounts. Small accounts are fine. No deploys today. Worker utilization on dashboard-api is maxed.",
+  "synthetic_logs": [
+    {
+      "ts": "2027-02-17T14:36:06.313593Z",
+      "service": "dashboard-api",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 206ms"
+    },
+    {
+      "ts": "2027-02-17T14:38:10.731669Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2027-02-17T14:38:46.671528Z",
+      "service": "tile-cache",
+      "level": "INFO",
+      "msg": "SET key=session:785 ttl=3600"
+    },
+    {
+      "ts": "2027-02-17T14:39:21.602252Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-17T14:41:21.609242Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "POST /products 201 in 221ms"
+    },
+    {
+      "ts": "2027-02-17T14:42:18.728669Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "GET /api/v1/users/me 200 in 103ms"
+    },
+    {
+      "ts": "2027-02-17T14:43:14.761913Z",
+      "service": "export-worker",
+      "level": "WARN",
+      "msg": "job invoice.render retried attempt=1"
+    },
+    {
+      "ts": "2027-02-17T14:45:05.945237Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "GET /api/v1/orders 200 in 50ms"
+    },
+    {
+      "ts": "2027-02-17T14:45:33.008541Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "POST /search 201 in 15ms"
+    },
+    {
+      "ts": "2027-02-17T14:45:54.910158Z",
+      "service": "dashboard-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=142"
+    },
+    {
+      "ts": "2027-02-17T14:46:34.735629Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "GET /cart 200 in 48ms"
+    },
+    {
+      "ts": "2027-02-17T14:47:37.689871Z",
+      "service": "dashboard-api",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/orders duration_ms=100"
+    },
+    {
+      "ts": "2027-02-17T14:47:57.760411Z",
+      "service": "export-worker",
+      "level": "INFO",
+      "msg": "processed batch size=114"
+    },
+    {
+      "ts": "2027-02-17T14:50:56.299682Z",
+      "service": "dashboard-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-17T14:55:09.931633Z",
+      "service": "export-worker",
+      "level": "INFO",
+      "msg": "job report.build completed in 23ms"
+    },
+    {
+      "ts": "2027-02-17T14:55:51.370057Z",
+      "service": "export-worker",
+      "level": "INFO",
+      "msg": "job email.send completed in 209ms"
+    },
+    {
+      "ts": "2027-02-17T14:56:39.378349Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "POST /api/v1/orders 201 in 152ms"
+    },
+    {
+      "ts": "2027-02-17T14:58:58.155519Z",
+      "service": "widget-service",
+      "level": "WARN",
+      "msg": "slow request path=/api/v1/users/me duration_ms=97"
+    },
+    {
+      "ts": "2027-02-17T14:59:59.492649Z",
+      "service": "export-worker",
+      "level": "INFO",
+      "msg": "processed batch size=897"
+    },
+    {
+      "ts": "2027-02-17T15:00:28.046707Z",
+      "service": "tile-cache",
+      "level": "INFO",
+      "msg": "evicted 245 keys (lru)"
+    },
+    {
+      "ts": "2027-02-17T15:01:25.159617Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-17T15:02:53.548804Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "POST /products 201 in 19ms"
+    },
+    {
+      "ts": "2027-02-17T15:03:27.300599Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 95ms"
+    },
+    {
+      "ts": "2027-02-17T15:04:04.026956Z",
+      "service": "dashboard-api",
+      "level": "INFO",
+      "msg": "GET /products 200 in 171ms"
+    },
+    {
+      "ts": "2027-02-17T15:05:00Z",
+      "service": "dashboard-api",
+      "level": "WARN",
+      "msg": "worker pool utilisation 88%; some requests fanning out to 400+ parallel widget-service calls"
+    },
+    {
+      "ts": "2027-02-17T15:05:55.904855Z",
+      "service": "export-worker",
+      "level": "INFO",
+      "msg": "processed batch size=303"
+    },
+    {
+      "ts": "2027-02-17T15:07:00Z",
+      "service": "dashboard-api",
+      "level": "WARN",
+      "msg": "largest accounts now have 600+ widgets; one dashboard render holds 600 worker slots at once"
+    },
+    {
+      "ts": "2027-02-17T15:07:36.573458Z",
+      "service": "export-worker",
+      "level": "WARN",
+      "msg": "job invoice.render retried attempt=1"
+    },
+    {
+      "ts": "2027-02-17T15:10:00Z",
+      "service": "dashboard-api",
+      "level": "ERROR",
+      "msg": "worker pool exhausted (size=512); new dashboard requests queued then timing out"
+    },
+    {
+      "ts": "2027-02-17T15:10:14.282055Z",
+      "service": "tile-cache",
+      "level": "WARN",
+      "msg": "GET key=user:92 miss"
+    },
+    {
+      "ts": "2027-02-17T15:12:00Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "widget-service itself is healthy; p95 12ms; load is just very spiky from dashboard-api fan-out"
+    },
+    {
+      "ts": "2027-02-17T15:13:13.216832Z",
+      "service": "widget-service",
+      "level": "WARN",
+      "msg": "slow request path=/checkout duration_ms=59"
+    },
+    {
+      "ts": "2027-02-17T15:14:56.601624Z",
+      "service": "dashboard-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 132ms"
+    },
+    {
+      "ts": "2027-02-17T15:15:44.959479Z",
+      "service": "widget-service",
+      "level": "WARN",
+      "msg": "slow request path=/products duration_ms=199"
+    },
+    {
+      "ts": "2027-02-17T15:17:11.991859Z",
+      "service": "dashboard-api",
+      "level": "INFO",
+      "msg": "POST /products 201 in 152ms"
+    },
+    {
+      "ts": "2027-02-17T15:17:29.682279Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-17T15:17:53.437448Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 205ms"
+    },
+    {
+      "ts": "2027-02-17T15:18:52.058754Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "GET /search 200 in 4ms"
+    },
+    {
+      "ts": "2027-02-17T15:18:54.054223Z",
+      "service": "dashboard-api",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-17T15:19:30.982643Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/products status=200"
+    },
+    {
+      "ts": "2027-02-17T15:22:35.668093Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-17T15:23:08.605018Z",
+      "service": "tile-cache",
+      "level": "INFO",
+      "msg": "evicted 461 keys (lru)"
+    },
+    {
+      "ts": "2027-02-17T15:23:52.913106Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "request completed method=GET path=/search status=200"
+    },
+    {
+      "ts": "2027-02-17T15:23:59.375924Z",
+      "service": "tile-cache",
+      "level": "WARN",
+      "msg": "GET key=user:871 miss"
+    },
+    {
+      "ts": "2027-02-17T15:25:00Z",
+      "service": "dashboard-api",
+      "level": "INFO",
+      "msg": "operator capped fan-out concurrency at 20 per request; worker pool recovering"
+    },
+    {
+      "ts": "2027-02-17T15:25:25.064995Z",
+      "service": "tile-cache",
+      "level": "INFO",
+      "msg": "evicted 483 keys (lru)"
+    },
+    {
+      "ts": "2027-02-17T15:26:40.435709Z",
+      "service": "dashboard-api",
+      "level": "INFO",
+      "msg": "POST /api/v1/users/me 201 in 34ms"
+    },
+    {
+      "ts": "2027-02-17T15:26:43.390486Z",
+      "service": "export-worker",
+      "level": "WARN",
+      "msg": "job webhook.deliver retried attempt=1"
+    },
+    {
+      "ts": "2027-02-17T15:32:00.729178Z",
+      "service": "export-worker",
+      "level": "WARN",
+      "msg": "job report.build retried attempt=1"
+    },
+    {
+      "ts": "2027-02-17T15:33:45.625949Z",
+      "service": "dashboard-api",
+      "level": "INFO",
+      "msg": "GET /checkout 200 in 221ms"
+    },
+    {
+      "ts": "2027-02-17T15:33:46.484677Z",
+      "service": "export-worker",
+      "level": "WARN",
+      "msg": "job cache.warm retried attempt=1"
+    },
+    {
+      "ts": "2027-02-17T15:33:58.660592Z",
+      "service": "tile-cache",
+      "level": "INFO",
+      "msg": "GET key=user:158 hit"
+    },
+    {
+      "ts": "2027-02-17T15:34:10.065291Z",
+      "service": "widget-service",
+      "level": "INFO",
+      "msg": "health check ok"
+    },
+    {
+      "ts": "2027-02-17T15:34:31.256410Z",
+      "service": "export-worker",
+      "level": "INFO",
+      "msg": "queue depth=21"
+    },
+    {
+      "ts": "2027-02-17T15:34:44.535712Z",
+      "service": "dashboard-api",
+      "level": "WARN",
+      "msg": "slow request path=/search duration_ms=40"
+    }
+  ],
+  "synthetic_metrics": [
+    {
+      "name": "worker_pool_utilization",
+      "unit": "ratio",
+      "service": "dashboard-api",
+      "points": [
+        [
+          "2027-02-17T14:35:00Z",
+          0.5506
+        ],
+        [
+          "2027-02-17T14:36:00Z",
+          0.5583
+        ],
+        [
+          "2027-02-17T14:37:00Z",
+          0.55
+        ],
+        [
+          "2027-02-17T14:38:00Z",
+          0.5461
+        ],
+        [
+          "2027-02-17T14:39:00Z",
+          0.5396
+        ],
+        [
+          "2027-02-17T14:40:00Z",
+          0.5458
+        ],
+        [
+          "2027-02-17T14:41:00Z",
+          0.5422
+        ],
+        [
+          "2027-02-17T14:42:00Z",
+          0.5427
+        ],
+        [
+          "2027-02-17T14:43:00Z",
+          0.5564
+        ],
+        [
+          "2027-02-17T14:44:00Z",
+          0.5468
+        ],
+        [
+          "2027-02-17T14:45:00Z",
+          0.5455
+        ],
+        [
+          "2027-02-17T14:46:00Z",
+          0.5454
+        ],
+        [
+          "2027-02-17T14:47:00Z",
+          0.5498
+        ],
+        [
+          "2027-02-17T14:48:00Z",
+          0.5431
+        ],
+        [
+          "2027-02-17T14:49:00Z",
+          0.5442
+        ],
+        [
+          "2027-02-17T14:50:00Z",
+          0.5547
+        ],
+        [
+          "2027-02-17T14:51:00Z",
+          0.5578
+        ],
+        [
+          "2027-02-17T14:52:00Z",
+          0.5409
+        ],
+        [
+          "2027-02-17T14:53:00Z",
+          0.5598
+        ],
+        [
+          "2027-02-17T14:54:00Z",
+          0.5396
+        ],
+        [
+          "2027-02-17T14:55:00Z",
+          0.5464
+        ],
+        [
+          "2027-02-17T14:56:00Z",
+          0.5448
+        ],
+        [
+          "2027-02-17T14:57:00Z",
+          0.5393
+        ],
+        [
+          "2027-02-17T14:58:00Z",
+          0.5405
+        ],
+        [
+          "2027-02-17T14:59:00Z",
+          0.5419
+        ],
+        [
+          "2027-02-17T15:00:00Z",
+          0.5609
+        ],
+        [
+          "2027-02-17T15:01:00Z",
+          0.553
+        ],
+        [
+          "2027-02-17T15:02:00Z",
+          0.5464
+        ],
+        [
+          "2027-02-17T15:03:00Z",
+          0.5541
+        ],
+        [
+          "2027-02-17T15:04:00Z",
+          0.5511
+        ],
+        [
+          "2027-02-17T15:05:00Z",
+          0.5424
+        ],
+        [
+          "2027-02-17T15:06:00Z",
+          0.6651
+        ],
+        [
+          "2027-02-17T15:07:00Z",
+          0.7757
+        ],
+        [
+          "2027-02-17T15:08:00Z",
+          0.8758
+        ],
+        [
+          "2027-02-17T15:09:00Z",
+          0.9804
+        ],
+        [
+          "2027-02-17T15:10:00Z",
+          0.9964
+        ],
+        [
+          "2027-02-17T15:11:00Z",
+          0.9871
+        ],
+        [
+          "2027-02-17T15:12:00Z",
+          0.9896
+        ],
+        [
+          "2027-02-17T15:13:00Z",
+          0.9935
+        ],
+        [
+          "2027-02-17T15:14:00Z",
+          0.9916
+        ],
+        [
+          "2027-02-17T15:15:00Z",
+          1.0041
+        ],
+        [
+          "2027-02-17T15:16:00Z",
+          0.9986
+        ],
+        [
+          "2027-02-17T15:17:00Z",
+          0.9865
+        ],
+        [
+          "2027-02-17T15:18:00Z",
+          1.0129
+        ],
+        [
+          "2027-02-17T15:19:00Z",
+          0.9876
+        ],
+        [
+          "2027-02-17T15:20:00Z",
+          0.9896
+        ],
+        [
+          "2027-02-17T15:21:00Z",
+          1.0096
+        ],
+        [
+          "2027-02-17T15:22:00Z",
+          1.0066
+        ],
+        [
+          "2027-02-17T15:23:00Z",
+          1.0128
+        ],
+        [
+          "2027-02-17T15:24:00Z",
+          0.9859
+        ],
+        [
+          "2027-02-17T15:25:00Z",
+          0.9957
+        ],
+        [
+          "2027-02-17T15:26:00Z",
+          1.0099
+        ],
+        [
+          "2027-02-17T15:27:00Z",
+          0.9851
+        ],
+        [
+          "2027-02-17T15:28:00Z",
+          0.9843
+        ],
+        [
+          "2027-02-17T15:29:00Z",
+          0.9894
+        ],
+        [
+          "2027-02-17T15:30:00Z",
+          1.0044
+        ],
+        [
+          "2027-02-17T15:31:00Z",
+          1.0
+        ],
+        [
+          "2027-02-17T15:32:00Z",
+          0.9919
+        ],
+        [
+          "2027-02-17T15:33:00Z",
+          1.0154
+        ],
+        [
+          "2027-02-17T15:34:00Z",
+          1.0038
+        ],
+        [
+          "2027-02-17T15:35:00Z",
+          1.0018
+        ]
+      ]
+    },
+    {
+      "name": "request_timeout_rate",
+      "unit": "ratio",
+      "service": "dashboard-api",
+      "points": [
+        [
+          "2027-02-17T14:35:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:36:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:37:00Z",
+          0.0051
+        ],
+        [
+          "2027-02-17T14:38:00Z",
+          0.0051
+        ],
+        [
+          "2027-02-17T14:39:00Z",
+          0.0049
+        ],
+        [
+          "2027-02-17T14:40:00Z",
+          0.0049
+        ],
+        [
+          "2027-02-17T14:41:00Z",
+          0.0051
+        ],
+        [
+          "2027-02-17T14:42:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:43:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:44:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:45:00Z",
+          0.0051
+        ],
+        [
+          "2027-02-17T14:46:00Z",
+          0.0051
+        ],
+        [
+          "2027-02-17T14:47:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:48:00Z",
+          0.0051
+        ],
+        [
+          "2027-02-17T14:49:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:50:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:51:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:52:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:53:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:54:00Z",
+          0.0049
+        ],
+        [
+          "2027-02-17T14:55:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:56:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:57:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T14:58:00Z",
+          0.0051
+        ],
+        [
+          "2027-02-17T14:59:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T15:00:00Z",
+          0.0051
+        ],
+        [
+          "2027-02-17T15:01:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T15:02:00Z",
+          0.0051
+        ],
+        [
+          "2027-02-17T15:03:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T15:04:00Z",
+          0.0051
+        ],
+        [
+          "2027-02-17T15:05:00Z",
+          0.0051
+        ],
+        [
+          "2027-02-17T15:06:00Z",
+          0.0049
+        ],
+        [
+          "2027-02-17T15:07:00Z",
+          0.0051
+        ],
+        [
+          "2027-02-17T15:08:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T15:09:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T15:10:00Z",
+          0.005
+        ],
+        [
+          "2027-02-17T15:11:00Z",
+          0.2313
+        ],
+        [
+          "2027-02-17T15:12:00Z",
+          0.443
+        ],
+        [
+          "2027-02-17T15:13:00Z",
+          0.4538
+        ],
+        [
+          "2027-02-17T15:14:00Z",
+          0.4512
+        ],
+        [
+          "2027-02-17T15:15:00Z",
+          0.4423
+        ],
+        [
+          "2027-02-17T15:16:00Z",
+          0.4575
+        ],
+        [
+          "2027-02-17T15:17:00Z",
+          0.4452
+        ],
+        [
+          "2027-02-17T15:18:00Z",
+          0.4569
+        ],
+        [
+          "2027-02-17T15:19:00Z",
+          0.4448
+        ],
+        [
+          "2027-02-17T15:20:00Z",
+          0.4502
+        ],
+        [
+          "2027-02-17T15:21:00Z",
+          0.441
+        ],
+        [
+          "2027-02-17T15:22:00Z",
+          0.4476
+        ],
+        [
+          "2027-02-17T15:23:00Z",
+          0.45
+        ],
+        [
+          "2027-02-17T15:24:00Z",
+          0.459
+        ],
+        [
+          "2027-02-17T15:25:00Z",
+          0.4472
+        ],
+        [
+          "2027-02-17T15:26:00Z",
+          0.4579
+        ],
+        [
+          "2027-02-17T15:27:00Z",
+          0.4532
+        ],
+        [
+          "2027-02-17T15:28:00Z",
+          0.4524
+        ],
+        [
+          "2027-02-17T15:29:00Z",
+          0.4467
+        ],
+        [
+          "2027-02-17T15:30:00Z",
+          0.4577
+        ],
+        [
+          "2027-02-17T15:31:00Z",
+          0.4416
+        ],
+        [
+          "2027-02-17T15:32:00Z",
+          0.4585
+        ],
+        [
+          "2027-02-17T15:33:00Z",
+          0.4487
+        ],
+        [
+          "2027-02-17T15:34:00Z",
+          0.4542
+        ],
+        [
+          "2027-02-17T15:35:00Z",
+          0.4474
+        ]
+      ]
+    }
+  ],
+  "synthetic_deploys": [],
+  "ground_truth": {
+    "root_cause": "dashboard-api renders a dashboard by fanning out one parallel call to widget-service per widget, with no cap on concurrency. As the largest accounts accumulated widgets (now 600+), a single dashboard render for one of those accounts holds hundreds of worker-pool slots at once. Enough concurrent large-account renders exhausted the 512-slot worker pool, so new requests queued and timed out. widget-service is healthy - the problem is the un-bounded fan-out width on the caller, which crossed a threshold as data grew. Recovery required capping per-request fan-out concurrency.",
+    "evidence_path": [
+      "dashboard-api WARN: requests fanning out to 400+ parallel widget-service calls; worker utilisation 88%",
+      "dashboard-api WARN: largest accounts now have 600+ widgets; one render holds 600 worker slots",
+      "dashboard-api ERROR: worker pool exhausted (size=512); new requests queue then time out",
+      "widget-service confirmed healthy (p95 12ms) - the load is spiky fan-out, not a widget-service problem",
+      "recovery after fan-out concurrency is capped at 20 per request"
+    ],
+    "fix": "Cap per-request fan-out concurrency and batch the widget calls (done). Add a bounded worker pool per fan-out stage, page or lazy-load widgets for very large dashboards, and alert on fan-out width.",
+    "should_escalate": false
+  }
+}
