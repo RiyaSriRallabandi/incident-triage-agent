@@ -1,0 +1,63 @@
+{
+  "tag": "conclude-v3",
+  "scenario_id": "scn_019",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_019",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "A decompression bomb attack via an image asset (asset a91f) declaring 48000x48000 pixels from a tiny 40KB file caused CPU exhaustion and pinned the resize fleet as the image-resizer service struggled to decode the malicious payload.",
+      "confidence": 0.95,
+      "evidence": [
+        "cpu_utilization_pct summary: first=39.3285, last=99.7609, min=39.2046, max=101.9889, change +159.3%",
+        "cpu_utilization_pct points: 19:31=59.1687, 19:32=79.9483, 19:33=100.326",
+        "2026-12-01T19:32:00Z  image-resizer  ERROR  decode job for asset a91f exceeded 60s; image declares 48000x48000 px from a 40KB file"
+      ],
+      "recommended_fix": "Implement strict validation checks on incoming image dimensions and file size ratios to reject decompression bombs before passing them to the decoder. Follow up by adding rate-limiting and input-sanitization rules at the ingress layer for image upload and resize endpoints."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The image-resizer service has pinned CPU and a huge resize queue since 19:32 UTC. I will query the cpu_utilization_pct metric for image-resizer to quantify the CPU saturation during the incident window.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "image-resizer",
+          "metric": "cpu_utilization_pct",
+          "start": "2026-12-01T19:00:00Z",
+          "end": "2026-12-01T19:55:00Z"
+        },
+        "result": "image-resizer / cpu_utilization_pct (percent)\nsummary: first=39.3285, last=99.7609, min=39.2046, max=101.9889, change +159.3% (first value -> most extreme value)\npoints: 19:00=39.3285, 19:01=39.2574, 19:02=39.9929, 19:03=39.6316, 19:04=40.0319, 19:05=39.762, 19:06=39.3442, 19:07=40.598, 19:08=40.7564, 19:09=39.4851, 19:10=40.5156, 19:11=40.1509, 19:12=39.3446, 19:13=39.7226, 19:14=40.2845, 19:15=40.5154, 19:16=40.0047, 19:17=39.5929, 19:18=40.0283, 19:19=39.7948, 19:20=40.0981, 19:21=39.8655, 19:22=40.2175, 19:23=40.2651, 19:24=40.6041, 19:25=39.8191, 19:26=39.2046, 19:27=40.4919, 19:28=39.9533, 19:29=39.337, 19:30=39.5858, 19:31=59.1687, 19:32=79.9483, 19:33=100.326, 19:34=101.051, 19:35=99.7237, 19:36=100.491, 19:37=98.1531, 19:38=101.477, 19:39=100.94, 19:40=100.89, 19:41=99.0198, 19:42=98.6698, 19:43=101.778, 19:44=100.085, 19:45=101.917, 19:46=101.982, 19:47=101.989, 19:48=100.013, 19:49=100.712, 19:50=98.4201, 19:51=100.722, 19:52=98.2176, 19:53=101.817, 19:54=99.0181, 19:55=99.7609",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The image-resizer CPU utilization surged to 100% starting at 19:32 UTC. I will now search the image-resizer logs around that timestamp to identify any specific errors or incoming payload anomalies causing the CPU saturation.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "image-resizer",
+          "start": "2026-12-01T19:30:00Z",
+          "end": "2026-12-01T19:35:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2026-12-01T19:32:00Z  image-resizer  ERROR  decode job for asset a91f exceeded 60s; image declares 48000x48000 px from a 40KB file",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The logs indicate that image-resizer is struggling with a maliciously large dimension declaration (48000x48000 px) in a tiny file (40KB), which represents a decompression bomb attack. I will search the runbook library for troubleshooting guidance on image bombs or excessive dimensions.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "image-resizer resize error decode job exceeded"
+        },
+        "result": "5 runbook section(s):\n\n[1] connection-pool-exhaustion.md > Likely causes (score 0.2964)\n- A slow downstream (database, cache, or another service) holding connections\n  longer, so the fixed-size pool drains and cannot refill fast enough.\n- Retry amplification increasing concurrent outbound calls beyond the pool size.\n- A connection leak: connections checked out and never returned due to a missing\n  release in an error path.\n- Pool sized too small for current traffic, or a single pool shared between fast\n  local work and slow remote calls.\n\n[2] operator-capacity-change-incident.md > Likely causes (score 0.2506)\n- A command run with the wrong argument, wrong target, or wrong environment: a\n  fat-finger, a copied value, or a script bug.\n- Automation acting on stale or incorrect input.\n- An operation whose blast radius was underestimated: removing more capacity than\n  the system could tolerate.\n\n[3] memory-leak-and-oom.md > Mitigation (score 0.2384)\nRestart to buy time, then fix the retention: bound and evict caches, close\nresources in finally blocks, add backpressure to queues. Right-size the memory\nlimit only after the leak is ruled out.\n\n[4] operator-capacity-change-incident.md > Symptoms (score 0.2311)\nAn outage that begins during planned maintenance or a manual operation, not during\na deploy. Logs show an operator session and a command that changed capacity,\nscaled a group, drained nodes, or altered routing, often with a parameter larger\nthan intended. Impact appears seconds to minutes after the command.\n\n[5] cpu-saturation.md > Likely causes (score 0.2112)\n- A pathological code path introduced by a recent change: a catastrophically\n  backtracking regular expression, an accidental O(n^2) loop, unbounded JSON\n  parsing, or serialization of a large object on every request.\n- A cache that stopped working, forcing expensive recomputation per request.\n- A retry storm or traffic surge pushing the service past its capacity.\n- Garbage collection thrashing due to memory pressure.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 3,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

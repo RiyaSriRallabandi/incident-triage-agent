@@ -1,49 +1,72 @@
 # IncidentTriage Agent
 
-A multi-step AI agent that automates the *investigation* phase of an on-call
+A multi-step AI agent that automates the **investigation** phase of an on-call
 incident — not the fix. Given an incident report, it iteratively queries evidence
-sources (logs, metrics, deploy history, and a runbook knowledge base), reasons
-about what to check next, and produces a cited root-cause hypothesis with a
-confidence score and recommended fix — or cleanly escalates to a human when the
-evidence is insufficient.
+sources, reasons about what to check next, and produces a **cited root-cause
+hypothesis** (with a confidence score and a recommended fix) — or **cleanly
+escalates** when the evidence doesn't localize a cause.
 
-The goal is to demonstrate agent design and orchestration with in-demand tooling:
-LangGraph for the agent state machine, tool-use over structured evidence sources,
-retrieval for the runbook corpus, and step-level evaluation with tracing.
+The point of the project is not the agent — a plan/act/conclude loop is a known
+pattern. The point is **building the agent *and* a rigorous evaluation of it**:
+step-level metrics, a calibrated LLM judge, controlled ablations with paired
+significance testing, a sealed held-out test set, and an adversarial slice.
 
-## Status
+## What it does
 
-Early development.
+```
+   INCIDENT REPORT  ──►  ┌──────────────────────────────┐  ──►  DIAGNOSIS
+   "checkout 503s since        plan  ─►  act  ─►  plan  ─►  ...        root cause + confidence
+    ~09:23, no deploys,      (LLM)     (tool)   (LLM)              + cited evidence + fix
+    payments looks slow"          └── conclude (LLM) ──┘        OR  ESCALATE
+                                                                    reason + next steps
+```
+
+- **`plan`** (LLM): given the report + evidence so far, pick the next tool call, or conclude.
+- **`act`** (deterministic): run the chosen tool, append the result to the evidence trace.
+- **`conclude`** (LLM): produce the diagnosis contract, or escalate.
+- A tool-call budget (default 6) bounds the loop.
+
+**Tools:** `search_logs`, `query_metrics`, `get_recent_deploys` (over one
+scenario's synthetic evidence), and `retrieve_runbook` (RAG over a hand-written
+runbook corpus). Also exposed as an [MCP](https://modelcontextprotocol.io) server.
+
+## Results
+
+Evaluated on a **30-scenario dev set** (used for prompt iteration + ablations)
+and a **10-scenario sealed held-out set** (used once). Every scenario is derived
+from a real public postmortem; ground truth is hand-verified.
+
+_See [docs/REPORT.md](docs/REPORT.md) for the full numbers, the ablation table,
+and the judge-calibration story. Headline figures land here once the held-out run
+completes._
+
+Highlights so far:
+
+- **Judge calibration:** v1 of the LLM judge came out at Cohen's **κ = 0.25**
+  (too lenient); diagnosed the bias, rewrote it, **κ = 0.92** (n=30).
+- **Ablation:** a `conclude` prompt that constrains citations to retrieved text
+  raised citation grounding **55% → 87%** (Wilcoxon p = 0.0004) — but over-escalated
+  (93% → 80%), caught by the paired test; the next iteration fixes it.
 
 ## Stack
 
-- **Orchestration:** LangGraph (explicit state machine)
-- **LLM calls:** Groq and Google AI Studio (Gemini) — free tiers only
-- **Runbook retrieval:** Chroma + sentence-transformers embeddings
-- **Tracing / eval:** LangSmith free tier
-- **Serving:** FastAPI + uvicorn
-- **CI:** GitHub Actions
-- **Deployment:** Render or Fly.io free tier
+| | |
+|---|---|
+| Agent orchestration | **LangGraph** (explicit state machine) |
+| LLMs | **Groq** (`gpt-oss-20b/120b`) + **Gemini** (`gemini-3.5-flash-lite`), free tiers only |
+| Runbook RAG | **Chroma** + `sentence-transformers` (`all-MiniLM-L6-v2`, local) |
+| Tracing | **LangSmith** free tier — per-step traces, tagged and filterable |
+| Eval | custom harness · LLM-as-judge · `scikit-learn` (Cohen's κ) · `scipy` (McNemar, Wilcoxon) |
+| Tooling | `uv` · `ruff` · `pytest` (250+ tests) · GitHub Actions CI |
 
-Everything runs on free tiers. Target cost: $0.
+Target cost: **$0**.
 
 ## Setup
 
 ```bash
 uv sync --dev
-cp .env.example .env   # then fill in API keys
-```
-
-Verify LLM access once keys are set:
-
-```bash
-uv run python scripts/smoke_llm.py
-```
-
-Build the runbook retrieval index (downloads the embedding model on first run):
-
-```bash
-uv run python scripts/build_runbook_index.py
+cp .env.example .env                        # fill in GROQ_API_KEY, GEMINI_API_KEY, LANGCHAIN_API_KEY
+uv run python scripts/build_runbook_index.py   # downloads the embedding model (~80 MB) once
 ```
 
 Run the agent on a scenario:
@@ -57,20 +80,21 @@ result = investigate(scenarios["scn_001"])
 print(result.outcome, result.diagnosis or result.escalation)
 ```
 
-## MCP server
-
-The four evidence tools are also exposed as an [MCP](https://modelcontextprotocol.io)
-server, so any MCP client can explore the incident dataset directly:
+Reproduce the evaluation:
 
 ```bash
-uv run triage-mcp        # stdio transport
+uv run python scripts/run_eval.py --variant dev-baseline   # baseline (uses cache)
+uv run python scripts/run_ablations.py                     # variants + significance tests
+uv run python scripts/run_security.py --provider groq      # prompt-injection slice
 ```
 
-Tools: `list_scenarios`, `search_logs`, `query_metrics`, `get_recent_deploys`,
-`retrieve_runbook`. The scenario-scoped tools take a `scenario_id` from
-`list_scenarios`.
+## MCP server
 
-To use it from Claude Desktop, add to `claude_desktop_config.json`:
+```bash
+uv run triage-mcp        # stdio transport; 5 tools
+```
+
+Claude Desktop (`claude_desktop_config.json`):
 
 ```json
 {
@@ -85,13 +109,18 @@ To use it from Claude Desktop, add to `claude_desktop_config.json`:
 
 ## Tracing
 
-Set `LANGCHAIN_API_KEY` (from [smith.langchain.com](https://smith.langchain.com),
-free Developer tier) and `LANGCHAIN_TRACING_V2=true` in `.env`. Every agent run is
-then captured to the `incident-triage-agent` LangSmith project, tagged with the
-scenario id, category, and difficulty so runs are filterable. Without a key,
-tracing is a silent no-op.
+With `LANGCHAIN_API_KEY` + `LANGCHAIN_TRACING_V2=true` in `.env`, every run is
+captured to the `incident-triage-agent` LangSmith project, tagged by scenario id,
+category, and difficulty. No key → silent no-op.
 
-## Data
+## Deployment
 
-All incident data is synthetic or derived from public postmortems. No production
-data is used.
+The agent is packaged as a library plus scripts; a thin FastAPI wrapper and a
+Render/Fly deploy config are planned (see [docs/REPORT.md](docs/REPORT.md) for
+status). All incident data is synthetic, so a deployed instance exposes no
+production data.
+
+## Honesty
+
+Synthetic data, small n, free-tier-limited throughput, prompts tuned against the
+dev set. The gaps are documented in [docs/LIMITATIONS.md](docs/LIMITATIONS.md).
