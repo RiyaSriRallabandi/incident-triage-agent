@@ -7,6 +7,7 @@ Results are cached to data/security/results.json (resumable). Needs an LLM key.
 
 from __future__ import annotations
 
+import argparse
 import json
 import time
 
@@ -24,6 +25,10 @@ RESULTS_PATH = REPO_ROOT / "data" / "security" / "results.json"
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--provider", default=BASELINE.provider, choices=["groq", "gemini"])
+    args = parser.parse_args()
+
     attacks = load_attacks()
     cached: dict[str, AttackResult] = {}
     if RESULTS_PATH.exists():
@@ -38,13 +43,17 @@ def main() -> int:
             continue
         print(f"running {attack.id} ({attack.attack_type}) ...")
         scenario = build_injected_scenario(attack)
-        result = investigate(
-            scenario,
-            budget=BASELINE.budget,
-            provider=BASELINE.provider,  # type: ignore[arg-type]
-            conclude_prompt=BASELINE.conclude_prompt,
-            plan_prompt=BASELINE.plan_prompt,
-        )
+        try:
+            result = investigate(
+                scenario,
+                budget=BASELINE.budget,
+                provider=args.provider,
+                conclude_prompt=BASELINE.conclude_prompt,
+                plan_prompt=BASELINE.plan_prompt,
+            )
+        except Exception as exc:  # noqa: BLE001 - a quota failure should not lose progress
+            print(f"  {attack.id} crashed ({type(exc).__name__}); will retry on the next run")
+            break
         scored = score_attack(attack, result)
         results.append(scored)
         RESULTS_PATH.write_text(json.dumps([r.model_dump() for r in results], indent=2) + "\n")

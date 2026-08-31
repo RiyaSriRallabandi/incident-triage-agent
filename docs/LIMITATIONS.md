@@ -23,15 +23,29 @@ below are deliberate scope choices, recorded honestly.
 - **Synthetic.** Incident reports, logs, metrics, and deploys are fabricated.
   Only the failure pattern and root-cause shape come from the cited public
   postmortems. Real logs are messier (gaps, inconsistent formats, clock skew).
-- **Small.** The golden set is a handful of scenarios during development; it
-  expands later. Measured performance reflects these constructed scenarios, not
-  real-world incidents.
-- **Mostly singular ground truth.** Real incidents are sometimes never fully
-  root-caused or are several overlapping problems. One scenario (`scn_004`) tests
-  the "no clean answer, escalate" case.
+- **Constructed by the project author** from public postmortems and validated by
+  an automated rubric reviewer; not independently reviewed by a practicing SRE.
+- **30 scenarios** across 7 failure categories. Small for statistics: paired
+  ablation tests run at n=30, so p-values are supporting evidence, not verdicts -
+  effect sizes are reported alongside.
+- **The dev set was tuned against.** Prompts were iterated against these 30
+  scenarios, so their headline accuracy is an in-domain (optimistic) estimate. A
+  held-out test set is the intended fix (planned; see the report).
+- **Judge calibration is small.** Cohen's kappa is computed against the author's
+  hand grading of 30 runs; the judge-v2 prompt contains worked examples drawn
+  from a few scenarios, so some anchoring is possible.
 
 ## Model / infrastructure
 
-- Free-tier models only (Groq OSS, Gemini). Structured output on the Groq OSS
-  models is occasionally malformed and is retried.
-- No live deployment integration; the agent reads scenario files.
+- **Free-tier models only**, which caps throughput: Groq OSS models (`gpt-oss-20b`
+  ~200K tokens/day) and Gemini (`gemini-3.5-flash-lite` ~500 requests/day). The
+  full ablation matrix does not fit in one day's quota, so runs are spread over
+  several days. Structured output on the Groq OSS models is occasionally malformed
+  and is retried.
+- **No live deployment integration**; the agent reads scenario files.
+
+## Security slice
+
+- The prompt-injection suite is **5 attacks**, one payload per scenario, scored by
+  a conservative keyword/behaviour heuristic (not an LLM judge). It shows the
+  agent's resistance to a representative set of attack shapes, not a guarantee.
