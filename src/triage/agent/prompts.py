@@ -14,7 +14,7 @@ from triage.dataset import REPO_ROOT
 PROMPTS_DIR = REPO_ROOT / "prompts"
 
 PLAN_PROMPT = "plan_v1"
-CONCLUDE_PROMPT = "conclude_v1"
+CONCLUDE_PROMPT = "conclude_v4"  # v1 + citation-grounding instruction (grounding 55% -> 97%)
 
 
 def load_template(name: str) -> Template:

@@ -4,6 +4,74 @@
   "run_index": 1,
   "budget": 6,
   "provider": "gemini",
-  "result": null,
-  "error": "Traceback (most recent call last):\n  File \"/Users/riyasrirallabandi/projects/incident-triage-agent/.venv/lib/python3.12/site-packages/langchain_google_genai/chat_models.py\", line 3988, in _generate\n    response: GenerateContentResponse = self.client.models.generate_content(\n                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/riyasrirallabandi/projects/incident-triage-agent/.venv/lib/python3.12/site-packages/google/genai/models.py\", line 6270, in generate_content\n    response = self._generate_content(\n               ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/riyasrirallabandi/projects/incident-triage-agent/.venv/lib/python3.12/site-packages/google/genai/models.py\", line 4707, in _generate_content\n    response = self._api_client.request(\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\ngoogle.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 500, model: gemini-3.5-flash-lite\\nPlease retry in 6.852141088s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.5-flash-lite'}, 'quotaValue': '500'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '6s'}]}}\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/Users/riyasrirallabandi/projects/incident-triage-agent/src/triage/eval/runner.py\", line 87, in produce_runs\n    result = investigate(\n             ^^^^^^^^^^^^\n  File \"/Users/riyasrirallabandi/projects/incident-triage-agent/src/triage/agent/run.py\", line 162, in investigate\n    final = graph.invoke(initial, config)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/riyasrirallabandi/projects/incident-triage-agent/.venv/lib/python3.12/site-packages/langgraph/pregel/main.py\", line 3913, in invoke\n    for chunk in self.stream(\n                 ^^^^^^^^^^^^\nlangchain_google_genai.chat_models.GoogleRateLimitError: Error calling model 'gemini-3.5-flash-lite' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 500, model: gemini-3.5-flash-lite\\nPlease retry in 6.852141088s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.5-flash-lite'}, 'quotaValue': '500'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '6s'}]}}\nDuring task with name 'plan' and id '2a440a53-a0fc-f460-c5a3-421e7ac2d241'\n"
+  "result": {
+    "scenario_id": "scn_029",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The fleet was scaled up for load this morning, causing active database connections to hit the maximum client limit on orders-db, resulting in connection pool exhaustion and connection acquire errors across ~15% of requests.",
+      "confidence": 0.95,
+      "evidence": [
+        "orders-service / connection_acquire_error_rate (ratio) summary: first=0.001, last=0.1473, min=0.001, max=0.1529, change +15190.0%",
+        "orders-db / db_active_connections (count) summary: first=385.2159, last=504.9487, min=373.0157, max=509.1683, change +32.2%",
+        "2027-01-14T11:32:00Z  orders-service  ERROR  FATAL: sorry, too many clients already; ~15% of requests failing to acquire a DB connection",
+        "The fleet was scaled up this morning for load."
+      ],
+      "recommended_fix": "Increase the maximum database connection limit on orders-db to accommodate the scaled-up fleet, or reduce the connection pool size per instance in orders-service. Follow up by reviewing database connection usage and connection pooling configurations."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The orders-service is experiencing intermittent database connection errors, so we should check its connection error metric to understand the timing and scale of the failures.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "orders-service",
+          "metric": "connection_acquire_error_rate",
+          "start": "2027-01-14T10:50:00Z",
+          "end": "2027-01-14T11:59:00Z"
+        },
+        "result": "orders-service / connection_acquire_error_rate (ratio)\nsummary: first=0.001, last=0.1473, min=0.001, max=0.1529, change +15190.0% (first value -> most extreme value)\npoints: 10:50=0.001, 10:51=0.001, 10:52=0.001, 10:53=0.001, 10:54=0.001, 10:55=0.001, 10:56=0.001, 10:57=0.001, 10:58=0.001, 10:59=0.001, 11:00=0.001, 11:01=0.001, 11:02=0.001, 11:03=0.001, 11:04=0.001, 11:05=0.001, 11:06=0.001, 11:07=0.001, 11:08=0.001, 11:09=0.001, 11:10=0.001, 11:11=0.001, 11:12=0.001, 11:13=0.001, 11:14=0.001, 11:15=0.001, 11:16=0.001, 11:17=0.001, 11:18=0.001, 11:19=0.001, 11:20=0.001, 11:21=0.001, 11:22=0.001, 11:23=0.001, 11:24=0.001, 11:25=0.001, 11:26=0.001, 11:27=0.001, 11:28=0.001, 11:29=0.001, 11:30=0.001, 11:31=0.001, 11:32=0.001, 11:33=0.0753, 11:34=0.1473, 11:35=0.1487, 11:36=0.1517, 11:37=0.1477, 11:38=0.1479, 11:39=0.152, 11:40=0.1475, 11:41=0.1478, 11:42=0.1485, 11:43=0.152, 11:44=0.1491, 11:45=0.1498, 11:46=0.1507, 11:47=0.1513, 11:48=0.1484, 11:49=0.1495, 11:50=0.1512, 11:51=0.1488, 11:52=0.1486, 11:53=0.1498, 11:54=0.1487, 11:55=0.1521, 11:56=0.1481, 11:57=0.1529, 11:58=0.1496, 11:59=0.1473",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We confirmed that connection acquire error rates for orders-service spike starting at 11:33 UTC. Next, we should check active database connections on orders-db to see if the database pool is exhausted.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "orders-db",
+          "metric": "db_active_connections",
+          "start": "2027-01-14T10:50:00Z",
+          "end": "2027-01-14T11:59:00Z"
+        },
+        "result": "orders-db / db_active_connections (count)\nsummary: first=385.2159, last=504.9487, min=373.0157, max=509.1683, change +32.2% (first value -> most extreme value)\npoints: 10:50=385.216, 10:51=376.962, 10:52=386.629, 10:53=383.803, 10:54=373.847, 10:55=375.656, 10:56=386.002, 10:57=385.627, 10:58=387.033, 10:59=385.067, 11:00=380.684, 11:01=379.419, 11:02=373.324, 11:03=384.741, 11:04=387.326, 11:05=386.395, 11:06=385.618, 11:07=378.871, 11:08=378.953, 11:09=387.455, 11:10=386.515, 11:11=379.85, 11:12=385.142, 11:13=383.82, 11:14=384.726, 11:15=383.104, 11:16=379.908, 11:17=373.016, 11:18=374.205, 11:19=385.654, 11:20=382.896, 11:21=386.212, 11:22=380.646, 11:23=381.762, 11:24=386.036, 11:25=383.538, 11:26=373.606, 11:27=382.68, 11:28=379.27, 11:29=386.049, 11:30=384.079, 11:31=446.45, 11:32=491.832, 11:33=490.843, 11:34=500.221, 11:35=493.982, 11:36=498.518, 11:37=497.337, 11:38=496.766, 11:39=491.357, 11:40=494.267, 11:41=492.675, 11:42=508.193, 11:43=491.498, 11:44=500.24, 11:45=504.107, 11:46=500.785, 11:47=509.168, 11:48=501.768, 11:49=490.846, 11:50=506.89, 11:51=497.034, 11:52=507.186, 11:53=501.864, 11:54=491.127, 11:55=503.915, 11:56=498.402, 11:57=508.915, 11:58=503.819, 11:59=504.949",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "We see active database connections on orders-db hit a ceiling around 505 around 11:32-11:33 UTC, coinciding with the orders-service connection acquire error rate spike. Let's search the orders-service logs to see what specific database connection errors or configuration limits are logged.",
+        "tool": "search_logs",
+        "args": {
+          "service": "orders-service",
+          "query": "connection",
+          "start": "2027-01-14T11:30:00Z",
+          "end": "2027-01-14T11:40:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2027-01-14T11:32:00Z  orders-service  ERROR  FATAL: sorry, too many clients already; ~15% of requests failing to acquire a DB connection",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "We found the exact log message 'FATAL: sorry, too many clients already' matching the database connection exhaustion on orders-db and the spike in errors on orders-service. We should search the runbook library to confirm standard troubleshooting and root cause mitigation steps for this failure pattern.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "too many clients already"
+        },
+        "result": "5 runbook section(s):\n\n[1] quorum-loss-distributed-system.md > Likely causes (score 0.2792)\n- Too many nodes lost at once: a bad capacity change, a coordinated restart, a\n  rack or availability-zone outage, or an aggressive rollout.\n- Network partition splitting the cluster so no side has a majority.\n- Disk or data corruption taking replicas out of service.\n- Misconfiguration of the cluster size or voting membership.\n\n[2] thread-pool-exhaustion.md > Symptoms (score 0.2756)\nThe service stops accepting new work: log lines about a full worker pool, a\nrejected-execution error, or a saturated event loop. Inbound requests are queued\nor dropped with 503 responses. Already-running requests may still complete slowly.\n\n[3] connection-pool-exhaustion.md > Likely causes (score 0.275)\n- A slow downstream (database, cache, or another service) holding connections\n  longer, so the fixed-size pool drains and cannot refill fast enough.\n- Retry amplification increasing concurrent outbound calls beyond the pool size.\n- A connection leak: connections checked out and never returned due to a missing\n  release in an error path.\n- Pool sized too small for current traffic, or a single pool shared between fast\n  local work and slow remote calls.\n\n[4] memory-leak-and-oom.md > Mitigation (score 0.2707)\nRestart to buy time, then fix the retention: bound and evict caches, close\nresources in finally blocks, add backpressure to queues. Right-size the memory\nlimit only after the leak is ruled out.\n\n[5] retry-storm-amplification.md > Mitigation (score 0.267)\nReduce or disable the retry budget to break the storm, then restore capacity.\nFix the client to use exponential backoff with jitter, a bounded retry budget,\nand a circuit breaker. Ensure only one layer retries.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 4,
+    "hit_budget_cap": false
+  },
+  "error": null
 }
