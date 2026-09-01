@@ -47,11 +47,12 @@ from a real public postmortem; ground truth is hand-verified.
 
 - **Judge calibration:** the LLM judge's first prompt scored Cohen's **κ = 0.25**
   vs. hand grading (too lenient) — diagnosed, rewrote, **κ = 0.92** (n=30).
-- **Ablations rejected every prompt variant:** a citation-constrained `conclude`
-  prompt raised grounding **55% → 87%** (Wilcoxon p = 0.0004) but over-escalated
-  (93% → 80%); the fix for that regressed mechanism identification. The baseline ships.
+- **Ablations rejected every prompt variant.** Four `conclude`-prompt variants
+  each fixed citation grounding (up to 55% → 97%, Wilcoxon p ≈ 0) but traded it
+  for a regression. One looked like a clean win on the dev set — **the held-out
+  set caught that it cost ~15–40pp of accuracy** on synthesis-heavy incidents.
 - **5/5 prompt-injection attacks resisted** ([SECURITY.md](docs/SECURITY.md)).
-- Persistent weak spot: ~55% citation grounding.
+- Persistent weak spot: ~55% citation grounding — not fixable by prompt alone.
 
 Full numbers, the ablation table, and the calibration story: [docs/REPORT.md](docs/REPORT.md).
 

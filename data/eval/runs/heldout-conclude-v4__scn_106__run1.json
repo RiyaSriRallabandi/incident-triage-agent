@@ -1,0 +1,81 @@
+{
+  "tag": "heldout-conclude-v4",
+  "scenario_id": "scn_106",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_106",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "Increased traffic causing outbound RPS to model-scoring to exceed rate limits, resulting in downstream 429 errors from model-scoring.",
+      "confidence": 0.95,
+      "evidence": [
+        "~15% of reco requests failing on model-scoring 429; rate has grown ~25% week-over-week with traffic",
+        "recommendations-service / outbound_rps_to_model_scoring (count_per_second)",
+        "recommendations-service / downstream_429_rate (ratio)",
+        "summary: first=778.7822, last=1198.1898, min=764.6937, max=1203.06, change +54.5% (first value -> most extreme value)",
+        "summary: first=0.002, last=0.1481, min=0.002, max=0.1529, change +7545.0% (first value -> most extreme value)"
+      ],
+      "recommended_fix": "Increase the rate limit for recommendations-service on the model-scoring backend or implement client-side caching and backoff to handle the traffic growth."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The recommendations widget is failing to load for 15% of page views, starting around 10:40 UTC without recent deploys. I need to search the logs of the web-frontend service to find error patterns or status codes related to these failures.",
+        "tool": "search_logs",
+        "args": {
+          "query": "recommendations",
+          "service": "web-frontend",
+          "start": "2027-03-10T09:50:00Z",
+          "end": "2027-03-10T11:05:00Z"
+        },
+        "result": "No matching log lines.",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "Since the web-frontend logs returned no matches for recommendations, I should search logs on the recommendations-service to see if it is receiving requests and what errors it might be returning.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "recommendations-service",
+          "start": "2027-03-10T09:50:00Z",
+          "end": "2027-03-10T11:05:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2027-03-10T10:40:00Z  recommendations-service  ERROR  ~15% of reco requests failing on model-scoring 429; rate has grown ~25% week-over-week with traffic",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The recommendations-service logs indicate that 15% of requests are failing due to a 429 error on model-scoring. I need to query the outbound_rps_to_model_scoring metric on recommendations-service to understand the traffic pattern and confirm if rate limiting is occurring.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "recommendations-service",
+          "metric": "outbound_rps_to_model_scoring",
+          "start": "2027-03-10T09:50:00Z",
+          "end": "2027-03-10T11:05:00Z"
+        },
+        "result": "recommendations-service / outbound_rps_to_model_scoring (count_per_second)\nsummary: first=778.7822, last=1198.1898, min=764.6937, max=1203.06, change +54.5% (first value -> most extreme value)\npoints: 09:50=778.782, 09:51=780.963, 09:52=775.591, 09:53=764.694, 09:54=770.521, 09:55=772.815, 09:56=791.806, 09:57=767.517, 09:58=778.783, 09:59=783.491, 10:00=781.967, 10:01=782.943, 10:02=769.71, 10:03=771.52, 10:04=777.159, 10:05=790.145, 10:06=774.639, 10:07=781.368, 10:08=768.666, 10:09=779.051, 10:10=771.172, 10:11=791.331, 10:12=793.472, 10:13=788.322, 10:14=765.856, 10:15=772.187, 10:16=789.344, 10:17=769.544, 10:18=788.414, 10:19=794.751, 10:20=767.598, 10:21=788.967, 10:22=773.102, 10:23=785.538, 10:24=765.804, 10:25=789.244, 10:26=792.167, 10:27=774.052, 10:28=789.818, 10:29=792.131, 10:30=794.036, 10:31=810.222, 10:32=834.217, 10:33=866.189, 10:34=900.69, 10:35=918.352, 10:36=930.06, 10:37=977.013, 10:38=1006.02, 10:39=1018.98, 10:40=1058.45, 10:41=1065.48, 10:42=1089.06, 10:43=1116.46, 10:44=1176.14, 10:45=1173.29, 10:46=1198.41, 10:47=1199.41, 10:48=1175.35, 10:49=1187.03, 10:50=1185.24, 10:51=1186.06, 10:52=1159.42, 10:53=1186.45, 10:54=1194.9, 10:55=1194.14, 10:56=1182.13, 10:57=1194.27, 10:58=1174.71, 10:59=1198.66, 11:00=1203.06, 11:01=1197.47, 11:02=1200.36, 11:03=1197.11, 11:04=1164.58, 11:05=1198.19",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "We see outbound RPS to model-scoring increasing significantly starting around 10:30 UTC, resulting in 429 errors from model-scoring. I will query the downstream_429_rate metric on recommendations-service to confirm the exact pattern and magnitude of the rate limiting.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "recommendations-service",
+          "metric": "downstream_429_rate",
+          "start": "2027-03-10T09:50:00Z",
+          "end": "2027-03-10T11:05:00Z"
+        },
+        "result": "recommendations-service / downstream_429_rate (ratio)\nsummary: first=0.002, last=0.1481, min=0.002, max=0.1529, change +7545.0% (first value -> most extreme value)\npoints: 09:50=0.002, 09:51=0.002, 09:52=0.002, 09:53=0.002, 09:54=0.002, 09:55=0.002, 09:56=0.002, 09:57=0.002, 09:58=0.002, 09:59=0.002, 10:00=0.002, 10:01=0.002, 10:02=0.002, 10:03=0.002, 10:04=0.002, 10:05=0.002, 10:06=0.002, 10:07=0.002, 10:08=0.002, 10:09=0.002, 10:10=0.002, 10:11=0.002, 10:12=0.002, 10:13=0.002, 10:14=0.002, 10:15=0.002, 10:16=0.002, 10:17=0.002, 10:18=0.002, 10:19=0.002, 10:20=0.002, 10:21=0.002, 10:22=0.002, 10:23=0.002, 10:24=0.002, 10:25=0.002, 10:26=0.002, 10:27=0.002, 10:28=0.002, 10:29=0.002, 10:30=0.002, 10:31=0.017, 10:32=0.0317, 10:33=0.0466, 10:34=0.0617, 10:35=0.0755, 10:36=0.0891, 10:37=0.1076, 10:38=0.1224, 10:39=0.1378, 10:40=0.1479, 10:41=0.1504, 10:42=0.151, 10:43=0.1472, 10:44=0.1505, 10:45=0.1491, 10:46=0.1485, 10:47=0.1529, 10:48=0.1519, 10:49=0.1501, 10:50=0.1509, 10:51=0.1489, 10:52=0.1477, 10:53=0.1516, 10:54=0.1505, 10:55=0.1524, 10:56=0.1504, 10:57=0.149, 10:58=0.1501, 10:59=0.1498, 11:00=0.1476, 11:01=0.1493, 11:02=0.1494, 11:03=0.1512, 11:04=0.1521, 11:05=0.1481",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 4,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

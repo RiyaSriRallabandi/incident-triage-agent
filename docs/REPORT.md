@@ -14,12 +14,15 @@ with the shipped config:
 
 - The **LLM judge was calibrated** against hand grading: v1 landed at Cohen's
   κ = 0.25 (too lenient), was diagnosed and rewritten, v2 reached **κ = 0.92**.
-- **Every prompt variant tried in the ablations was rejected** — each fixed one
-  axis (citation fabrication) but regressed another (escalation, then mechanism
-  identification), so the baseline config ships.
+- **Every prompt variant tried in the ablations was rejected.** Each fixed
+  citation grounding (77–100%) but traded it for a regression elsewhere. One
+  variant (`conclude-v4`) looked like a clean win on the dev set (+7pp accuracy)
+  — the **held-out set caught that it actually costs ~15–40pp** on
+  synthesis-heavy incidents.
 - **5/5 prompt-injection attacks resisted.**
 - Persistent weak spot: **~55% citation grounding** — nearly half the agent's
-  final citations don't match evidence it actually retrieved.
+  final citations don't match evidence it actually retrieved. Not fixable by
+  prompt alone (see §3); needs a post-hoc verification step.
 
 ---
 
@@ -146,36 +149,56 @@ evidence instead). The tool earns its place. (McNemar p = 0.29 at n=30 — the
 effect direction and the failure-stage evidence are consistent, the sample is
 just small.)
 
-### `conclude-v4` — the citation instruction *only*, nothing else
+### `conclude-v4` — the citation instruction *only* — and why the held-out set matters
 
-`conclude-v2` and `conclude-v3` both bundled the citation fix with escalation and
-hedging language that caused the regressions. `conclude-v4` is `conclude-v1` plus
-**only** the "quote verbatim from the evidence you retrieved" instruction.
+`conclude-v2` and `conclude-v3` bundled the citation fix with escalation and
+hedging language. `conclude-v4` is `conclude-v1` plus **only** the "quote verbatim
+from the evidence you retrieved" instruction.
 
-| Metric | baseline | conclude-v4 | Δ | p |
-|---|---|---|---|---|
-| **Citation grounding** | 55.2% | **96.9%** | **+41.7pp** | **~0** (Wilcoxon, 23 non-zero pairs) |
-| **Fabricated citation rate** | 44.8% | **3.1%** | −41.7pp | |
-| Root-cause correct | 74.1% | **80.8%** | +6.7pp | — |
-| Escalation decision accuracy | 93.3% | 90.0% | −3.3pp (27/30 vs 28/30) | — |
-| False-confident-wrong | 3.3% | 3.3% | 0 | — |
-| Mean tool calls | 4.13 | 3.97 | −0.16 | 0.31 (Wilcoxon) |
+**On the dev set it looked like a clean win:**
 
-**Accepted.** The isolated citation instruction fixes the biggest weakness —
-grounding 55 → 97%, fabrication 45 → 3%, both highly significant — while
-root-cause accuracy goes *up* and nothing regresses beyond one-scenario noise on
-escalation. `conclude-v4` is the shipped config.
+| Metric | baseline (dev) | conclude-v4 (dev) |
+|---|---|---|
+| Citation grounding | 55.2% | **96.9%** (Wilcoxon p ≈ 0) |
+| Fabricated citation rate | 44.8% | **3.1%** |
+| Root-cause correct | 74.1% | **80.8%** |
+| Escalation decision accuracy | 93.3% | 90.0% |
+
+**On the held-out set it regressed:**
+
+| Metric | baseline (held-out) | conclude-v4 (held-out) |
+|---|---|---|
+| Citation grounding | 54.8% | **100%** |
+| Root-cause correct | **88.9%** | **50.0%** |
+| Escalation decision accuracy | **100%** | 90.0% (`scn_110` → false diagnosis) |
+
+Spot-checking the regressed held-out answers shows a consistent mechanism: the
+"quote verbatim" instruction makes the agent **latch onto a single retrieved line
+and report it, instead of synthesizing the mechanism from several pieces**. On the
+canary-routing incident it reported the *symptom* on the new build ("TypeError on
+null cart") instead of *why the broken build got 100% of traffic*. On the
+confounded two-cause incident it committed to one cause instead of escalating. The
+dev set has more incidents where the mechanism is stated in one log line, so
+"quote it" scored well there; the held-out set has more "synthesize from pieces"
+incidents, and it caught the regression.
+
+**Rejected.** The dev-set ablation, on its own, would have shipped `conclude-v4`.
 
 ### Verdict
 
-`conclude-v2` and `conclude-v3` were **rejected**: each fixed citation fabrication
-but bundled it with language that regressed escalation, then mechanism
-identification. Isolating just the citation instruction (`conclude-v4`) gave the
-fix cleanly. `no-deploys` confirmed the deploy tool is worth ~12pp of accuracy.
+**Every prompt variant was rejected.** Four attempts (`conclude-v2/v3/v4`) fixed
+citation grounding (77–100%), and every one traded it for a regression elsewhere —
+over-escalation, vaguer mechanisms, or (revealed only by the held-out set) lost
+synthesis and ambiguity handling. `no-deploys` confirmed the deploy tool is worth
+~12pp of accuracy.
 
-This is the ablation discipline working: measure each candidate against the
-baseline with paired tests and spot hand-checks; reject the ones the data doesn't
-support; ship the one it does.
+**`dev-baseline` is the shipped config.** Citation grounding (~55%, ~45%
+fabricated) remains a known limitation — the fix likely needs a post-hoc
+citation-verification step, not a prompt instruction.
+
+The ablation discipline working: measure each candidate against the baseline with
+paired tests, hand-check the borderline calls, validate on held-out data, and ship
+only what survives all of it — which this time was nothing.
 
 ---
 

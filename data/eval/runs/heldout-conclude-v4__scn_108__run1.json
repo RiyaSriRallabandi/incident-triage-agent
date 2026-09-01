@@ -1,0 +1,68 @@
+{
+  "tag": "heldout-conclude-v4",
+  "scenario_id": "scn_108",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_108",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The intermediate CA certificate 'Acme Intermediate G2' in the served certificate chain expired at 2027-03-24T00:00:00Z, causing approximately 40% of API clients performing strict chain validation to reject the connection.",
+      "confidence": 1.0,
+      "evidence": [
+        "intermediate CA in the served chain 'Acme Intermediate G2' expired at 2027-03-24T00:00:00Z",
+        "clients doing strict chain validation reject the expired intermediate (~40%); clients with a cached/pinned intermediate still connect",
+        "leaf key and cert are fine; only the intermediate needs replacing in the served chain",
+        "api-gateway / tls_handshake_error_rate (ratio)",
+        "api-gateway / chain_validation_failures_per_s (count_per_second)"
+      ],
+      "recommended_fix": "Replace the expired 'Acme Intermediate G2' intermediate CA certificate in the api-gateway served certificate chain. As a follow-up, implement automated certificate expiration monitoring that includes intermediate and root certificates well in advance of their expiry dates."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "Since ~40% of API clients are experiencing TLS errors at the api-gateway without any recent deployments or certificate expiration, I need to check the TLS handshake error metrics and gateway logs to understand the failure pattern.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "api-gateway",
+          "metric": "tls_handshake_error_rate",
+          "start": "2027-03-23T23:30:00Z",
+          "end": "2027-03-24T00:35:00Z"
+        },
+        "result": "api-gateway / tls_handshake_error_rate (ratio)\nsummary: first=0.003, last=0.3943, min=0.0029, max=0.4064, change +13446.7% (first value -> most extreme value)\npoints: 23:30=0.003, 23:31=0.003, 23:32=0.003, 23:33=0.0029, 23:34=0.003, 23:35=0.003, 23:36=0.003, 23:37=0.003, 23:38=0.003, 23:39=0.0029, 23:40=0.003, 23:41=0.0031, 23:42=0.003, 23:43=0.003, 23:44=0.003, 23:45=0.003, 23:46=0.003, 23:47=0.003, 23:48=0.003, 23:49=0.003, 23:50=0.0029, 23:51=0.003, 23:52=0.003, 23:53=0.0029, 23:54=0.0029, 23:55=0.003, 23:56=0.003, 23:57=0.0029, 23:58=0.003, 23:59=0.003, 00:00=0.003, 00:01=0.2002, 00:02=0.4043, 00:03=0.4024, 00:04=0.3959, 00:05=0.4, 00:06=0.3978, 00:07=0.4048, 00:08=0.4009, 00:09=0.4028, 00:10=0.3952, 00:11=0.4064, 00:12=0.4023, 00:13=0.3991, 00:14=0.3988, 00:15=0.3987, 00:16=0.4001, 00:17=0.4014, 00:18=0.3963, 00:19=0.3926, 00:20=0.3946, 00:21=0.4014, 00:22=0.4041, 00:23=0.4034, 00:24=0.4019, 00:25=0.3999, 00:26=0.4007, 00:27=0.3939, 00:28=0.4045, 00:29=0.4006, 00:30=0.4052, 00:31=0.3945, 00:32=0.3939, 00:33=0.3959, 00:34=0.4019, 00:35=0.3943",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The tls_handshake_error_rate metric on api-gateway confirms a sharp increase starting at 00:01 UTC, aligning with the incident report. I should now check chain_validation_failures_per_s and search api-gateway logs around that time to identify the specific nature of the TLS failures.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "api-gateway",
+          "metric": "chain_validation_failures_per_s",
+          "start": "2027-03-23T23:30:00Z",
+          "end": "2027-03-24T00:35:00Z"
+        },
+        "result": "api-gateway / chain_validation_failures_per_s (count_per_second)\nsummary: first=0.2016, last=59.2181, min=0.1961, max=61.1527, change +30233.7% (first value -> most extreme value)\npoints: 23:30=0.2016, 23:31=0.2016, 23:32=0.2034, 23:33=0.204, 23:34=0.1963, 23:35=0.2028, 23:36=0.2013, 23:37=0.1982, 23:38=0.1965, 23:39=0.2013, 23:40=0.1999, 23:41=0.1988, 23:42=0.1991, 23:43=0.1968, 23:44=0.2033, 23:45=0.2007, 23:46=0.1991, 23:47=0.1993, 23:48=0.2012, 23:49=0.203, 23:50=0.1961, 23:51=0.2028, 23:52=0.2007, 23:53=0.2025, 23:54=0.1961, 23:55=0.2038, 23:56=0.2015, 23:57=0.1975, 23:58=0.2008, 23:59=0.2018, 00:00=0.2008, 00:01=29.5398, 00:02=59.4433, 00:03=60.0695, 00:04=58.9691, 00:05=60.9545, 00:06=59.2029, 00:07=60.5445, 00:08=60.5081, 00:09=60.3032, 00:10=60.3641, 00:11=59.1037, 00:12=58.9896, 00:13=60.6457, 00:14=58.9095, 00:15=59.034, 00:16=61.092, 00:17=59.689, 00:18=61.0859, 00:19=59.0636, 00:20=60.335, 00:21=60.0324, 00:22=59.6506, 00:23=60.0796, 00:24=59.6953, 00:25=60.3549, 00:26=60.1586, 00:27=59.322, 00:28=59.511, 00:29=60.3169, 00:30=61.1036, 00:31=61.1527, 00:32=60.3682, 00:33=60.0441, 00:34=59.2918, 00:35=59.2181",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "Both tls_handshake_error_rate and chain_validation_failures_per_s spiked significantly starting around 00:01 UTC. I will now search the api-gateway logs for errors or warnings related to certificate chain validation during this timeframe.",
+        "tool": "search_logs",
+        "args": {
+          "query": "chain",
+          "service": "api-gateway",
+          "start": "2027-03-23T23:55:00Z",
+          "end": "2027-03-24T00:10:00Z"
+        },
+        "result": "3 of 3 matching log lines:\n2027-03-24T00:02:00Z  api-gateway  WARN  intermediate CA in the served chain 'Acme Intermediate G2' expired at 2027-03-24T00:00:00Z\n2027-03-24T00:05:00Z  api-gateway  INFO  clients doing strict chain validation reject the expired intermediate (~40%); clients with a cached/pinned intermediate still connect\n2027-03-24T00:07:00Z  api-gateway  INFO  leaf key and cert are fine; only the intermediate needs replacing in the served chain",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 3,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

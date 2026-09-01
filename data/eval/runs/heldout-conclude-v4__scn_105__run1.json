@@ -1,0 +1,67 @@
+{
+  "tag": "heldout-conclude-v4",
+  "scenario_id": "scn_105",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_105",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The events-consumer service is failing to deserialize messages due to an unexpected field 'legacy_promo', causing partition 3 not to advance and leading to a massive spike in consumer group lag.",
+      "confidence": 0.99,
+      "evidence": [
+        "consumer_group_lag metric for events-consumer peaked at 198703.7243",
+        "failed to deserialize message at partition 3 offset 88214102: unexpected field 'legacy_promo'; retrying",
+        "consumer group lag on 'order-events' now 190000 and rising; partition 3 not advancing",
+        "downstream_events_per_s dropped to -0.0108"
+      ],
+      "recommended_fix": "Deploy a schema update or hotfix to the events-consumer service to handle or ignore the unexpected 'legacy_promo' field, allowing it to successfully deserialize messages and resume processing the consumer group lag."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The incident report states that order confirmation emails and fulfillment handoffs have stopped while orders continue to be placed, and the events pipeline seems stuck. Since events-consumer has consumer group lag metrics, checking those metrics is the best first step to see if the event stream is blocked.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "events-consumer",
+          "metric": "consumer_group_lag",
+          "start": "2027-03-03T12:25:00Z",
+          "end": "2027-03-03T13:35:00Z"
+        },
+        "result": "events-consumer / consumer_group_lag (count)\nsummary: first=490.109, last=198703.7243, min=490.109, max=198703.7243, change +40442.8% (first value -> most extreme value)\npoints: 12:25=490.109, 12:26=509.091, 12:27=497.599, 12:28=508.232, 12:29=501.508, 12:30=499.968, 12:31=493.663, 12:32=504.44, 12:33=495.774, 12:34=507.302, 12:35=494.149, 12:36=490.784, 12:37=499.909, 12:38=496.44, 12:39=491.931, 12:40=500.869, 12:41=495.272, 12:42=493.532, 12:43=490.131, 12:44=498.886, 12:45=509.899, 12:46=502.986, 12:47=505.827, 12:48=498.255, 12:49=494.815, 12:50=494.9, 12:51=498.986, 12:52=504.802, 12:53=492.357, 12:54=493.72, 12:55=498.042, 12:56=498.841, 12:57=508.293, 12:58=19758.5, 12:59=38921.1, 13:00=57722.6, 13:01=77655.1, 13:02=99097.2, 13:03=115402, 13:04=133956, 13:05=159163, 13:06=177491, 13:07=191653, 13:08=194050, 13:09=198330, 13:10=196428, 13:11=193713, 13:12=194869, 13:13=196524, 13:14=192053, 13:15=196921, 13:16=197483, 13:17=197556, 13:18=195352, 13:19=195091, 13:20=195866, 13:21=191717, 13:22=196210, 13:23=197463, 13:24=194036, 13:25=194559, 13:26=194306, 13:27=197722, 13:28=197468, 13:29=195569, 13:30=193836, 13:31=194385, 13:32=196687, 13:33=196921, 13:34=198571, 13:35=198704",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The consumer group lag started shooting up sharply around 12:58 UTC, indicating that events-consumer is failing to process events. We should search logs for events-consumer to find the error causing this blockage.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "events-consumer",
+          "start": "2027-03-03T12:55:00Z",
+          "end": "2027-03-03T13:15:00Z"
+        },
+        "result": "2 of 2 matching log lines:\n2027-03-03T12:55:00Z  events-consumer  ERROR  failed to deserialize message at partition 3 offset 88214102: unexpected field 'legacy_promo'; retrying\n2027-03-03T13:05:00Z  events-consumer  ERROR  consumer group lag on 'order-events' now 190000 and rising; partition 3 not advancing",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The logs show that events-consumer is failing to deserialize messages because of an unexpected field 'legacy_promo'. We should check the downstream_events_per_s metric and search for more logs around the schema or deserialization error to fully confirm the root cause.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "events-consumer",
+          "metric": "downstream_events_per_s",
+          "start": "2027-03-03T12:55:00Z",
+          "end": "2027-03-03T13:15:00Z"
+        },
+        "result": "events-consumer / downstream_events_per_s (count_per_second)\nsummary: first=317.8522, last=-0.0108, min=-0.0197, max=317.8522, change -100.0% (first value -> most extreme value)\npoints: 12:55=317.852, 12:56=316.511, 12:57=158.688, 12:58=0.0066, 12:59=0.0019, 13:00=-0.015, 13:01=-0.0061, 13:02=-0.0197, 13:03=0.019, 13:04=0.0083, 13:05=0.0044, 13:06=0.0038, 13:07=0.0192, 13:08=0.014, 13:09=0.0128, 13:10=0.0056, 13:11=0.0149, 13:12=-0.0152, 13:13=0.0198, 13:14=-0.0127, 13:15=-0.0108",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 3,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

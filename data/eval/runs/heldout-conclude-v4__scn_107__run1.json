@@ -1,0 +1,52 @@
+{
+  "tag": "heldout-conclude-v4",
+  "scenario_id": "scn_107",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_107",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "Stale DNS resolution pointing internal services to the old billing‑api IP address after the migration",
+      "confidence": 0.9,
+      "evidence": [
+        "2027-03-17T08:01:00Z  orders-api  ERROR  connections to billing-api (10.4.1.14) refused; that address no longer responds",
+        "first=0.012, last=0.2484, min=-0.0192, max=0.2547, change +2022.5% (first value -> most extreme value)"
+      ],
+      "recommended_fix": "Flush or refresh the DNS cache on affected services, update any hard‑coded IPs to the new billing‑api host, and verify that DNS propagation has completed before restarting services."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The platform team migrated billing-api to new hosts overnight, and some internal services are experiencing connection refused or timeouts while others work. I will search the logs for billing-api or orders-api to identify which clients are failing and why.",
+        "tool": "search_logs",
+        "args": {
+          "query": "connection refused",
+          "service": "orders-api",
+          "start": "2027-03-17T07:00:00Z",
+          "end": "2027-03-17T08:35:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2027-03-17T08:01:00Z  orders-api  ERROR  connections to billing-api (10.4.1.14) refused; that address no longer responds",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "The orders‑api log shows a connection refused to the old billing‑api IP, suggesting stale DNS resolution. Checking the platform‑net stale_resolution_share metric will confirm if DNS entries are out of date.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "platform-net",
+          "metric": "stale_resolution_share",
+          "start": "2027-03-17T07:00:00Z",
+          "end": "2027-03-17T08:35:00Z"
+        },
+        "result": "platform-net / stale_resolution_share (ratio)\nsummary: first=0.012, last=0.2484, min=-0.0192, max=0.2547, change +2022.5% (first value -> most extreme value)\npoints: 07:00=0.012, 07:01=0.0043, 07:02=-0.0064, 07:03=-0.0043, 07:04=0.0024, 07:05=0.0061, 07:06=0.0163, 07:07=-0.009, 07:08=-0.0178, 07:09=-0.01, 07:10=-0.0071, 07:11=0.0175, 07:12=0.011, 07:13=0.015, 07:14=0.0064, 07:15=-0.0126, 07:16=0.0056, 07:17=-0.0106, 07:18=0.0098, 07:19=0.019, 07:20=0.0183, 07:21=0.0164, 07:22=0.0129, 07:23=-0.0158, 07:24=0.0009, 07:25=-0.0068, 07:26=-0.0186, 07:27=0.0057, 07:28=0.0105, 07:29=-0.0045, 07:30=-0.0075, 07:31=0.0164, 07:32=0.0096, 07:33=0.006, 07:34=-0.0192, 07:35=-0.0181, 07:36=-0.0182, 07:37=-0.0103, 07:38=0.0117, 07:39=-0.007, 07:40=0.0011, 07:41=0.0165, 07:42=0.0179, 07:43=0.0006, 07:44=0.0152, 07:45=-0.0053, 07:46=-0.0021, 07:47=0.003, 07:48=0.0062, 07:49=-0.0047, 07:50=0.0194, 07:51=-0.0186, 07:52=-0.0178, 07:53=0.0192, 07:54=0.0111, 07:55=0.0196, 07:56=0.02, 07:57=-0.0076, 07:58=0.0106, 07:59=0.0022, 08:00=0.0064, 08:01=-0.0072, 08:02=0.2477, 08:03=0.2473, 08:04=0.2506, 08:05=0.2499, 08:06=0.2501, 08:07=0.2518, 08:08=0.2505, 08:09=0.2518, 08:10=0.2484, 08:11=0.2531, 08:12=0.2547, 08:13=0.2481, 08:14=0.2476, 08:15=0.2501, 08:16=0.249, 08:17=0.2536, 08:18=0.2542, 08:19=0.2514, 08:20=0.2506, 08:21=0.2491, 08:22=0.2496, 08:23=0.2488, 08:24=0.2454, 08:25=0.252, 08:26=0.2535, 08:27=0.2476, 08:28=0.2531, 08:29=0.2543, 08:30=0.254, 08:31=0.2453, 08:32=0.2473, 08:33=0.2547, 08:34=0.2521, 08:35=0.2484",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 2,
+    "hit_budget_cap": false
+  },
+  "error": null
+}

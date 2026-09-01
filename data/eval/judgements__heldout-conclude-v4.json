@@ -1,0 +1,102 @@
+[
+  {
+    "scenario_id": "scn_101",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "partial",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies the buggy checkout-web version and the TypeError, but omits the key mechanism\u2014the traffic router misparsing the canary weight as 100%\u2014that caused the full rollout and outage. Hence the implied fix would differ from the ground truth."
+  },
+  {
+    "scenario_id": "scn_102",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identified that the json-lib upgrade in pricing\u2011service changed decimal serialization from numbers to strings, causing order\u2011api parsing errors and zero totals, which matches the ground\u2011truth mechanism."
+  },
+  {
+    "scenario_id": "scn_103",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "partial",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly points to dashboard\u2011api worker\u2011pool exhaustion causing timeouts, but it does not identify the underlying mechanism\u2014unbounded parallel fan\u2011out to widget\u2011service that consumes hundreds of slots per large\u2011account render. Without that detail, the implied fix (e.g., increasing pool size) differs from the ground\u2011truth fix of capping fan\u2011out concurrency."
+  },
+  {
+    "scenario_id": "scn_104",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "partial",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that the sync-service\u2019s ephemeral port range is exhausted due to a buildup of sockets during the high\u2011volume batch window, matching the symptom and service. However, it omits the key mechanism\u2014opening a fresh TCP connection for every request without HTTP keep\u2011alive\u2014that creates the TIME_WAIT accumulation, so the implied fix (e.g., enabling connection pooling) is not clearly derived."
+  },
+  {
+    "scenario_id": "scn_105",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies the unexpected 'legacy_promo' field causing deserialization failure in the events\u2011consumer, which stops partition 3 from advancing and creates massive consumer\u2011group lag\u2014the same mechanism described in the ground truth."
+  },
+  {
+    "scenario_id": "scn_106",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies that traffic growth caused the outbound request rate to exceed the model\u2011scoring API's per\u2011client rate limit, leading to 429 errors\u2014the same mechanism and fix as the ground truth."
+  },
+  {
+    "scenario_id": "scn_107",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identified that stale DNS resolution to the old billing\u2011api IPs after the migration caused the connection failures, matching the ground\u2011truth mechanism of cached DNS records leading to traffic being sent to decommissioned hosts."
+  },
+  {
+    "scenario_id": "scn_108",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "correct",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identified that the expired intermediate CA certificate caused the TLS handshake failures for clients performing strict chain validation, matching the ground\u2011truth mechanism and leading to the same fix of replacing the expired intermediate."
+  },
+  {
+    "scenario_id": "scn_109",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "partial",
+    "escalation_call": "correct",
+    "false_confident_wrong": false,
+    "failure_stage": null,
+    "reasoning": "The agent correctly identifies the q_feed_recent query and the resulting high I/O wait and CPU as the immediate cause of the timeouts, but it omits the underlying mechanism\u2014rapid data growth causing the query's working set to exceed the buffer cache. Without that detail, the implied fix could differ from the ground\u2011truth solution of adding a partial index and trimming old rows."
+  },
+  {
+    "scenario_id": "scn_110",
+    "run_index": 1,
+    "agent_outcome": "diagnosis",
+    "root_cause_grade": "incorrect",
+    "escalation_call": "false_diagnosis",
+    "false_confident_wrong": true,
+    "failure_stage": "misread_evidence",
+    "reasoning": "After retrieving logs that mention a payments\u2011provider degradation, the agent interpreted this as proof that the provider caused the error spike, ignoring the concurrent deploy and the ambiguous nature of the evidence. This misreading of the evidence led to the incorrect diagnosis."
+  }
+]

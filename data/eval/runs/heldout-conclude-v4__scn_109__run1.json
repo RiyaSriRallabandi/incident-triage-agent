@@ -1,0 +1,86 @@
+{
+  "tag": "heldout-conclude-v4",
+  "scenario_id": "scn_109",
+  "run_index": 1,
+  "budget": 6,
+  "provider": "gemini",
+  "result": {
+    "scenario_id": "scn_109",
+    "outcome": "diagnosis",
+    "diagnosis": {
+      "root_cause": "The q_feed_recent database query became expensive and caused high I/O wait, driving feed-db CPU utilization to over 90% and causing feed requests to time out.",
+      "confidence": 0.95,
+      "evidence": [
+        "feed-db / db_cpu_utilization_pct (percent) summary: first=39.7392, last=91.6578, min=39.324, max=91.7471, change +130.9%",
+        "feed-db / q_feed_recent_p95_ms (milliseconds) summary: first=129.1069, last=2442.643, min=127.7476, max=2446.8455, change +1795.2%",
+        "2027-03-31T14:00:00Z  feed-api  ERROR  feed requests timing out; feed-db CPU 90%, mostly I/O wait from q_feed_recent"
+      ],
+      "recommended_fix": "Kill or pause the offending query, transaction, or batch job. Add the missing index or pin the plan. Route reads away from lagging replicas."
+    },
+    "escalation": null,
+    "evidence": [
+      {
+        "step": 1,
+        "plan_reasoning": "The incident report states that the activity feed database CPU and disk read rate are elevated. I will query the db_cpu_utilization_pct metric on the feed-db service to understand the scope and severity of the database load during the incident window.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "feed-db",
+          "metric": "db_cpu_utilization_pct",
+          "start": "2027-03-31T13:20:00Z",
+          "end": "2027-03-31T14:30:00Z"
+        },
+        "result": "feed-db / db_cpu_utilization_pct (percent)\nsummary: first=39.7392, last=91.6578, min=39.324, max=91.7471, change +130.9% (first value -> most extreme value)\npoints: 13:20=39.7392, 13:21=40.7127, 13:22=40.2294, 13:23=39.6491, 13:24=39.324, 13:25=40.3585, 13:26=39.8453, 13:27=40.5053, 13:28=39.4986, 13:29=39.616, 13:30=40.0458, 13:31=39.9509, 13:32=40.598, 13:33=40.5018, 13:34=40.6174, 13:35=39.7617, 13:36=39.7913, 13:37=40.1382, 13:38=40.7415, 13:39=40.0644, 13:40=40.4794, 13:41=39.8121, 13:42=40.1195, 13:43=40.6854, 13:44=40.0566, 13:45=40.479, 13:46=40.184, 13:47=39.7887, 13:48=39.9676, 13:49=40.1565, 13:50=39.3345, 13:51=39.7921, 13:52=39.9907, 13:53=53.5183, 13:54=65.5237, 13:55=76.3411, 13:56=88.896, 13:57=91.7471, 13:58=91.42, 13:59=89.0253, 14:00=90.7322, 14:01=89.1916, 14:02=90.076, 14:03=90.6161, 14:04=89.3204, 14:05=88.9613, 14:06=88.2039, 14:07=89.8957, 14:08=89.6029, 14:09=89.7498, 14:10=88.9864, 14:11=88.6292, 14:12=88.9203, 14:13=89.0964, 14:14=88.9553, 14:15=88.3913, 14:16=91.2064, 14:17=90.2355, 14:18=90.722, 14:19=91.4742, 14:20=90.4401, 14:21=89.2042, 14:22=89.531, 14:23=91.3472, 14:24=91.4176, 14:25=89.1532, 14:26=88.4827, 14:27=90.2623, 14:28=90.8668, 14:29=90.954, 14:30=91.6578",
+        "error": false
+      },
+      {
+        "step": 2,
+        "plan_reasoning": "We observed database CPU spike sharply starting at 13:53 UTC. I will now query the feed-db service metric q_feed_recent_p95_ms to check if the query latency has degraded in tandem with the CPU spike.",
+        "tool": "query_metrics",
+        "args": {
+          "service": "feed-db",
+          "metric": "q_feed_recent_p95_ms",
+          "start": "2027-03-31T13:20:00Z",
+          "end": "2027-03-31T14:30:00Z"
+        },
+        "result": "feed-db / q_feed_recent_p95_ms (milliseconds)\nsummary: first=129.1069, last=2442.643, min=127.7476, max=2446.8455, change +1795.2% (first value -> most extreme value)\npoints: 13:20=129.107, 13:21=128.762, 13:22=129.933, 13:23=127.866, 13:24=131.411, 13:25=130.026, 13:26=132.385, 13:27=127.998, 13:28=129.81, 13:29=131.123, 13:30=129.085, 13:31=128.738, 13:32=130.288, 13:33=131.701, 13:34=128.124, 13:35=129.352, 13:36=131.014, 13:37=130.51, 13:38=129.9, 13:39=131.61, 13:40=132.061, 13:41=129.1, 13:42=131.79, 13:43=129.371, 13:44=130.418, 13:45=128.787, 13:46=129.596, 13:47=128.223, 13:48=132.015, 13:49=132.581, 13:50=127.748, 13:51=585.375, 13:52=1024.09, 13:53=1509.82, 13:54=1940.41, 13:55=2434.9, 13:56=2378.99, 13:57=2405.01, 13:58=2364.13, 13:59=2414.67, 14:00=2441.65, 14:01=2420.5, 14:02=2372.47, 14:03=2435.2, 14:04=2418.73, 14:05=2370.17, 14:06=2384.37, 14:07=2366.15, 14:08=2358.54, 14:09=2400.07, 14:10=2401.04, 14:11=2420.74, 14:12=2417.29, 14:13=2428.75, 14:14=2371.35, 14:15=2427.97, 14:16=2443.68, 14:17=2438.31, 14:18=2405.71, 14:19=2378.15, 14:20=2358.76, 14:21=2369.89, 14:22=2440.81, 14:23=2391.3, 14:24=2446.04, 14:25=2395.99, 14:26=2419.73, 14:27=2401.82, 14:28=2434.25, 14:29=2446.85, 14:30=2442.64",
+        "error": false
+      },
+      {
+        "step": 3,
+        "plan_reasoning": "The database CPU utilization and query p95 latency both spike sharply around 13:51-13:53 UTC. I will now search the logs for the feed-api or feed-db services around this time window to see what specific queries or errors are occurring.",
+        "tool": "search_logs",
+        "args": {
+          "query": "error",
+          "service": "feed-api",
+          "start": "2027-03-31T13:50:00Z",
+          "end": "2027-03-31T14:10:00Z"
+        },
+        "result": "1 of 1 matching log lines:\n2027-03-31T14:00:00Z  feed-api  ERROR  feed requests timing out; feed-db CPU 90%, mostly I/O wait from q_feed_recent",
+        "error": false
+      },
+      {
+        "step": 4,
+        "plan_reasoning": "The logs indicate that feed requests are timing out due to feed-db CPU utilization at 90% driven by q_feed_recent. I will search the runbook library for troubleshooting guidance regarding slow feed queries or feed-db performance issues.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "q_feed_recent"
+        },
+        "result": "5 runbook section(s):\n\n[1] cpu-saturation.md > How to confirm (score 0.124)\n- Confirm the spike is CPU specifically, not memory or I/O wait.\n- Correlate the onset with deploy history and with any change in request mix.\n- Capture a CPU profile or flame graph if the service is still up; look for a\n  single dominant frame.\n- Check for log lines naming a slow rule, slow query, or evaluation-budget\n  exceeded.\n\n[2] database-degradation.md > References (score 0.098)\n- GitLab.com database incident, January 31, 2017:\n  https://about.gitlab.com/blog/2017/02/10/postmortem-of-database-outage-of-january-31/\n\n[3] cpu-saturation.md > Likely causes (score 0.0911)\n- A pathological code path introduced by a recent change: a catastrophically\n  backtracking regular expression, an accidental O(n^2) loop, unbounded JSON\n  parsing, or serialization of a large object on every request.\n- A cache that stopped working, forcing expensive recomputation per request.\n- A retry storm or traffic surge pushing the service past its capacity.\n- Garbage collection thrashing due to memory pressure.\n\n[4] when-to-escalate-inconclusive-evidence.md > Escalate when (score 0.0847)\n- The error or latency change is modest and intermittent, spread across most\n  hosts, with no single host or shard dominating.\n- No deploy, config change, or operator action correlates with the onset.\n- Downstream dependencies and shared infrastructure all report healthy.\n- Resource signals are flat: CPU, memory, connection pools, and queues are within\n  normal range.\n- The incident partially self-recovers without any action taken.\n- Two or more plausible causes fit the evidence equally well and cannot be\n  distinguished without data you do not have.\n\n[5] certificate-and-config-expiry.md > Likely causes (score 0.08)\n- A TLS certificate reached its expiry date and was not renewed or not reloaded\n  after renewal.\n- A signing key, API token, or service-account credential expired or was rotated\n  without updating all consumers.\n- A trust bundle or intermediate certificate changed.\n- A time-skewed host rejecting otherwise-valid certificates.",
+        "error": false
+      },
+      {
+        "step": 5,
+        "plan_reasoning": "We know that feed-db CPU and q_feed_recent query latency spiked due to I/O wait. I will search the runbook library for 'q_feed_recent' or slow database queries to find specific troubleshooting and mitigation steps.",
+        "tool": "retrieve_runbook",
+        "args": {
+          "query": "slow database queries q_feed_recent"
+        },
+        "result": "5 runbook section(s):\n\n[1] database-degradation.md > Mitigation (score 0.3175)\nKill or pause the offending query, transaction, or batch job. Add the missing\nindex or pin the plan. Route reads away from lagging replicas. Raise connection\nlimits only as a stopgap. Schedule heavy maintenance away from peak.\n\n[2] database-degradation.md > How to confirm (score 0.3045)\n- Identify the slow queries and inspect their execution plans; compare against a\n  known-good baseline.\n- Check replica lag, active connection count against the limit, and lock waits.\n- Correlate with deploys, schema migrations, and large batch jobs.\n\n[3] database-degradation.md > Likely causes (score 0.2934)\n- A missing or dropped index, or a query-plan change after a statistics update or\n  version upgrade, making a common query expensive.\n- A long-running transaction or migration holding locks.\n- Replica lag from a write spike, a large backfill, or replication falling behind,\n  so reads served from replicas are slow or stale.\n- Connection limit reached on the database side.\n- Vacuum, compaction, or checkpoint activity competing with live traffic.\n\n[4] database-degradation.md > References (score 0.2739)\n- GitLab.com database incident, January 31, 2017:\n  https://about.gitlab.com/blog/2017/02/10/postmortem-of-database-outage-of-january-31/\n\n[5] cpu-saturation.md > How to confirm (score 0.2425)\n- Confirm the spike is CPU specifically, not memory or I/O wait.\n- Correlate the onset with deploy history and with any change in request mix.\n- Capture a CPU profile or flame graph if the service is still up; look for a\n  single dominant frame.\n- Check for log lines naming a slow rule, slow query, or evaluation-budget\n  exceeded.",
+        "error": false
+      }
+    ],
+    "tool_calls_used": 5,
+    "hit_budget_cap": false
+  },
+  "error": null
+}
