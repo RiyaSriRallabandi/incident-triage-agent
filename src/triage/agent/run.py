@@ -17,6 +17,7 @@ from triage.agent.state import (
     PlanDecision,
     TriageState,
 )
+from triage.agent.verify import verify_result
 from triage.config import get_settings
 from triage.llm import (
     Provider,
@@ -160,4 +161,4 @@ def investigate(
     }
     config = {"recursion_limit": budget * 2 + 5, **trace_config(scenario, budget)}
     final = graph.invoke(initial, config)
-    return _to_result(scenario.id, final)
+    return verify_result(_to_result(scenario.id, final))

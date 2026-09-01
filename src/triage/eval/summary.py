@@ -39,8 +39,9 @@ class EvalSummary(BaseModel):
     mean_tool_calls: float
     budget_cap_rate: float
     mean_error_steps: float
-    citation_grounding_rate: float | None
-    fabricated_citation_rate: float | None
+    citation_grounding_rate: float | None  # of citations the agent generated
+    fabricated_citation_rate: float | None  # generated but ungrounded (removed by verification)
+    mean_delivered_citations: float  # per run, after post-hoc verification
 
     failure_stages: dict[str, int]
     per_scenario: list[ScenarioBreakdown]
@@ -102,6 +103,7 @@ def summarize(
         mean_error_steps=round(sum(m.error_steps for m in metrics) / n, 2) if n else 0.0,
         citation_grounding_rate=_rate(total_grounded, total_citations),
         fabricated_citation_rate=_rate(total_citations - total_grounded, total_citations),
+        mean_delivered_citations=round(sum(m.n_delivered for m in metrics) / n, 2) if n else 0.0,
         failure_stages=dict(stages),
         per_scenario=per_scenario,
         calibration=calibration,

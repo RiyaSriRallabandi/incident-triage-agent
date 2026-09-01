@@ -76,6 +76,7 @@ def _metric(sid, run, **kw) -> RunMetrics:
         error_steps=0,
         n_citations=2,
         n_grounded=1,
+        n_delivered=1,
         ungrounded_citations=["x"],
         escalation_decision_correct=True,
     )

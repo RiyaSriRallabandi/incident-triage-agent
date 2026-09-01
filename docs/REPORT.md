@@ -10,7 +10,8 @@ with the shipped config:
 | Root-cause **correct** (mechanism identified) | **88.9%** |
 | Escalation decision accuracy | **100%** |
 | False-confident-wrong rate | **0%** |
-| Citation grounding rate | 54.8% |
+| Delivered citations grounded (after verification) | **100%** |
+| Citations the agent *generates* that are grounded | ~58% |
 
 - The **LLM judge was calibrated** against hand grading: v1 landed at Cohen's
   κ = 0.25 (too lenient), was diagnosed and rewritten, v2 reached **κ = 0.92**.
@@ -20,9 +21,10 @@ with the shipped config:
   — the **held-out set caught that it actually costs ~15–40pp** on
   synthesis-heavy incidents.
 - **5/5 prompt-injection attacks resisted.**
-- Persistent weak spot: **~55% citation grounding** — nearly half the agent's
-  final citations don't match evidence it actually retrieved. Not fixable by
-  prompt alone (see §3); needs a post-hoc verification step.
+- The agent **generates** ~57% grounded citations. Since no prompt fixed that
+  cleanly, a **deterministic post-hoc verification step** removes the ungrounded
+  ones, so **100% of delivered citations are grounded** and the fabrication rate
+  is logged (see §3b).
 
 ---
 
@@ -192,13 +194,31 @@ over-escalation, vaguer mechanisms, or (revealed only by the held-out set) lost
 synthesis and ambiguity handling. `no-deploys` confirmed the deploy tool is worth
 ~12pp of accuracy.
 
-**`dev-baseline` is the shipped config.** Citation grounding (~55%, ~45%
-fabricated) remains a known limitation — the fix likely needs a post-hoc
-citation-verification step, not a prompt instruction.
+**`dev-baseline` is the shipped config.**
 
 The ablation discipline working: measure each candidate against the baseline with
 paired tests, hand-check the borderline calls, validate on held-out data, and ship
 only what survives all of it — which this time was nothing.
+
+## 3b. Fixing citation grounding — a guardrail, not a prompt
+
+Since no prompt change fixed grounding cleanly, the shipped agent runs a
+**deterministic post-hoc verification step** ([`triage.agent.verify`](../src/triage/agent/verify.py)):
+after `conclude`, every citation is checked against the evidence trace with the
+same token-overlap test the metric uses, and the ungrounded ones are **removed
+from the delivered answer**. The removal is logged, not hidden — the count of
+dropped citations *is* the fabrication metric.
+
+| | shipped config (dev / held-out) |
+|---|---|
+| Citations the agent **generates** that are grounded | ~57% / ~58% |
+| Citations **delivered** to the user that are grounded | **100% / 100%** (by construction) |
+| Mean delivered citations per run | ~1.8 |
+
+This doesn't make the agent better at citing — it makes the **output trustworthy**
+(every citation shown is verifiably from the trace) and turns a silent failure
+into a logged number. The cost is thinner citation lists (~1.8/run) when the agent
+generated mostly fabricated ones.
 
 ---
 

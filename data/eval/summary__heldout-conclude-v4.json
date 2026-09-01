@@ -11,6 +11,7 @@
   "mean_error_steps": 0.0,
   "citation_grounding_rate": 1.0,
   "fabricated_citation_rate": 0.0,
+  "mean_delivered_citations": 3.7,
   "failure_stages": {
     "misread_evidence": 1
   },

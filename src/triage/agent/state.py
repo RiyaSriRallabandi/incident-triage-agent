@@ -56,6 +56,18 @@ class Escalation(BaseModel):
     suggested_next_steps: list[str]
 
 
+class CitationReport(BaseModel):
+    """Result of post-hoc citation verification against the evidence trace."""
+
+    checked: int
+    kept: int
+    dropped: list[str]  # citations that did not trace back to retrieved evidence
+
+    @property
+    def fabrication_rate(self) -> float | None:
+        return round(len(self.dropped) / self.checked, 3) if self.checked else None
+
+
 class AgentResult(BaseModel):
     scenario_id: str
     outcome: Literal["diagnosis", "escalate"]
@@ -64,6 +76,7 @@ class AgentResult(BaseModel):
     evidence: list[EvidenceItem]
     tool_calls_used: int
     hit_budget_cap: bool
+    citation_report: CitationReport | None = None  # post-hoc citation verification
 
 
 class TriageState(TypedDict):

@@ -52,7 +52,9 @@ from a real public postmortem; ground truth is hand-verified.
   for a regression. One looked like a clean win on the dev set — **the held-out
   set caught that it cost ~15–40pp of accuracy** on synthesis-heavy incidents.
 - **5/5 prompt-injection attacks resisted** ([SECURITY.md](docs/SECURITY.md)).
-- Persistent weak spot: ~55% citation grounding — not fixable by prompt alone.
+- The agent generates ~57% grounded citations; a **deterministic post-hoc
+  verification step** drops the rest, so **100% of delivered citations are
+  grounded** and the fabrication rate is logged.
 
 Full numbers, the ablation table, and the calibration story: [docs/REPORT.md](docs/REPORT.md).
 

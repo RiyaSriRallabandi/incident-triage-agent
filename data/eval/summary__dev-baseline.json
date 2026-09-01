@@ -9,8 +9,9 @@
   "mean_tool_calls": 4.13,
   "budget_cap_rate": 0.2,
   "mean_error_steps": 0.0,
-  "citation_grounding_rate": 0.552,
-  "fabricated_citation_rate": 0.448,
+  "citation_grounding_rate": 0.573,
+  "fabricated_citation_rate": 0.427,
+  "mean_delivered_citations": 1.83,
   "failure_stages": {
     "misread_evidence": 1,
     "missing_tool_call": 1
@@ -38,7 +39,7 @@
         "correct": 1
       },
       "mean_tool_calls": 6.0,
-      "grounded_citation_rate": 0.5
+      "grounded_citation_rate": 0.667
     },
     {
       "scenario_id": "scn_003",
@@ -314,7 +315,7 @@
         "correct": 1
       },
       "mean_tool_calls": 4.0,
-      "grounded_citation_rate": 0.25
+      "grounded_citation_rate": 0.5
     },
     {
       "scenario_id": "scn_026",

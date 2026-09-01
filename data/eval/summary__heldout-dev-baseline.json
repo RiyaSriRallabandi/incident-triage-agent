@@ -9,8 +9,9 @@
   "mean_tool_calls": 3.9,
   "budget_cap_rate": 0.0,
   "mean_error_steps": 0.0,
-  "citation_grounding_rate": 0.548,
-  "fabricated_citation_rate": 0.452,
+  "citation_grounding_rate": 0.581,
+  "fabricated_citation_rate": 0.419,
+  "mean_delivered_citations": 1.8,
   "failure_stages": {},
   "per_scenario": [
     {
@@ -47,7 +48,7 @@
         "correct": 1
       },
       "mean_tool_calls": 4.0,
-      "grounded_citation_rate": 0.667
+      "grounded_citation_rate": 1.0
     },
     {
       "scenario_id": "scn_104",

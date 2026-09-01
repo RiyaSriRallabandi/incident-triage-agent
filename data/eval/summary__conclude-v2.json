@@ -9,8 +9,9 @@
   "mean_tool_calls": 3.73,
   "budget_cap_rate": 0.133,
   "mean_error_steps": 0.0,
-  "citation_grounding_rate": 0.878,
-  "fabricated_citation_rate": 0.122,
+  "citation_grounding_rate": 0.89,
+  "fabricated_citation_rate": 0.11,
+  "mean_delivered_citations": 2.43,
   "failure_stages": {
     "wrong_tool_args": 3,
     "missing_tool_call": 3
@@ -230,7 +231,7 @@
         "correct": 1
       },
       "mean_tool_calls": 3.0,
-      "grounded_citation_rate": 0.75
+      "grounded_citation_rate": 1.0
     },
     {
       "scenario_id": "scn_019",
