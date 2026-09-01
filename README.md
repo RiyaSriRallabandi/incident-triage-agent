@@ -11,6 +11,9 @@ pattern. The point is **building the agent *and* a rigorous evaluation of it**:
 step-level metrics, a calibrated LLM judge, controlled ablations with paired
 significance testing, a sealed held-out test set, and an adversarial slice.
 
+**Live demo** (recorded traces, no live LLM calls):
+https://incident-triage-agent-fkni.onrender.com
+
 ## What it does
 
 ```
@@ -141,9 +144,9 @@ It does **not** run the agent per request — investigation is slow and spends
 free-tier LLM quota. `POST /investigate` runs a live investigation only when
 `ALLOW_LIVE_RUNS=true`; the deployed instance leaves it off.
 
-Deployed on Render's free tier via [render.yaml](render.yaml) (New → Blueprint →
-this repo; `plan: free`, no card). All incident data is synthetic, so a public
-instance exposes nothing.
+Live: **https://incident-triage-agent-fkni.onrender.com** (Render free tier via
+[render.yaml](render.yaml); first request after idle cold-starts in ~50s). All
+incident data is synthetic, so the public instance exposes nothing.
 
 ## Honesty
 
