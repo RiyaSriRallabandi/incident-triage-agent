@@ -26,6 +26,8 @@ significance testing, a sealed held-out test set, and an adversarial slice.
 - **`conclude`** (LLM): produce the diagnosis contract, or escalate.
 - A tool-call budget (default 6) bounds the loop.
 
+Runtime and evaluation-harness diagrams: [docs/architecture.md](docs/architecture.md).
+
 **Tools:** `search_logs`, `query_metrics`, `get_recent_deploys` (over one
 scenario's synthetic evidence), and `retrieve_runbook` (RAG over a hand-written
 runbook corpus). Also exposed as an [MCP](https://modelcontextprotocol.io) server.
