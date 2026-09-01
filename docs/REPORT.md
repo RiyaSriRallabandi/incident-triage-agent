@@ -146,18 +146,36 @@ evidence instead). The tool earns its place. (McNemar p = 0.29 at n=30 — the
 effect direction and the failure-stage evidence are consistent, the sample is
 just small.)
 
+### `conclude-v4` — the citation instruction *only*, nothing else
+
+`conclude-v2` and `conclude-v3` both bundled the citation fix with escalation and
+hedging language that caused the regressions. `conclude-v4` is `conclude-v1` plus
+**only** the "quote verbatim from the evidence you retrieved" instruction.
+
+| Metric | baseline | conclude-v4 | Δ | p |
+|---|---|---|---|---|
+| **Citation grounding** | 55.2% | **96.9%** | **+41.7pp** | **~0** (Wilcoxon, 23 non-zero pairs) |
+| **Fabricated citation rate** | 44.8% | **3.1%** | −41.7pp | |
+| Root-cause correct | 74.1% | **80.8%** | +6.7pp | — |
+| Escalation decision accuracy | 93.3% | 90.0% | −3.3pp (27/30 vs 28/30) | — |
+| False-confident-wrong | 3.3% | 3.3% | 0 | — |
+| Mean tool calls | 4.13 | 3.97 | −0.16 | 0.31 (Wilcoxon) |
+
+**Accepted.** The isolated citation instruction fixes the biggest weakness —
+grounding 55 → 97%, fabrication 45 → 3%, both highly significant — while
+root-cause accuracy goes *up* and nothing regresses beyond one-scenario noise on
+escalation. `conclude-v4` is the shipped config.
+
 ### Verdict
 
-**Every prompt variant was rejected.** `conclude-v2` and `conclude-v3` each fixed
-a real problem (citation fabrication) but regressed another (escalation, then
-mechanism identification). At this model size the trade wasn't worth it, so
-**`dev-baseline` is the shipped config.** The obvious next experiment — a
-citation-only prompt change with none of the escalation or hedging language — is
-left as future work.
+`conclude-v2` and `conclude-v3` were **rejected**: each fixed citation fabrication
+but bundled it with language that regressed escalation, then mechanism
+identification. Isolating just the citation instruction (`conclude-v4`) gave the
+fix cleanly. `no-deploys` confirmed the deploy tool is worth ~12pp of accuracy.
 
-This is the intended outcome of the ablation discipline: build candidate
-improvements, measure them against the baseline with paired tests and spot
-hand-checks, and *don't ship* the ones the data doesn't support.
+This is the ablation discipline working: measure each candidate against the
+baseline with paired tests and spot hand-checks; reject the ones the data doesn't
+support; ship the one it does.
 
 ---
 
