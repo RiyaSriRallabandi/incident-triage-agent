@@ -125,10 +125,23 @@ category, and difficulty. No key → silent no-op.
 
 ## Deployment
 
-The agent is packaged as a library plus scripts; a thin FastAPI wrapper and a
-Render/Fly deploy config are planned (see [docs/REPORT.md](docs/REPORT.md) for
-status). All incident data is synthetic, so a deployed instance exposes no
-production data.
+A thin FastAPI layer ([src/triage/api.py](src/triage/api.py)) serves the cached
+evaluation runs for the shipped config — each scenario's incident report, the
+agent's plan/act/conclude trace, the diagnosis or escalation, the post-hoc
+citation report, and the LLM judge's verdict.
+
+```bash
+uv sync --extra serve
+uv run uvicorn triage.api:app --reload      # http://127.0.0.1:8000
+```
+
+It does **not** run the agent per request — investigation is slow and spends
+free-tier LLM quota. `POST /investigate` runs a live investigation only when
+`ALLOW_LIVE_RUNS=true`; the deployed instance leaves it off.
+
+Deployed on Render's free tier via [render.yaml](render.yaml) (New → Blueprint →
+this repo; `plan: free`, no card). All incident data is synthetic, so a public
+instance exposes nothing.
 
 ## Honesty
 

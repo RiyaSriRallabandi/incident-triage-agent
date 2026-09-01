@@ -1,0 +1,17 @@
+# Render Blueprint: one free web service serving the cached evaluation runs.
+# New -> Blueprint -> pick this repo. No paid resources are declared.
+services:
+  - type: web
+    name: incident-triage-agent
+    runtime: python
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: pip install uv && uv sync --extra serve --no-dev
+    startCommand: uv run uvicorn triage.api:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: ALLOW_LIVE_RUNS
+        value: "false"
+      - key: PYTHON_VERSION
+        value: "3.12.7"

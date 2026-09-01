@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     langchain_tracing_v2: bool = False
     langchain_project: str = "incident-triage-agent"
 
+    # The deployed demo serves cached runs only; live investigation is disabled
+    # so a public instance never spends the free-tier LLM quota.
+    allow_live_runs: bool = False
+
 
 def get_settings() -> Settings:
     """Return a fresh Settings instance."""
