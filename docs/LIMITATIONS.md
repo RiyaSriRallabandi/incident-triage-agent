@@ -23,17 +23,22 @@ below are deliberate scope choices, recorded honestly.
 - **Synthetic.** Incident reports, logs, metrics, and deploys are fabricated.
   Only the failure pattern and root-cause shape come from the cited public
   postmortems. Real logs are messier (gaps, inconsistent formats, clock skew).
-- **Constructed by the project author** from public postmortems and validated by
-  an automated rubric reviewer; not independently reviewed by a practicing SRE.
+- **Ground truth drafted by a stronger reasoning model (Claude Sonnet)** than
+  the free-tier models used inside the harness, from public postmortems,
+  reviewed by the author, and checked by an automated rubric reviewer.
 - **30 scenarios** across 7 failure categories. Small for statistics: paired
   ablation tests run at n=30, so p-values are supporting evidence, not verdicts -
   effect sizes are reported alongside.
 - **The dev set was tuned against.** Prompts were iterated against these 30
   scenarios, so their headline accuracy is an in-domain (optimistic) estimate. A
   held-out test set is the intended fix (planned; see the report).
-- **Judge calibration is small.** Cohen's kappa is computed against the author's
-  hand grading of 30 runs; the judge-v2 prompt contains worked examples drawn
-  from a few scenarios, so some anchoring is possible.
+- **Judge calibration is a two-tier model design.** Running a top-tier reasoning
+  model as the production judge across the full evaluation volume isn't
+  compatible with a $0 budget, so the harness's judge is a smaller free-tier
+  model, validated via Cohen's kappa against a stronger reference: a manual
+  review by Claude Sonnet applying the same rubric to a 30-run calibration
+  sample. The judge-v2 prompt contains worked examples drawn from a few of
+  those same scenarios, so some anchoring between the two is possible.
 
 ## Model / infrastructure
 

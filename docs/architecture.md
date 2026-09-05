@@ -80,15 +80,18 @@ flowchart TB
     METRICS --> SUM
     SUM --> ES[("EvalSummary per variant<br/>data/eval/summary__*.json")]
 
-    HAND[("hand labels · n=30<br/>data/eval/hand_labels.json")] --> CAL
-    JUDGE --> CAL["calibrate<br/>Cohen's kappa, judge vs. human<br/>v1 = 0.25, then v2 = 0.92"]
+    HAND[("Claude Sonnet reference review · n=30<br/>data/eval/hand_labels.json")] --> CAL
+    JUDGE --> CAL["calibrate<br/>Cohen's kappa, free-tier judge vs.<br/>stronger reference model<br/>v1 = 0.25, then v2 = 0.92"]
 
     ES --> AB["ablation stats<br/>McNemar exact test on discordant pairs<br/>+ Wilcoxon signed-rank on continuous metrics<br/>baseline vs. variant, n=30 paired"]
 ```
 
-- **The judge is calibrated before it is trusted.** Its first prompt scored
-  κ = 0.25 against hand grading (too lenient — it accepted "right service +
-  symptom chain" as correct). Rewritten to require the mechanism: κ = 0.92.
+- **The judge is calibrated before it is trusted.** A stronger model (Claude
+  Sonnet) validates the harness's cheaper production judge on a 30-run
+  sample, since running the stronger model as the judge for every evaluation
+  run isn't $0-compatible. Its first prompt scored κ = 0.25 (too lenient — it
+  accepted "right service + symptom chain" as correct). Rewritten to require
+  the mechanism: κ = 0.92.
 - **Ablations are paired.** Same scenarios, same seed set, baseline vs. variant,
   McNemar on the discordant pairs plus Wilcoxon on the continuous metrics. At
   n = 30 the p-values are supporting evidence; effect sizes and hand-checks of

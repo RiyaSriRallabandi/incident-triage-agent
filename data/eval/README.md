@@ -1,9 +1,10 @@
 # Golden evaluation set
 
 Each scenario is one synthetic incident: an incident report, a bundle of
-synthetic evidence (logs, metrics, deploys), and a hand-verified ground-truth
-answer (root cause, evidence path, fix, and whether the agent should escalate
-instead of guessing).
+synthetic evidence (logs, metrics, deploys), and a ground-truth answer (root
+cause, evidence path, fix, and whether the agent should escalate instead of
+guessing) drafted by a stronger reasoning model (Claude Sonnet) than the
+free-tier models used inside the harness itself, and reviewed by the author.
 
 ## How a scenario is built
 
@@ -11,7 +12,7 @@ instead of guessing).
    deploy that saturates CPU, a retry storm that exhausts a connection pool).
 2. A short spec is hand-written in `specs/scn_###.spec.json`: the paraphrased
    incident report, the ground truth, the handful of real "signal" log lines, the
-   deploys, and the shape of each metric. **This spec is the human-reviewed
+   deploys, and the shape of each metric. **This spec is the reviewed
    artifact.**
 3. `scripts/generate_evidence.py` expands the spec into `scenarios/scn_###.json`,
    inserting the signal lines at their real offsets among distractor log lines

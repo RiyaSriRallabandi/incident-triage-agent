@@ -39,7 +39,7 @@ def print_summary(s: EvalSummary) -> None:
             print(f"  {stage:24s} {count}")
     if s.calibration:
         c = s.calibration
-        print("\nJUDGE CALIBRATION (vs hand labels)")
+        print("\nJUDGE CALIBRATION (vs the manual review)")
         print(f"  n={c.n}  raw agreement {_pct(c.raw_agreement)}  kappa {c.cohen_kappa:.3f}")
 
 
@@ -52,7 +52,7 @@ def main() -> int:
 
     variant = VARIANTS[args.variant]
     print(f"evaluating variant '{variant.tag}' (repeats={args.repeats}) ...")
-    # Calibration compares judge vs hand labels, which exist only for dev-baseline runs.
+    # Calibration compares judge vs the manual review, which exists only for dev-baseline runs.
     ev = evaluate_variant(
         variant,
         repeats=args.repeats,

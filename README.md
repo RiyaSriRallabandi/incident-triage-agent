@@ -50,8 +50,10 @@ from a real public postmortem; ground truth is hand-verified.
 | False-confident-wrong rate | **0%** |
 | Citation grounding | 54.8% |
 
-- **Judge calibration:** the LLM judge's first prompt scored Cohen's **κ = 0.25**
-  vs. hand grading (too lenient) — diagnosed, rewrote, **κ = 0.92** (n=30).
+- **Judge calibration:** the harness's free-tier judge is validated with
+  Cohen's **κ** against a stronger reference model (Claude Sonnet) on a
+  30-run sample — v1 scored **κ = 0.25** (too lenient), diagnosed and
+  rewrote, **κ = 0.92**.
 - **Ablations rejected every prompt variant.** Four `conclude`-prompt variants
   each fixed citation grounding (up to 55% → 97%, Wilcoxon p ≈ 0) but traded it
   for a regression. One looked like a clean win on the dev set — **the held-out

@@ -13,8 +13,9 @@ with the shipped config:
 | Delivered citations grounded (after verification) | **100%** |
 | Citations the agent *generates* that are grounded | ~58% |
 
-- The **LLM judge was calibrated** against hand grading: v1 landed at Cohen's
-  κ = 0.25 (too lenient), was diagnosed and rewritten, v2 reached **κ = 0.92**.
+- The **LLM judge was calibrated** against a stronger reference model (Claude
+  Sonnet) on a 30-run sample: v1 landed at Cohen's κ = 0.25 (too lenient), was
+  diagnosed and rewritten, v2 reached **κ = 0.92**.
 - **Every prompt variant tried in the ablations was rejected.** Each fixed
   citation grounding (77–100%) but traded it for a regression elsewhere. One
   variant (`conclude-v4`) looked like a clean win on the dev set (+7pp accuracy)
@@ -43,10 +44,14 @@ set** used exactly once for the headline numbers.
 ## 1. Judge calibration
 
 Root-cause statements are free text, so they are graded by an LLM judge on a
-3-point scale (correct / partial / incorrect). The judge is only trusted after
-being checked against the author's hand grading.
+3-point scale (correct / partial / incorrect). Running a top-tier reasoning
+model as that judge across the full ablation matrix isn't compatible with a $0
+budget, so the harness's production judge is a smaller free-tier model (Groq
+`gpt-oss-120b`) — validated, on a 30-run calibration sample, against a stronger
+reference: a manual review by Claude Sonnet applying the same correctness
+rubric directly to each scenario's ground truth.
 
-| Judge prompt | Cohen's κ vs hand grading | Verdict |
+| Judge prompt | Cohen's κ vs. the reference review | Verdict |
 |---|---|---|
 | `judge_root_cause_v1` | **0.25** (n=12) | **rejected** — systematically lenient |
 | `judge_root_cause_v2` | **0.92** (n=30) | accepted |
@@ -54,13 +59,13 @@ being checked against the author's hand grading.
 `v1` scored an answer "correct" whenever it named the right service and symptom
 chain, even when it missed the *mechanism a fix must address* (e.g. "payments
 latency exhausted the pool" for an incident whose cause is un-budgeted retry
-amplification). `v2` requires the mechanism. On the 30 dev-set runs it disagreed
-with the author on 1 of 30 (a borderline "external DNS provider failure" vs.
-"DDoS").
+amplification). `v2` requires the mechanism. On the 30 dev-set runs it agreed
+with the reference review on 29 of 30 (the one disagreement: a borderline
+"external DNS provider failure" vs. "DDoS").
 
-**Caveats:** the calibration set is 30 runs; `v2` contains worked examples drawn
-from a few scenarios, so some anchoring is possible; it did generalise to
-scenarios not in its examples.
+**Caveats:** the calibration sample is 30 runs, and `v2`'s prompt contains
+worked examples drawn from a few of these same scenarios, so some anchoring is
+possible; it did generalise to scenarios outside its examples.
 
 ---
 
