@@ -198,7 +198,7 @@ incidents, and it caught the regression.
 
 ### Verdict
 
-**Every prompt variant was rejected.** Four attempts (`conclude-v2/v3/v4`) fixed
+**Every prompt variant was rejected.** Three attempts (`conclude-v2/v3/v4`) fixed
 citation grounding (77 to 100%), and every one traded it for a regression
 elsewhere: over-escalation, vaguer mechanisms, or (revealed only by the held-out
 set) lost synthesis and ambiguity handling. `no-deploys` confirmed the deploy

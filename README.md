@@ -56,7 +56,7 @@ model (Claude Sonnet) and reviewed by the author.
   Cohen's **κ** against a stronger reference model (Claude Sonnet) on a
   30-run sample. v1 scored **κ = 0.25** (too lenient); after a diagnosis and
   rewrite, **κ = 0.92**.
-- **Ablations rejected every prompt variant.** Four `conclude`-prompt variants
+- **Ablations rejected every prompt variant.** Three `conclude`-prompt variants
   each fixed citation grounding (from 57% to as high as 97%, Wilcoxon p ≈ 0) but
   traded it for a regression elsewhere. One looked like a clean win on the dev
   set, and **the held-out set caught that it dropped root-cause accuracy from
