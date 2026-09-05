@@ -31,7 +31,7 @@ from triage.tools.toolset import build_toolset
 from triage.tracing import configure_tracing, trace_config
 
 DEFAULT_BUDGET = 6
-DEFAULT_PROVIDER: Provider = "groq"
+DEFAULT_PROVIDER: Provider = "gemini"  # matches the evaluated config; Groq is the fallback
 
 
 def _evidence_window(scenario: Scenario) -> str:

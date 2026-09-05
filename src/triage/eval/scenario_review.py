@@ -5,7 +5,7 @@ reviewer applies) using the Groq judge model, and returns a structured verdict
 per check. This is a data-QA gate, not a replacement for human sign-off: it
 flags, a person confirms.
 
-The rubric here is also the seed for the Task 8 LLM-judge.
+The rubric here is also the seed for the root-cause LLM judge (see docs/REPORT.md).
 """
 
 from __future__ import annotations

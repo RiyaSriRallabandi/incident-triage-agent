@@ -28,7 +28,7 @@ class CachedRun(BaseModel):
     scenario_id: str
     run_index: int
     budget: int
-    provider: str = "groq"
+    provider: str = "gemini"
     result: AgentResult | None = None
     error: str | None = None
 

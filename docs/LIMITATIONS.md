@@ -27,11 +27,13 @@ below are deliberate scope choices, recorded honestly.
   the free-tier models used inside the harness, from public postmortems,
   reviewed by the author, and checked by an automated rubric reviewer.
 - **30 scenarios** across 7 failure categories. Small for statistics: paired
-  ablation tests run at n=30, so p-values are supporting evidence, not verdicts -
-  effect sizes are reported alongside.
+  ablation tests run at n=30, so p-values are supporting evidence, not verdicts,
+  and effect sizes are reported alongside.
 - **The dev set was tuned against.** Prompts were iterated against these 30
-  scenarios, so their headline accuracy is an in-domain (optimistic) estimate. A
-  held-out test set is the intended fix (planned; see the report).
+  scenarios, so their accuracy is an in-domain (optimistic) estimate. The
+  sealed 10-scenario held-out set addresses this: it was run once, with the
+  frozen config, and its numbers are the report's headline (held-out accuracy
+  came out above the dev estimate, not below).
 - **Judge calibration is a two-tier model design.** Running a top-tier reasoning
   model as the production judge across the full evaluation volume isn't
   compatible with a $0 budget, so the harness's judge is a smaller free-tier

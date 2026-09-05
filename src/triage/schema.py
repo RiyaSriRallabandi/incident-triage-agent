@@ -1,7 +1,8 @@
 """Data contract for incident scenarios and their ground truth.
 
 A scenario is one synthetic incident: an incident report, a bundle of synthetic
-evidence (logs, metrics, deploys), and a hand-verified ground-truth answer. The
+evidence (logs, metrics, deploys), and a ground-truth answer drafted by a
+stronger reasoning model (Claude Sonnet) and reviewed by the author. The
 evidence is fabricated for evaluation; only the failure pattern and root-cause
 shape are drawn from the cited real postmortem.
 """

@@ -1,12 +1,12 @@
 # IncidentTriage Agent
 
 A multi-step AI agent that automates the **investigation** phase of an on-call
-incident — not the fix. Given an incident report, it iteratively queries evidence
+incident, not the fix. Given an incident report, it iteratively queries evidence
 sources, reasons about what to check next, and produces a **cited root-cause
-hypothesis** (with a confidence score and a recommended fix) — or **cleanly
+hypothesis** (with a confidence score and a recommended fix), or **cleanly
 escalates** when the evidence doesn't localize a cause.
 
-The point of the project is not the agent — a plan/act/conclude loop is a known
+The point of the project is not the agent. A plan/act/conclude loop is a known
 pattern. The point is **building the agent *and* a rigorous evaluation of it**:
 step-level metrics, a calibrated LLM judge, controlled ablations with paired
 significance testing, a sealed held-out test set, and an adversarial slice.
@@ -37,9 +37,10 @@ runbook corpus). Also exposed as an [MCP](https://modelcontextprotocol.io) serve
 
 ## Results
 
-Evaluated on a **30-scenario dev set** (used for prompt iteration + ablations)
+Evaluated on a **30-scenario dev set** (used for prompt iteration and ablations)
 and a **10-scenario sealed held-out set** (used once). Every scenario is derived
-from a real public postmortem; ground truth is hand-verified.
+from a real public postmortem. Ground truth was drafted by a stronger reasoning
+model (Claude Sonnet) and reviewed by the author.
 
 **Held-out test set (10 scenarios, run once with the shipped config):**
 
@@ -48,18 +49,20 @@ from a real public postmortem; ground truth is hand-verified.
 | Root-cause correct (mechanism identified) | **88.9%** |
 | Escalation decision accuracy | **100%** |
 | False-confident-wrong rate | **0%** |
-| Citation grounding | 54.8% |
+| Citations the agent generates that are grounded | ~58% |
+| Citations delivered after verification | **100%** |
 
 - **Judge calibration:** the harness's free-tier judge is validated with
   Cohen's **κ** against a stronger reference model (Claude Sonnet) on a
-  30-run sample — v1 scored **κ = 0.25** (too lenient), diagnosed and
-  rewrote, **κ = 0.92**.
+  30-run sample. v1 scored **κ = 0.25** (too lenient); after a diagnosis and
+  rewrite, **κ = 0.92**.
 - **Ablations rejected every prompt variant.** Four `conclude`-prompt variants
-  each fixed citation grounding (up to 55% → 97%, Wilcoxon p ≈ 0) but traded it
-  for a regression. One looked like a clean win on the dev set — **the held-out
-  set caught that it cost ~15–40pp of accuracy** on synthesis-heavy incidents.
+  each fixed citation grounding (from 57% to as high as 97%, Wilcoxon p ≈ 0) but
+  traded it for a regression elsewhere. One looked like a clean win on the dev
+  set, and **the held-out set caught that it dropped root-cause accuracy from
+  88.9% to 50%** on synthesis-heavy incidents.
 - **5/5 prompt-injection attacks resisted** ([SECURITY.md](docs/SECURITY.md)).
-- The agent generates ~57% grounded citations; a **deterministic post-hoc
+- The agent generates roughly 57% grounded citations. A **deterministic post-hoc
   verification step** drops the rest, so **100% of delivered citations are
   grounded** and the fabrication rate is logged.
 
@@ -70,11 +73,11 @@ Full numbers, the ablation table, and the calibration story: [docs/REPORT.md](do
 | | |
 |---|---|
 | Agent orchestration | **LangGraph** (explicit state machine) |
-| LLMs | **Groq** (`gpt-oss-20b/120b`) + **Gemini** (`gemini-3.5-flash-lite`), free tiers only |
+| LLMs | **Gemini** `gemini-3.5-flash-lite` (agent) + **Groq** `gpt-oss-120b` (judge), `gpt-oss-20b` fallback, free tiers only |
 | Runbook RAG | **Chroma** + `sentence-transformers` (`all-MiniLM-L6-v2`, local) |
-| Tracing | **LangSmith** free tier — per-step traces, tagged and filterable |
-| Eval | custom harness · LLM-as-judge · `scikit-learn` (Cohen's κ) · `scipy` (McNemar, Wilcoxon) |
-| Tooling | `uv` · `ruff` · `pytest` (250+ tests) · GitHub Actions CI |
+| Tracing | **LangSmith** free tier, per-step traces, tagged and filterable |
+| Eval | custom harness, LLM-as-judge, `scikit-learn` (Cohen's κ), `scipy` (McNemar, Wilcoxon) |
+| Tooling | `uv`, `ruff`, `pytest` (272 tests), GitHub Actions CI |
 
 Target cost: **$0**.
 
@@ -102,7 +105,7 @@ Reproduce the evaluation:
 ```bash
 uv run python scripts/run_eval.py --variant dev-baseline   # baseline (uses cache)
 uv run python scripts/run_ablations.py                     # variants + significance tests
-uv run python scripts/run_security.py --provider groq      # prompt-injection slice
+uv run python scripts/run_security.py                      # prompt-injection slice
 ```
 
 ## MCP server
@@ -126,14 +129,14 @@ Claude Desktop (`claude_desktop_config.json`):
 
 ## Tracing
 
-With `LANGCHAIN_API_KEY` + `LANGCHAIN_TRACING_V2=true` in `.env`, every run is
+With `LANGCHAIN_API_KEY` and `LANGCHAIN_TRACING_V2=true` in `.env`, every run is
 captured to the `incident-triage-agent` LangSmith project, tagged by scenario id,
-category, and difficulty. No key → silent no-op.
+category, and difficulty. No key means a silent no-op.
 
 ## Deployment
 
 A thin FastAPI layer ([src/triage/api.py](src/triage/api.py)) serves the cached
-evaluation runs for the shipped config — each scenario's incident report, the
+evaluation runs for the shipped config: each scenario's incident report, the
 agent's plan/act/conclude trace, the diagnosis or escalation, the post-hoc
 citation report, and the LLM judge's verdict.
 
@@ -142,7 +145,7 @@ uv sync --extra serve
 uv run uvicorn triage.api:app --reload      # http://127.0.0.1:8000
 ```
 
-It does **not** run the agent per request — investigation is slow and spends
+It does **not** run the agent per request, since investigation is slow and spends
 free-tier LLM quota. `POST /investigate` runs a live investigation only when
 `ALLOW_LIVE_RUNS=true`; the deployed instance leaves it off.
 

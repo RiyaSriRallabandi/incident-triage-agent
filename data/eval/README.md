@@ -18,7 +18,7 @@ free-tier models used inside the harness itself, and reviewed by the author.
    inserting the signal lines at their real offsets among distractor log lines
    from unrelated services and generating realistic metric time series. Generation
    is deterministic (RNG seeded from the scenario id), so the committed scenario
-   file is always exactly what the spec produces — a test enforces this.
+   file is always exactly what the spec produces, and a test enforces this.
 
 Nothing is copied from the source postmortems. Incident text, service names, log
 lines, metrics, timestamps, and commit hashes are all fabricated for evaluation;
@@ -39,8 +39,8 @@ uv run python scripts/review_scenarios.py            # needs GROQ_API_KEY
 
 Runs each spec through an eight-check SRE rubric (report realism, signal→cause,
 deploy presence, metric/narrative consistency, root-cause correctness, evidence
-support, fix, escalation flag) using the Groq judge model. It flags; a human
-confirms. The same rubric seeds the Task 8 LLM-judge.
+support, fix, escalation flag) using the Groq judge model. It flags; a person
+confirms. The same rubric seeds the LLM judge (see [docs/REPORT.md](../../docs/REPORT.md) §1).
 
 
 ## Current set (30 scenarios)
@@ -86,7 +86,7 @@ they test whether the agent escalates rather than fabricating one.
 ## Held-out test set (`heldout/`, 10 scenarios)
 
 `scn_101`–`scn_110`, one or two per failure category plus one escalate case. These
-were **not used for prompt iteration or ablations** — the dev set (above) was. The
+were **not used for prompt iteration or ablations**; the dev set (above) was. The
 agent is run against the held-out set exactly once, with the frozen final config,
 to produce the report's headline numbers. Built and generated the same way; run
 `uv run python scripts/generate_evidence.py --heldout`.

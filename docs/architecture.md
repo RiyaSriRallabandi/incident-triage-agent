@@ -1,7 +1,7 @@
 # Architecture
 
 Two pieces: the **agent** (a plan/act/conclude loop over evidence tools) and the
-**evaluation harness** around it. The harness is the point of the project — the
+**evaluation harness** around it. The harness is the point of the project. The
 agent is a deliberately plain implementation of a known pattern so the evaluation
 has something honest to measure.
 
@@ -43,7 +43,7 @@ flowchart TB
 
 - **plan** and **conclude** are the only LLM calls. Both use structured output
   (`with_structured_output`) so the loop never parses free text.
-- **act** is pure Python — it looks the tool up by name and runs it. A tool error
+- **act** is pure Python: it looks the tool up by name and runs it. A tool error
   is appended to the trace as evidence, not raised.
 - The **budget** (default 6) caps tool calls; hitting it forces `conclude`.
 - **Citation verification** is deterministic (token overlap against the trace),
@@ -56,7 +56,7 @@ flowchart TB
 
 One variant = one change vs. the shipped config (a prompt version, a removed
 tool, a bigger budget). Everything is cached under `data/eval/` keyed by the
-variant tag, so a re-run only does the missing work — which is what makes the
+variant tag, so a re-run only does the missing work. That is what makes the
 pipeline survive daily free-tier quota limits.
 
 ```mermaid
@@ -89,7 +89,7 @@ flowchart TB
 - **The judge is calibrated before it is trusted.** A stronger model (Claude
   Sonnet) validates the harness's cheaper production judge on a 30-run
   sample, since running the stronger model as the judge for every evaluation
-  run isn't $0-compatible. Its first prompt scored κ = 0.25 (too lenient — it
+  run isn't $0-compatible. Its first prompt scored κ = 0.25 (too lenient, it
   accepted "right service + symptom chain" as correct). Rewritten to require
   the mechanism: κ = 0.92.
 - **Ablations are paired.** Same scenarios, same seed set, baseline vs. variant,

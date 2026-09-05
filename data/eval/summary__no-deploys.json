@@ -9,8 +9,9 @@
   "mean_tool_calls": 3.77,
   "budget_cap_rate": 0.133,
   "mean_error_steps": 0.0,
-  "citation_grounding_rate": 0.465,
-  "fabricated_citation_rate": 0.535,
+  "citation_grounding_rate": 0.512,
+  "fabricated_citation_rate": 0.488,
+  "mean_delivered_citations": 1.47,
   "failure_stages": {
     "missing_tool_call": 2,
     "wrong_tool_args": 1
@@ -134,7 +135,7 @@
         "correct": 1
       },
       "mean_tool_calls": 3.0,
-      "grounded_citation_rate": 0.333
+      "grounded_citation_rate": 0.667
     },
     {
       "scenario_id": "scn_011",
@@ -146,7 +147,7 @@
         "correct": 1
       },
       "mean_tool_calls": 3.0,
-      "grounded_citation_rate": 0.667
+      "grounded_citation_rate": 1.0
     },
     {
       "scenario_id": "scn_012",
@@ -194,7 +195,7 @@
         "correct": 1
       },
       "mean_tool_calls": 3.0,
-      "grounded_citation_rate": 0.333
+      "grounded_citation_rate": 0.667
     },
     {
       "scenario_id": "scn_016",
@@ -206,7 +207,7 @@
         "correct": 1
       },
       "mean_tool_calls": 4.0,
-      "grounded_citation_rate": 0.667
+      "grounded_citation_rate": 1.0
     },
     {
       "scenario_id": "scn_017",
